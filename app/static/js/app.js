@@ -16,7 +16,10 @@ async function checkServiceHealth() {
         }
 
         serviceState.classList.add("is-ready");
-        serviceState.querySelector("span:last-child").textContent = "Sistem siap";
+        const nodeCount = payload.data?.dataset?.logical_nodes;
+        serviceState.querySelector("span:last-child").textContent = nodeCount
+            ? `Sistem siap · ${nodeCount} lokasi`
+            : "Sistem siap";
     } catch (error) {
         serviceState.classList.add("is-error");
         serviceState.querySelector("span:last-child").textContent = "Sistem bermasalah";
@@ -24,4 +27,3 @@ async function checkServiceHealth() {
 }
 
 checkServiceHealth();
-

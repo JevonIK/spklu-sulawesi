@@ -1,0 +1,102 @@
+from pathlib import Path
+
+import pytest
+
+from app.config import BASE_DIR
+from app.services.dataset import (
+    DatasetValidationError,
+    load_station_catalog,
+    parse_connectors,
+)
+
+
+CSV_HEADER = (
+    "Provinsi,Kota/Kabupaten,Lokasi SPKLU,Alamat,Latitude,Longitude,"
+    "google maps,Jenis Konektor\n"
+)
+
+
+def write_dataset(path: Path, rows: str):
+    path.write_text(CSV_HEADER + rows, encoding="utf-8")
+    return path
+
+
+def test_connector_normalization():
+    assert parse_connectors("ccs 2, CHAdeMO, g/bt, CCS2") == (
+        "CCS2",
+        "CHADEMO",
+        "GB/T",
+    )
+
+
+def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
+    catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
+
+    assert catalog.source_row_count == 150
+    assert catalog.logical_node_count == 149
+    assert len(catalog.multi_unit_nodes) == 1
+
+    bolmut = catalog.multi_unit_nodes[0]
+    assert bolmut.name == "SPKLU PLN KANTOR ULP BOLMUT"
+    assert bolmut.unit_count == 2
+    assert {unit.name for unit in bolmut.units} == {
+        "SPKLU PLN KANTOR ULP BOLMUT 1",
+        "SPKLU PLN KANTOR ULP BOLMUT 2",
+    }
+    assert bolmut.connectors == ("AC TYPE 2",)
+
+
+def test_unknown_connector_is_rejected(tmp_path):
+    dataset = write_dataset(
+        tmp_path / "unknown_connector.csv",
+        "Sulawesi Selatan,Makassar,SPKLU Uji,Alamat Uji,-5.1,119.4,"
+        "https://maps.app.goo.gl/uji,KONEKTOR BARU\n",
+    )
+
+    with pytest.raises(DatasetValidationError, match="jenis konektor tidak dikenal"):
+        load_station_catalog(dataset)
+
+
+def test_coordinate_outside_sulawesi_is_rejected(tmp_path):
+    dataset = write_dataset(
+        tmp_path / "outside_bounds.csv",
+        "Sulawesi Selatan,Makassar,SPKLU Uji,Alamat Uji,-8.0,119.4,"
+        "https://maps.app.goo.gl/uji,CCS2\n",
+    )
+
+    with pytest.raises(DatasetValidationError, match="di luar batas Sulawesi"):
+        load_station_catalog(dataset)
+
+
+def test_missing_required_column_is_rejected(tmp_path):
+    dataset = tmp_path / "missing_column.csv"
+    dataset.write_text(
+        "Provinsi,Lokasi SPKLU,Latitude,Longitude\n"
+        "Sulawesi Selatan,SPKLU Uji,-5.1,119.4\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DatasetValidationError, match="Kolom wajib tidak ditemukan"):
+        load_station_catalog(dataset)
+
+
+def test_non_google_maps_url_is_rejected(tmp_path):
+    dataset = write_dataset(
+        tmp_path / "invalid_maps_url.csv",
+        "Sulawesi Selatan,Makassar,SPKLU Uji,Alamat Uji,-5.1,119.4,"
+        "https://example.com/uji,CCS2\n",
+    )
+
+    with pytest.raises(DatasetValidationError, match="Google Maps tidak valid"):
+        load_station_catalog(dataset)
+
+
+def test_unknown_province_is_rejected(tmp_path):
+    dataset = write_dataset(
+        tmp_path / "unknown_province.csv",
+        "Sulawesi Timur,Makassar,SPKLU Uji,Alamat Uji,-5.1,119.4,"
+        "https://maps.app.goo.gl/uji,CCS2\n",
+    )
+
+    with pytest.raises(DatasetValidationError, match="Provinsi .* tidak dikenal"):
+        load_station_catalog(dataset)

@@ -1,7 +1,5 @@
 """Endpoint API dasar aplikasi."""
 
-from pathlib import Path
-
 from flask import Blueprint, current_app, jsonify
 
 
@@ -10,23 +8,30 @@ api_bp = Blueprint("api", __name__)
 
 @api_bp.get("/health")
 def health():
-    """Mengembalikan status aplikasi dan ketersediaan berkas dataset."""
+    """Mengembalikan status aplikasi dan hasil pemuatan dataset."""
 
-    dataset_path = Path(current_app.config["DATASET_PATH"])
-    dataset_exists = dataset_path.is_file()
-    status = "ok" if dataset_exists else "degraded"
+    catalog = current_app.extensions["station_catalog"]
 
     response = {
-        "status": status,
+        "status": "ok",
         "service": "spklu-sulawesi",
         "version": current_app.config["APP_VERSION"],
         "data": {
             "dataset": {
-                "filename": dataset_path.name,
-                "exists": dataset_exists,
+                "filename": catalog.source_path.name,
+                "exists": True,
+                "source_rows": catalog.source_row_count,
+                "logical_nodes": catalog.logical_node_count,
             }
         },
     }
 
-    return jsonify(response), 200 if dataset_exists else 503
+    return jsonify(response), 200
 
+
+@api_bp.get("/stations/summary")
+def station_summary():
+    """Mengembalikan statistik dataset yang telah dinormalisasi."""
+
+    catalog = current_app.extensions["station_catalog"]
+    return jsonify({"status": "ok", "data": catalog.summary()})

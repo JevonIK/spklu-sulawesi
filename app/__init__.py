@@ -2,9 +2,11 @@
 
 from flask import Flask
 
+from .commands import register_commands
 from .config import Config
 from .routes.api import api_bp
 from .routes.web import web_bp
+from .services.dataset import load_station_catalog
 
 
 def create_app(config_object=None, config_overrides=None):
@@ -20,8 +22,12 @@ def create_app(config_object=None, config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
 
+    app.extensions["station_catalog"] = load_station_catalog(
+        app.config["DATASET_PATH"]
+    )
+
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
+    register_commands(app)
 
     return app
-

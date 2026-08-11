@@ -8,8 +8,10 @@ state SOC untuk menyusun itinerary yang layak.
 ## Status pengembangan
 
 Fase 1 telah menyiapkan fondasi aplikasi Flask, konfigurasi berbasis environment
-variable, antarmuka awal, health check, dan pengujian dasar. Algoritma rekomendasi
-belum diaktifkan dan akan ditambahkan secara bertahap.
+variable, antarmuka awal, health check, dan pengujian dasar. Fase 2 menambahkan
+validasi dataset, normalisasi konektor, dan konsolidasi unit pada satu lokasi
+menjadi node logis. Algoritma rekomendasi belum diaktifkan dan akan ditambahkan
+secara bertahap.
 
 ## Ruang lingkup sistem
 
@@ -40,6 +42,13 @@ python run.py
 Buka `http://127.0.0.1:5000`. Endpoint pemeriksaan sistem tersedia pada
 `http://127.0.0.1:5000/api/health`.
 
+Ringkasan dataset tersedia melalui endpoint
+`http://127.0.0.1:5000/api/stations/summary` atau perintah:
+
+```bash
+python -m flask --app run.py dataset-summary
+```
+
 ## Menjalankan pengujian
 
 ```bash
@@ -58,6 +67,7 @@ spklu-sulawesi/
 |   |-- templates/       # Template HTML
 |   |-- __init__.py      # Application factory
 |   `-- config.py        # Konfigurasi environment
+|-- docs/                # Dokumentasi data dan penelitian
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
 |-- run.py
@@ -71,3 +81,5 @@ Salin `.env.example` menjadi `.env` untuk konfigurasi lokal. Berkas `.env` sudah
 dikecualikan melalui `.gitignore` dan tidak boleh dimasukkan ke GitHub. API key
 Google Maps baru akan diperlukan pada fase integrasi peta.
 
+Aturan kolom, normalisasi konektor, dan konsolidasi unit dijelaskan pada
+[`docs/data_dictionary.md`](docs/data_dictionary.md).
