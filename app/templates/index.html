@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Sistem rekomendasi SPKLU multi-stop untuk perjalanan antarkota di Sulawesi.">
+    <title>{{ app_name }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('web.index') }}" aria-label="Halaman utama">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img">
+                    <path d="M13.2 2 5.8 13h5l-1 9L18.2 10h-5l0-8Z"/>
+                </svg>
+            </span>
+            <span>
+                <strong>SPKLU Sulawesi</strong>
+                <small>Perencana perjalanan kendaraan listrik</small>
+            </span>
+        </a>
+
+        <div class="service-state" id="serviceState" aria-live="polite">
+            <span class="state-dot" aria-hidden="true"></span>
+            <span>Memeriksa sistem</span>
+        </div>
+    </header>
+
+    <main class="workspace">
+        <section class="control-panel" aria-labelledby="panelTitle">
+            <div class="panel-heading">
+                <p class="eyebrow">Rencana perjalanan</p>
+                <h1 id="panelTitle">Temukan rangkaian SPKLU yang layak</h1>
+                <p>
+                    Sistem akan menyusun pemberhentian berdasarkan koridor rute,
+                    kompatibilitas konektor, dan batas State of Charge.
+                </p>
+            </div>
+
+            <form class="route-form" aria-describedby="developmentNotice">
+                <fieldset disabled>
+                    <legend class="sr-only">Parameter perjalanan</legend>
+
+                    <label for="origin">Lokasi awal</label>
+                    <input id="origin" name="origin" type="text" placeholder="Contoh: Makassar">
+
+                    <label for="destination">Lokasi tujuan</label>
+                    <input id="destination" name="destination" type="text" placeholder="Contoh: Palu">
+
+                    <div class="form-grid">
+                        <div>
+                            <label for="currentSoc">SOC saat ini (%)</label>
+                            <input id="currentSoc" name="current_soc" type="number" min="0" max="100" value="80">
+                        </div>
+                        <div>
+                            <label for="maxRange">Jangkauan maksimum (km)</label>
+                            <input id="maxRange" name="max_range_km" type="number" min="1" value="300">
+                        </div>
+                        <div>
+                            <label for="minimumSoc">SOC minimum (%)</label>
+                            <input id="minimumSoc" name="minimum_soc" type="number" min="0" max="100" value="{{ defaults.soc_min | int }}">
+                        </div>
+                        <div>
+                            <label for="targetSoc">Target SOC (%)</label>
+                            <input id="targetSoc" name="target_soc" type="number" min="0" max="100" value="{{ defaults.soc_target | int }}">
+                        </div>
+                    </div>
+
+                    <label for="connector">Jenis konektor kendaraan</label>
+                    <select id="connector" name="connector">
+                        <option>AC Type 2</option>
+                        <option>CCS2</option>
+                        <option>CHAdeMO</option>
+                        <option>GB/T</option>
+                    </select>
+
+                    <button type="submit">Cari rekomendasi SPKLU</button>
+                </fieldset>
+            </form>
+
+            <p class="development-notice" id="developmentNotice">
+                Formulir akan diaktifkan setelah modul data, algoritma, dan Google Maps selesai diintegrasikan.
+            </p>
+        </section>
+
+        <section class="map-panel" aria-labelledby="mapTitle">
+            <div class="map-placeholder">
+                <div class="island-shape" aria-hidden="true"></div>
+                <div class="map-copy">
+                    <span class="map-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/>
+                        </svg>
+                    </span>
+                    <p class="eyebrow">Peta perjalanan</p>
+                    <h2 id="mapTitle">Integrasi peta disiapkan pada fase berikutnya</h2>
+                    <p>API key tidak diperlukan pada tahap inisialisasi ini.</p>
+                </div>
+            </div>
+
+            <aside class="method-strip" aria-label="Tahapan metode rekomendasi">
+                <span><strong>01</strong> Radius search</span>
+                <span><strong>02</strong> Graf feasible</span>
+                <span><strong>03</strong> DP berbasis SOC</span>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>Prototipe penelitian SPKLU Sulawesi</span>
+        <span>Versi {{ app_version }}</span>
+    </footer>
+
+    <noscript>Aktifkan JavaScript agar status layanan dapat diperiksa.</noscript>
+</body>
+</html>
