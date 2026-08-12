@@ -12,8 +12,9 @@ variable, antarmuka awal, health check, dan pengujian dasar. Fase 2 menambahkan
 validasi dataset, normalisasi konektor, dan konsolidasi unit pada satu lokasi
 menjadi node logis. Fase 3 menambahkan indeks Ball Tree Haversine, radius search,
 sampling polyline, filter koridor, dan pencarian kandidat maju berbasis usable
-range. Penyusunan graf dan itinerary belum diaktifkan dan akan ditambahkan secara
-bertahap.
+range. Fase 4 menambahkan pemangkasan edge geodesik, adapter batch jarak jalan,
+dan graf berarah origin-SPKLU-destination. Optimasi itinerary berbasis SOC belum
+diaktifkan dan akan ditambahkan secara bertahap.
 
 ## Ruang lingkup sistem
 
@@ -88,3 +89,6 @@ Aturan kolom, normalisasi konektor, dan konsolidasi unit dijelaskan pada
 
 Rancangan indeks Ball Tree dan penyaringan koridor dijelaskan pada
 [`docs/spatial_search.md`](docs/spatial_search.md).
+
+Aturan pemangkasan edge dan pembentukan graf dijelaskan pada
+[`docs/graph_construction.md`](docs/graph_construction.md).

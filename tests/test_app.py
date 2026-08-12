@@ -23,6 +23,11 @@ def test_health_endpoint_reports_dataset(client):
     assert payload["data"]["spatial_index"]["index_type"] == "BallTree"
     assert payload["data"]["spatial_index"]["metric"] == "haversine"
     assert payload["data"]["spatial_index"]["indexed_nodes"] == 149
+    assert payload["data"]["graph_builder"]["status"] == "ready"
+    assert (
+        payload["data"]["graph_builder"]["road_metric_provider"]
+        == "adapter_required"
+    )
 
 
 def test_station_summary_endpoint(client):

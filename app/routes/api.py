@@ -25,6 +25,10 @@ def health():
                 "logical_nodes": catalog.logical_node_count,
             },
             "spatial_index": spatial_index.summary(),
+            "graph_builder": {
+                "status": "ready",
+                "road_metric_provider": "adapter_required",
+            },
         },
     }
 

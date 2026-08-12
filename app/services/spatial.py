@@ -15,7 +15,7 @@ EARTH_RADIUS_KM = 6371.0088
 DISTANCE_TOLERANCE_KM = 1e-6
 
 
-def _coordinate(value):
+def normalize_coordinate(value):
     if len(value) != 2:
         raise ValueError("Koordinat harus berisi latitude dan longitude.")
 
@@ -32,8 +32,8 @@ def _coordinate(value):
 def haversine_distance_km(first, second):
     """Menghitung jarak great-circle dua koordinat dalam kilometer."""
 
-    lat1, lon1 = _coordinate(first)
-    lat2, lon2 = _coordinate(second)
+    lat1, lon1 = normalize_coordinate(first)
+    lat2, lon2 = normalize_coordinate(second)
     lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(
         math.radians, (lat1, lon1, lat2, lon2)
     )
@@ -95,7 +95,7 @@ class RouteGeometry:
     """Polyline tervalidasi dengan jarak kumulatif dan operasi proyeksi."""
 
     def __init__(self, coordinates):
-        normalized = tuple(_coordinate(point) for point in coordinates)
+        normalized = tuple(normalize_coordinate(point) for point in coordinates)
         if len(normalized) < 2:
             raise ValueError("Polyline rute harus memiliki sedikitnya dua titik.")
 
@@ -144,7 +144,7 @@ class RouteGeometry:
     def project(self, point):
         """Memproyeksikan titik ke segmen polyline terdekat."""
 
-        point = _coordinate(point)
+        point = normalize_coordinate(point)
         best_distance = math.inf
         best_progress = 0.0
         best_coordinate = self.coordinates[0]
@@ -228,7 +228,7 @@ class StationSpatialIndex:
     def query_radius(self, center, radius_km, connector=None):
         """Mengembalikan seluruh node dalam radius, tanpa membatasi nilai K."""
 
-        center = _coordinate(center)
+        center = normalize_coordinate(center)
         radius_km = float(radius_km)
         if not math.isfinite(radius_km) or radius_km <= 0:
             raise ValueError("Radius pencarian harus lebih besar dari nol.")
@@ -323,7 +323,7 @@ def find_reachable_forward_candidates(
     """Mencari kandidat dalam usable range yang bergerak maju di koridor."""
 
     geometry = route if isinstance(route, RouteGeometry) else RouteGeometry(route)
-    origin = _coordinate(origin)
+    origin = normalize_coordinate(origin)
     corridor_radius_km = float(corridor_radius_km)
     if not math.isfinite(corridor_radius_km) or corridor_radius_km <= 0:
         raise ValueError("Radius koridor harus lebih besar dari nol.")
@@ -359,4 +359,3 @@ def find_reachable_forward_candidates(
     return tuple(
         sorted(candidates, key=lambda item: (item.route_progress_km, item.node.node_id))
     )
-
