@@ -10,8 +10,10 @@ state SOC untuk menyusun itinerary yang layak.
 Fase 1 telah menyiapkan fondasi aplikasi Flask, konfigurasi berbasis environment
 variable, antarmuka awal, health check, dan pengujian dasar. Fase 2 menambahkan
 validasi dataset, normalisasi konektor, dan konsolidasi unit pada satu lokasi
-menjadi node logis. Algoritma rekomendasi belum diaktifkan dan akan ditambahkan
-secara bertahap.
+menjadi node logis. Fase 3 menambahkan indeks Ball Tree Haversine, radius search,
+sampling polyline, filter koridor, dan pencarian kandidat maju berbasis usable
+range. Penyusunan graf dan itinerary belum diaktifkan dan akan ditambahkan secara
+bertahap.
 
 ## Ruang lingkup sistem
 
@@ -83,3 +85,6 @@ Google Maps baru akan diperlukan pada fase integrasi peta.
 
 Aturan kolom, normalisasi konektor, dan konsolidasi unit dijelaskan pada
 [`docs/data_dictionary.md`](docs/data_dictionary.md).
+
+Rancangan indeks Ball Tree dan penyaringan koridor dijelaskan pada
+[`docs/spatial_search.md`](docs/spatial_search.md).

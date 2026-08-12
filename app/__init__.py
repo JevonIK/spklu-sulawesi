@@ -7,6 +7,7 @@ from .config import Config
 from .routes.api import api_bp
 from .routes.web import web_bp
 from .services.dataset import load_station_catalog
+from .services.spatial import StationSpatialIndex
 
 
 def create_app(config_object=None, config_overrides=None):
@@ -22,8 +23,12 @@ def create_app(config_object=None, config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
 
-    app.extensions["station_catalog"] = load_station_catalog(
+    station_catalog = load_station_catalog(
         app.config["DATASET_PATH"]
+    )
+    app.extensions["station_catalog"] = station_catalog
+    app.extensions["station_spatial_index"] = StationSpatialIndex(
+        station_catalog.nodes
     )
 
     app.register_blueprint(web_bp)

@@ -20,6 +20,9 @@ def test_health_endpoint_reports_dataset(client):
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["source_rows"] == 150
     assert payload["data"]["dataset"]["logical_nodes"] == 149
+    assert payload["data"]["spatial_index"]["index_type"] == "BallTree"
+    assert payload["data"]["spatial_index"]["metric"] == "haversine"
+    assert payload["data"]["spatial_index"]["indexed_nodes"] == 149
 
 
 def test_station_summary_endpoint(client):

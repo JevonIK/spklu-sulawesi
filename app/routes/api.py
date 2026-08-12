@@ -11,6 +11,7 @@ def health():
     """Mengembalikan status aplikasi dan hasil pemuatan dataset."""
 
     catalog = current_app.extensions["station_catalog"]
+    spatial_index = current_app.extensions["station_spatial_index"]
 
     response = {
         "status": "ok",
@@ -22,7 +23,8 @@ def health():
                 "exists": True,
                 "source_rows": catalog.source_row_count,
                 "logical_nodes": catalog.logical_node_count,
-            }
+            },
+            "spatial_index": spatial_index.summary(),
         },
     }
 
