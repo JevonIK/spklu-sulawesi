@@ -26,7 +26,7 @@ def test_health_endpoint_reports_dataset(client):
     assert payload["data"]["graph_builder"]["status"] == "ready"
     assert (
         payload["data"]["graph_builder"]["road_metric_provider"]
-        == "adapter_required"
+        == "google_routes_api"
     )
     assert payload["data"]["optimizer"]["status"] == "ready"
     assert (
@@ -34,6 +34,12 @@ def test_health_endpoint_reports_dataset(client):
         == "dynamic_programming_soc"
     )
     assert payload["data"]["optimizer"]["charging_time_included"] is False
+    assert payload["data"]["google_maps"]["browser_key_configured"] is True
+    assert payload["data"]["google_maps"]["server_key_configured"] is True
+    assert (
+        payload["data"]["google_maps"]["recommendation_endpoint_ready"]
+        is True
+    )
 
 
 def test_station_summary_endpoint(client):

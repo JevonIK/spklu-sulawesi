@@ -36,7 +36,7 @@ class Config:
     """Konfigurasi default untuk pengembangan lokal."""
 
     APP_NAME = "Sistem Rekomendasi SPKLU Sulawesi"
-    APP_VERSION = "0.5.0"
+    APP_VERSION = "0.6.0"
     APP_ENV = os.getenv("APP_ENV", "development")
 
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
@@ -66,3 +66,6 @@ class Config:
         "GOOGLE_MAPS_BROWSER_API_KEY", ""
     )
     GOOGLE_MAPS_SERVER_API_KEY = os.getenv("GOOGLE_MAPS_SERVER_API_KEY", "")
+    GOOGLE_ROUTES_TIMEOUT_SECONDS = _env_float(
+        "GOOGLE_ROUTES_TIMEOUT_SECONDS", 20
+    )

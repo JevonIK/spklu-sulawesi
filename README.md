@@ -15,8 +15,9 @@ sampling polyline, filter koridor, dan pencarian kandidat maju berbasis usable
 range. Fase 4 menambahkan pemangkasan edge geodesik, adapter batch jarak jalan,
 dan graf berarah origin-SPKLU-destination. Fase 5 menambahkan model energi,
 diskretisasi SOC konservatif, Dynamic Programming, rekonstruksi itinerary, dan
-simulasi akhir setiap leg. Integrasi antarmuka pengguna dan Google Maps belum
-diaktifkan dan akan ditambahkan secara bertahap.
+simulasi akhir setiap leg. Fase 6A mengintegrasikan Google Routes API untuk rute
+dasar, matriks edge hasil pemangkasan, rute akhir, endpoint rekomendasi, serta
+pencatatan penggunaan API. Antarmuka Google Maps akan ditambahkan pada fase 6B.
 
 ## Ruang lingkup sistem
 
@@ -45,7 +46,8 @@ python run.py
 ```
 
 Buka `http://127.0.0.1:5000`. Endpoint pemeriksaan sistem tersedia pada
-`http://127.0.0.1:5000/api/health`.
+`http://127.0.0.1:5000/api/health`. Endpoint rekomendasi tersedia melalui
+`POST http://127.0.0.1:5000/api/recommendations` setelah server API key diisi.
 
 Ringkasan dataset tersedia melalui endpoint
 `http://127.0.0.1:5000/api/stations/summary` atau perintah:
@@ -83,8 +85,8 @@ spklu-sulawesi/
 ## Keamanan konfigurasi
 
 Salin `.env.example` menjadi `.env` untuk konfigurasi lokal. Berkas `.env` sudah
-dikecualikan melalui `.gitignore` dan tidak boleh dimasukkan ke GitHub. API key
-Google Maps baru akan diperlukan pada fase integrasi peta.
+dikecualikan melalui `.gitignore` dan tidak boleh dimasukkan ke GitHub. Gunakan
+key terpisah untuk browser dan server serta batasi key ke API yang diperlukan.
 
 Aturan kolom, normalisasi konektor, dan konsolidasi unit dijelaskan pada
 [`docs/data_dictionary.md`](docs/data_dictionary.md).
@@ -97,3 +99,6 @@ Aturan pemangkasan edge dan pembentukan graf dijelaskan pada
 
 Model energi dan Dynamic Programming dijelaskan pada
 [`docs/dp_soc.md`](docs/dp_soc.md).
+
+Alur, keamanan, payload, dan efisiensi Google Routes API dijelaskan pada
+[`docs/google_routes.md`](docs/google_routes.md).
