@@ -29,6 +29,11 @@ def health():
                 "status": "ready",
                 "road_metric_provider": "adapter_required",
             },
+            "optimizer": {
+                "status": "ready",
+                "algorithm": "dynamic_programming_soc",
+                "charging_time_included": False,
+            },
         },
     }
 

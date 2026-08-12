@@ -13,7 +13,9 @@ validasi dataset, normalisasi konektor, dan konsolidasi unit pada satu lokasi
 menjadi node logis. Fase 3 menambahkan indeks Ball Tree Haversine, radius search,
 sampling polyline, filter koridor, dan pencarian kandidat maju berbasis usable
 range. Fase 4 menambahkan pemangkasan edge geodesik, adapter batch jarak jalan,
-dan graf berarah origin-SPKLU-destination. Optimasi itinerary berbasis SOC belum
+dan graf berarah origin-SPKLU-destination. Fase 5 menambahkan model energi,
+diskretisasi SOC konservatif, Dynamic Programming, rekonstruksi itinerary, dan
+simulasi akhir setiap leg. Integrasi antarmuka pengguna dan Google Maps belum
 diaktifkan dan akan ditambahkan secara bertahap.
 
 ## Ruang lingkup sistem
@@ -92,3 +94,6 @@ Rancangan indeks Ball Tree dan penyaringan koridor dijelaskan pada
 
 Aturan pemangkasan edge dan pembentukan graf dijelaskan pada
 [`docs/graph_construction.md`](docs/graph_construction.md).
+
+Model energi dan Dynamic Programming dijelaskan pada
+[`docs/dp_soc.md`](docs/dp_soc.md).

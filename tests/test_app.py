@@ -28,6 +28,12 @@ def test_health_endpoint_reports_dataset(client):
         payload["data"]["graph_builder"]["road_metric_provider"]
         == "adapter_required"
     )
+    assert payload["data"]["optimizer"]["status"] == "ready"
+    assert (
+        payload["data"]["optimizer"]["algorithm"]
+        == "dynamic_programming_soc"
+    )
+    assert payload["data"]["optimizer"]["charging_time_included"] is False
 
 
 def test_station_summary_endpoint(client):

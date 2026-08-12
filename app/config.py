@@ -36,7 +36,7 @@ class Config:
     """Konfigurasi default untuk pengembangan lokal."""
 
     APP_NAME = "Sistem Rekomendasi SPKLU Sulawesi"
-    APP_VERSION = "0.4.0"
+    APP_VERSION = "0.5.0"
     APP_ENV = os.getenv("APP_ENV", "development")
 
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
