@@ -47,10 +47,10 @@ validasi Google Routes pada rekomendasi yang panjang.
 ## Membangun dan menjalankan container
 
 ```bash
-docker build -t spklu-sulawesi:0.10.0 .
+docker build -t spklu-sulawesi:0.10.1 .
 docker run --rm -p 8080:8080 \
   --env-file .env.production \
-  spklu-sulawesi:0.10.0
+  spklu-sulawesi:0.10.1
 ```
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file

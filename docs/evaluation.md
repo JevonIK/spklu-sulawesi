@@ -151,6 +151,11 @@ audit quota batch dan `results[].api_usage` untuk analisis kebutuhan algoritma.
 Jika budget habis, sebagian skenario dapat berstatus `error`; jangan menghitung
 feasibility rate final sebelum seluruh skenario selesai tanpa error.
 
+Jika satu atau lebih skenario error, CLI tetap menyimpan JSON/CSV parsial untuk
+audit, mengisi `execution.outcome` dengan `completed_with_errors`, menandai run
+ledger sebagai `failed`, dan keluar dengan status nonzero. Run hanya berstatus
+`completed` apabila `aggregate.error_count` bernilai nol.
+
 Baseline dan sensitivitas merupakan dua perintah terpisah, sedangkan quota
 harian Google berlaku gabungan. CLI memakai ledger lokal untuk mencatat laporan
 lama, mereservasi hard limit sebelum eksperimen, dan mengganti reservasi dengan

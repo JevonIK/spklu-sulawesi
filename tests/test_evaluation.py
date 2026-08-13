@@ -322,8 +322,9 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-        "app_version": "0.10.0",
+        "app_version": "0.10.1",
         "live_api_confirmed": True,
+        "outcome": "completed",
         "compute_routes_limit": 60,
         "compute_routes_attempt_count": 0,
         "compute_routes_remaining": 60,
@@ -344,3 +345,43 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert report["batching"]["batch_count"] == 1
     assert (tmp_path / "cli-uji.json").exists()
     assert (tmp_path / "cli-uji.csv").exists()
+
+
+def test_experiment_cli_reports_scenario_errors_as_failed(app, tmp_path):
+    scenario_path = tmp_path / "error-scenarios.json"
+    scenario_path.write_text(
+        json.dumps(definition(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    app.extensions["recommendation_service"] = FakeEvaluationService(
+        error=RuntimeError("upstream tidak tersedia")
+    )
+    ledger_path = tmp_path / "error-quota-ledger.json"
+    app.config["GOOGLE_QUOTA_LEDGER_PATH"] = ledger_path
+    runner = app.test_cli_runner()
+
+    result = runner.invoke(
+        args=[
+            "experiment-run",
+            "--scenarios",
+            str(scenario_path),
+            "--output-dir",
+            str(tmp_path),
+            "--label",
+            "cli-error",
+            "--confirm-live-api",
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "1 skenario error" in result.output
+    assert "Laporan parsial telah disimpan" in result.output
+    report = json.loads((tmp_path / "cli-error.json").read_text())
+    assert report["aggregate"]["error_count"] == 1
+    assert report["execution"]["outcome"] == "completed_with_errors"
+    ledger = json.loads(ledger_path.read_text())
+    runs = next(iter(ledger["days"].values()))["runs"]
+    assert len(runs) == 1
+    assert runs[0]["outcome"] == "failed"
+    assert runs[0]["source_sha256"]
+    assert (tmp_path / "cli-error.csv").exists()

@@ -30,6 +30,8 @@ live tetap berada dalam budget quota yang ditetapkan.
 Fase 7D menambahkan ledger kuota harian lintas-eksekusi, reservasi atomik,
 pencegahan eksperimen paralel, impor laporan idempoten, dan pemulihan proses
 terhenti yang tetap mencatat pemakaian API.
+Fase 7E memperketat audit eksperimen: laporan parsial tetap disimpan ketika
+skenario error, tetapi exit code dan outcome ledger ditandai gagal.
 
 ## Ruang lingkup sistem
 

@@ -206,6 +206,11 @@ def experiment_run_command(
         report["execution"] = {
             "app_version": current_app.config["APP_VERSION"],
             "live_api_confirmed": True,
+            "outcome": (
+                "completed"
+                if report["aggregate"]["error_count"] == 0
+                else "completed_with_errors"
+            ),
             **budget.snapshot(),
         }
         json_path, csv_path = write_experiment_report(
@@ -240,11 +245,12 @@ def experiment_run_command(
             raise
         raise click.ClickException(str(error)) from error
 
+    scenario_error_count = report["aggregate"]["error_count"]
     daily_quota = ledger.finalize(
         reservation["reservation_id"],
         compute_routes_attempt_count=budget.compute_routes_attempt_count,
         matrix_element_attempt_count=budget.matrix_element_attempt_count,
-        outcome="completed",
+        outcome="completed" if scenario_error_count == 0 else "failed",
         report_path=json_path,
     )
     report["daily_quota"] = daily_quota
@@ -268,6 +274,11 @@ def experiment_run_command(
     )
     click.echo(f"JSON: {json_path}")
     click.echo(f"CSV: {csv_path}")
+    if scenario_error_count:
+        raise click.ClickException(
+            f"Eksperimen selesai dengan {scenario_error_count} skenario "
+            "error. Laporan parsial telah disimpan dan ledger ditandai gagal."
+        )
 
 
 @click.command("quota-status")
