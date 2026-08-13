@@ -1,5 +1,7 @@
 .DS_Store
 .env
+.env.*
+!.env.example
 .venv/
 venv/
 __pycache__/
@@ -14,4 +16,3 @@ htmlcov/
 # Berkas keluaran eksperimen dan log lokal
 logs/
 reports/generated/
-

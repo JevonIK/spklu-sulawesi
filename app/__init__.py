@@ -6,6 +6,7 @@ from .commands import register_commands
 from .config import Config
 from .routes.api import api_bp
 from .routes.web import web_bp
+from .security import configure_application_security
 from .services.dataset import load_station_catalog
 from .services.google_routes import GoogleRoutesClient
 from .services.recommendation import RecommendationService
@@ -24,6 +25,8 @@ def create_app(config_object=None, config_overrides=None):
 
     if config_overrides:
         app.config.update(config_overrides)
+
+    configure_application_security(app)
 
     station_catalog = load_station_catalog(
         app.config["DATASET_PATH"]

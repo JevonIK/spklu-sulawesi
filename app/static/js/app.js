@@ -114,6 +114,7 @@ function loadGoogleMaps(apiKey) {
             resolve();
         };
         script.async = true;
+        script.nonce = document.querySelector("script[nonce]")?.nonce || "";
         script.src = `https://maps.googleapis.com/maps/api/js?${parameters}`;
         script.referrerPolicy = "strict-origin-when-cross-origin";
         script.onerror = () => {

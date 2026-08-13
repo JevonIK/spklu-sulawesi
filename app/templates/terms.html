@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Ketentuan penggunaan Sistem Rekomendasi SPKLU Sulawesi.">
+    <title>Ketentuan · {{ app_name }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}"></style>
+</head>
+<body class="legal-body">
+    <main class="legal-page">
+        <a class="legal-back" href="{{ url_for('web.index') }}">← Kembali ke aplikasi</a>
+        <p class="eyebrow">Dokumen layanan</p>
+        <h1>Ketentuan penggunaan</h1>
+        <p class="legal-updated">Versi prototipe penelitian · berlaku sejak Agustus 2026</p>
+
+        <section>
+            <h2>Tujuan sistem</h2>
+            <p>
+                Sistem ini merupakan prototipe penelitian yang menyusun kandidat
+                itinerary SPKLU berdasarkan dataset, jarak jalan, dan model SOC.
+                Hasilnya adalah bantuan perencanaan dan bukan jaminan bahwa
+                perjalanan dapat diselesaikan pada kondisi nyata.
+            </p>
+        </section>
+
+        <section>
+            <h2>Batasan rekomendasi</h2>
+            <p>
+                Sistem tidak mengetahui status operasional atau antrean SPKLU,
+                kondisi lalu lintas setelah hasil dibuat, cuaca, elevasi, gaya
+                mengemudi, degradasi baterai, ataupun konsumsi aktual kendaraan.
+                Estimasi waktu pengisian tidak termasuk dalam sistem.
+            </p>
+        </section>
+
+        <section>
+            <h2>Tanggung jawab pengguna</h2>
+            <p>
+                Periksa kembali rute, kondisi kendaraan, ketersediaan dan jenis
+                konektor SPKLU, serta batas aman pabrikan sebelum berangkat.
+                Jangan mengandalkan prototipe sebagai satu-satunya sumber untuk
+                keputusan keselamatan atau keadaan darurat.
+            </p>
+        </section>
+
+        <section>
+            <h2>Layanan pihak ketiga</h2>
+            <p>
+                Peta, pencarian tempat, jarak, dan waktu berkendara menggunakan
+                Google Maps Platform dan tunduk pada
+                <a href="https://maps.google.com/help/terms_maps/">Persyaratan Google Maps</a>.
+            </p>
+        </section>
+
+        <section>
+            <h2>Kontak</h2>
+            {% if contact_email %}
+            <p>Pertanyaan dapat dikirim ke <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+            {% else %}
+            <p>Kontak pengelola belum dikonfigurasi pada lingkungan pengembangan ini.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

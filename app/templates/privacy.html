@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Pemberitahuan privasi Sistem Rekomendasi SPKLU Sulawesi.">
+    <title>Privasi · {{ app_name }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}"></style>
+</head>
+<body class="legal-body">
+    <main class="legal-page">
+        <a class="legal-back" href="{{ url_for('web.index') }}">← Kembali ke aplikasi</a>
+        <p class="eyebrow">Dokumen layanan</p>
+        <h1>Pemberitahuan privasi</h1>
+        <p class="legal-updated">Versi prototipe penelitian · berlaku sejak Agustus 2026</p>
+
+        <section>
+            <h2>Data yang diproses</h2>
+            <p>
+                Saat rekomendasi diminta, sistem memproses koordinat lokasi awal
+                dan tujuan, parameter jangkauan kendaraan, SOC, konektor, serta
+                parameter algoritma. Aplikasi ini tidak menyediakan akun pengguna
+                dan tidak menyimpan riwayat pencarian ke basis data aplikasi.
+            </p>
+        </section>
+
+        <section>
+            <h2>Penggunaan Google Maps Platform</h2>
+            <p>
+                Autocomplete dan peta berkomunikasi langsung dengan Google Maps
+                Platform dari browser. Backend mengirim koordinat perjalanan ke
+                Google Routes API untuk memperoleh polyline, jarak, dan waktu
+                berkendara. Pemrosesan Google tunduk pada
+                <a href="https://policies.google.com/privacy">Kebijakan Privasi Google</a>
+                dan
+                <a href="https://maps.google.com/help/terms_maps/">Persyaratan Google Maps</a>.
+            </p>
+        </section>
+
+        <section>
+            <h2>Log teknis dan keamanan</h2>
+            <p>
+                Penyedia hosting atau reverse proxy dapat mencatat alamat IP,
+                waktu permintaan, endpoint, status HTTP, dan informasi teknis
+                lain untuk operasi serta keamanan. Jangan masukkan data pribadi
+                ke dalam parameter perjalanan.
+            </p>
+        </section>
+
+        <section>
+            <h2>Kontak</h2>
+            {% if contact_email %}
+            <p>Pertanyaan privasi dapat dikirim ke <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+            {% else %}
+            <p>Kontak pengelola belum dikonfigurasi pada lingkungan pengembangan ini.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

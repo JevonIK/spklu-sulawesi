@@ -23,6 +23,8 @@ statistik perhitungan yang responsif.
 Fase 7A menambahkan perangkat eksperimen yang dapat direproduksi, enam skenario
 regional, analisis sensitivitas parameter, metrik SOC/API/runtime/memori, serta
 ekspor laporan JSON dan CSV.
+Fase 7B menambahkan validasi konfigurasi produksi, hardening HTTP, halaman
+privasi/ketentuan, black-box test end-to-end, Gunicorn, dan container non-root.
 
 ## Ruang lingkup sistem
 
@@ -124,6 +126,12 @@ Alur, keamanan, payload, dan efisiensi Google Routes API dijelaskan pada
 
 Komponen dan alur interaksi antarmuka dijelaskan pada
 [`docs/user_interface.md`](docs/user_interface.md).
+
+Matriks pengujian fungsional dan catatan smoke test browser tersedia pada
+[`docs/black_box_testing.md`](docs/black_box_testing.md).
+
+Konfigurasi Gunicorn, Docker, HTTPS, Google Maps key, quota, dan checklist
+publikasi dijelaskan pada [`docs/deployment.md`](docs/deployment.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
 pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).

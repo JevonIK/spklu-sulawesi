@@ -661,6 +661,69 @@ fieldset {
     font-size: 0.58rem;
 }
 
+.footer-links {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+}
+
+.footer a,
+.legal-page a {
+    color: inherit;
+    text-underline-offset: 0.2em;
+}
+
+.legal-body {
+    background: var(--surface-soft);
+    color: var(--ink);
+    min-height: 100vh;
+}
+
+.legal-page {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    margin: 3rem auto;
+    max-width: 780px;
+    padding: clamp(1.5rem, 5vw, 3.5rem);
+    width: min(calc(100% - 2rem), 780px);
+}
+
+.legal-page h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.04em;
+    margin: 0.4rem 0 0.6rem;
+}
+
+.legal-page h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+}
+
+.legal-page section {
+    border-top: 1px solid var(--line);
+    margin-top: 1.6rem;
+    padding-top: 1.3rem;
+}
+
+.legal-page p {
+    color: var(--ink-muted);
+    line-height: 1.75;
+    margin: 0;
+}
+
+.legal-back {
+    display: inline-block;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-decoration: none;
+}
+
+.legal-updated {
+    font-size: 0.9rem;
+}
+
 .route-marker {
     display: grid;
     min-width: 30px;

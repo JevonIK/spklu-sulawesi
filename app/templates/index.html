@@ -6,9 +6,10 @@
     <meta name="description" content="Sistem rekomendasi SPKLU multi-stop untuk perjalanan antarkota di Sulawesi.">
     <title>{{ app_name }}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-    <script id="frontendConfig" type="application/json">{{ frontend_config | tojson }}</script>
-    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}"></style>
+    <script id="frontendConfig" type="application/json" nonce="{{ csp_nonce }}">{{ frontend_config | tojson }}</script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" nonce="{{ csp_nonce }}" defer></script>
 </head>
 <body>
     <header class="topbar">
@@ -231,13 +232,17 @@
                 <span><strong>03</strong> DP berbasis SOC</span>
             </aside>
 
-            <span class="google-attribution">Powered by Google</span>
+            <span class="google-attribution">Google Maps</span>
         </section>
     </main>
 
     <footer class="footer">
         <span>Prototipe penelitian SPKLU Sulawesi</span>
-        <span>Versi {{ app_version }}</span>
+        <span class="footer-links">
+            <a href="{{ url_for('web.privacy') }}">Privasi</a>
+            <a href="{{ url_for('web.terms') }}">Ketentuan</a>
+            <span>Versi {{ app_version }}</span>
+        </span>
     </footer>
 
     <noscript>Aktifkan JavaScript untuk menggunakan perencana perjalanan.</noscript>
