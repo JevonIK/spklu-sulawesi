@@ -73,7 +73,13 @@ source .venv/bin/activate
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
-  --max-api-requests 100 \
+  --max-compute-routes 60 \
+  --max-compute-routes-per-minute 30 \
+  --max-compute-routes-per-scenario 10 \
+  --max-matrix-elements 2000 \
+  --max-matrix-elements-per-minute 625 \
+  --batch-size 3 \
+  --batch-interval-seconds 61 \
   --confirm-live-api
 ```
 
@@ -83,7 +89,13 @@ Analisis sensitivitas:
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_sensitivity.json \
   --label sensitivitas-makassar-rantepao \
-  --max-api-requests 100 \
+  --max-compute-routes 60 \
+  --max-compute-routes-per-minute 30 \
+  --max-compute-routes-per-scenario 10 \
+  --max-matrix-elements 2000 \
+  --max-matrix-elements-per-minute 625 \
+  --batch-size 3 \
+  --batch-interval-seconds 61 \
   --confirm-live-api
 ```
 
@@ -95,22 +107,37 @@ artefak laporan penelitian yang memang hendak dijadikan bukti versi.
 Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
+Schema laporan versi 2 juga menyimpan nama SPKLU terpilih, rincian leg dan SOC,
+jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
+statistik optimizer. Polyline serta koordinat hasil Google tidak disalin ke
+laporan eksperimen.
 
 ## Pengaman quota live
 
-`--max-api-requests` adalah hard limit jumlah percobaan HTTP aktual ke Google
-Routes API selama satu eksekusi CLI. Nilai defaultnya 100 dan rentang yang
-diterima 1–1.000. Penghitung bertambah tepat sebelum request dikirim, termasuk
-request yang kemudian timeout atau ditolak upstream. Setelah batas tercapai,
-request berikutnya gagal lokal dengan `request_budget_exceeded` dan tidak dikirim
-ke Google.
+Compute Routes dan Compute Route Matrix memakai dimensi quota berbeda. Karena
+itu, CLI menerapkan hard limit terpisah. Compute Routes dibatasi maksimal 60
+panggilan per eksperimen, 30 panggilan dalam rolling window 60 detik, dan 10
+panggilan per skenario. Route Matrix dibatasi maksimal 2.000 elemen per
+eksperimen dan 625 elemen dalam rolling window 60 detik.
+
+Penghitung bertambah tepat sebelum request dikirim, termasuk request yang
+kemudian timeout atau ditolak upstream. Request yang akan melampaui hard limit
+gagal secara lokal dan tidak dikirim ke Google. Jika hanya batas rolling window
+yang akan terlampaui, CLI menunggu sampai kapasitas window tersedia.
+
+Enam baseline dibagi menjadi dua batch berisi tiga skenario. Jeda 61 detik
+diberikan setelah batch pertama meskipun pemakaian aktual masih di bawah batas
+per menit. Opsi `--batch-size` dan `--batch-interval-seconds` dicatat di laporan;
+eksperimen multi-batch menolak jeda kurang dari 60 detik.
 
 Laporan JSON memiliki objek `execution` berisi:
 
-- `api_request_budget`: batas yang dipilih;
-- `api_request_attempt_count`: request HTTP yang benar-benar dicoba;
-- `api_request_budget_remaining`: sisa budget;
-- `api_request_budget_exhausted`: apakah batas telah habis; dan
+- limit, percobaan aktual, dan sisa panggilan Compute Routes;
+- limit Compute Routes per menit dan per skenario;
+- percobaan Compute Routes untuk setiap ID skenario;
+- limit, pemakaian aktual, dan sisa elemen Route Matrix;
+- jumlah request Route Matrix aktual;
+- total waktu tunggu otomatis akibat rolling window; dan
 - `live_api_confirmed`: bukti flag konfirmasi diberikan.
 
 Statistik per skenario tetap mencatat request logis Compute Routes/Matrix yang
@@ -119,9 +146,11 @@ audit quota batch dan `results[].api_usage` untuk analisis kebutuhan algoritma.
 Jika budget habis, sebagian skenario dapat berstatus `error`; jangan menghitung
 feasibility rate final sebelum seluruh skenario selesai tanpa error.
 
-Baseline dan sensitivitas merupakan dua perintah terpisah. Dengan budget default,
-batas gabungannya paling banyak 200 percobaan request, bukan 100. Turunkan budget
-jika quota atau anggaran penelitian memerlukan batas yang lebih kecil.
+Baseline dan sensitivitas merupakan dua perintah terpisah, sedangkan quota
+harian Google berlaku gabungan. Jangan menjalankan sensitivitas pada hari yang
+sama tanpa memeriksa sisa Compute Routes dan elemen Route Matrix di Google Cloud.
+Hard limit CLI membatasi eksekusi saat ini dan tidak mengetahui pemakaian dari
+eksekusi sebelumnya atau aplikasi lain.
 
 CLI menolak menimpa laporan lama. Gunakan label baru untuk replikasi, misalnya
 `baseline-enam-wilayah-uji-2`. Opsi `--overwrite` hanya digunakan jika

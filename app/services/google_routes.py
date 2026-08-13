@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import math
+import time
 from collections import defaultdict
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import requests
 
@@ -39,39 +40,207 @@ class GoogleRoutesError(RuntimeError):
         self.status_code = status_code
 
 
-class ApiRequestBudgetExceeded(GoogleRoutesError):
-    """Batas request eksternal eksperimen telah tercapai."""
+class ApiQuotaBudgetExceeded(GoogleRoutesError):
+    """Salah satu hard limit quota eksperimen telah tercapai."""
 
-    def __init__(self, limit):
+    def __init__(self, code, message, limit):
         super().__init__(
-            "request_budget_exceeded",
-            (
-                "Batas aman request Google Routes API untuk eksperimen "
-                f"telah tercapai ({limit} request)."
-            ),
+            code,
+            message,
         )
         self.limit = limit
 
 
 @dataclass
-class ApiRequestBudget:
-    """Penghitung hard limit request HTTP aktual ke Google Routes API."""
+class ApiQuotaBudget:
+    """Budget terpisah untuk Compute Routes dan elemen Route Matrix."""
 
-    limit: int
-    used: int = 0
+    maximum_compute_routes: int
+    maximum_compute_routes_per_minute: int
+    maximum_compute_routes_per_scenario: int
+    maximum_matrix_elements: int
+    maximum_matrix_elements_per_minute: int
+    clock: object = field(default=time.monotonic, repr=False)
+    sleeper: object = field(default=time.sleep, repr=False)
+    compute_routes_attempt_count: int = 0
+    matrix_request_attempt_count: int = 0
+    matrix_element_attempt_count: int = 0
+    rate_limit_wait_seconds: float = 0.0
+    _active_scenario_id: str | None = field(default=None, init=False)
+    _compute_routes_per_scenario: dict = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+    )
+    _compute_routes_events: list = field(
+        default_factory=list,
+        init=False,
+        repr=False,
+    )
+    _matrix_element_events: list = field(
+        default_factory=list,
+        init=False,
+        repr=False,
+    )
 
-    @property
-    def remaining(self):
-        return self.limit - self.used
+    def __post_init__(self):
+        limits = {
+            "maximum_compute_routes": self.maximum_compute_routes,
+            "maximum_compute_routes_per_minute": (
+                self.maximum_compute_routes_per_minute
+            ),
+            "maximum_compute_routes_per_scenario": (
+                self.maximum_compute_routes_per_scenario
+            ),
+            "maximum_matrix_elements": self.maximum_matrix_elements,
+            "maximum_matrix_elements_per_minute": (
+                self.maximum_matrix_elements_per_minute
+            ),
+        }
+        for name, value in limits.items():
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError(f"{name} harus berupa integer.")
+            if value <= 0:
+                raise ValueError(f"{name} harus lebih besar dari nol.")
 
-    @property
-    def exhausted(self):
-        return self.used >= self.limit
+    @contextmanager
+    def scenario(self, scenario_id):
+        if self._active_scenario_id is not None:
+            raise RuntimeError("Konteks quota skenario tidak dapat ditumpuk.")
+        if not isinstance(scenario_id, str) or not scenario_id:
+            raise ValueError("ID skenario quota tidak valid.")
+        self._active_scenario_id = scenario_id
+        try:
+            yield
+        finally:
+            self._active_scenario_id = None
 
-    def consume(self):
-        if self.exhausted:
-            raise ApiRequestBudgetExceeded(self.limit)
-        self.used += 1
+    def _wait(self, seconds):
+        seconds = max(0.0, float(seconds))
+        if seconds <= 0:
+            return
+        self.sleeper(seconds)
+        self.rate_limit_wait_seconds += seconds
+
+    def _purge_compute_routes_window(self, now):
+        self._compute_routes_events = [
+            timestamp
+            for timestamp in self._compute_routes_events
+            if now - timestamp < 60
+        ]
+
+    def _pace_compute_routes(self):
+        while True:
+            now = self.clock()
+            self._purge_compute_routes_window(now)
+            if (
+                len(self._compute_routes_events)
+                < self.maximum_compute_routes_per_minute
+            ):
+                return now
+            self._wait(60 - (now - self._compute_routes_events[0]) + 0.01)
+
+    def _purge_matrix_window(self, now):
+        self._matrix_element_events = [
+            event
+            for event in self._matrix_element_events
+            if now - event[0] < 60
+        ]
+
+    def _pace_matrix_elements(self, element_count):
+        if element_count > self.maximum_matrix_elements_per_minute:
+            raise ApiQuotaBudgetExceeded(
+                "matrix_elements_per_minute_exceeded",
+                (
+                    "Satu request Route Matrix memuat lebih banyak elemen "
+                    "daripada batas per menit."
+                ),
+                self.maximum_matrix_elements_per_minute,
+            )
+        while True:
+            now = self.clock()
+            self._purge_matrix_window(now)
+            recent_elements = sum(
+                count for _, count in self._matrix_element_events
+            )
+            if (
+                recent_elements + element_count
+                <= self.maximum_matrix_elements_per_minute
+            ):
+                return now
+            self._wait(60 - (now - self._matrix_element_events[0][0]) + 0.01)
+
+    def consume_compute_routes(self):
+        if self.compute_routes_attempt_count >= self.maximum_compute_routes:
+            raise ApiQuotaBudgetExceeded(
+                "compute_routes_budget_exceeded",
+                "Batas total Compute Routes eksperimen telah tercapai.",
+                self.maximum_compute_routes,
+            )
+        scenario_id = self._active_scenario_id or "unscoped"
+        scenario_count = self._compute_routes_per_scenario.get(scenario_id, 0)
+        if scenario_count >= self.maximum_compute_routes_per_scenario:
+            raise ApiQuotaBudgetExceeded(
+                "compute_routes_scenario_budget_exceeded",
+                "Batas Compute Routes per skenario telah tercapai.",
+                self.maximum_compute_routes_per_scenario,
+            )
+
+        timestamp = self._pace_compute_routes()
+        self.compute_routes_attempt_count += 1
+        self._compute_routes_per_scenario[scenario_id] = scenario_count + 1
+        self._compute_routes_events.append(timestamp)
+
+    def consume_matrix_elements(self, element_count):
+        if isinstance(element_count, bool) or not isinstance(element_count, int):
+            raise ValueError("Jumlah elemen Route Matrix harus berupa integer.")
+        if element_count <= 0:
+            raise ValueError("Jumlah elemen Route Matrix harus lebih dari nol.")
+        if (
+            self.matrix_element_attempt_count + element_count
+            > self.maximum_matrix_elements
+        ):
+            raise ApiQuotaBudgetExceeded(
+                "matrix_elements_budget_exceeded",
+                "Batas total elemen Route Matrix eksperimen akan terlampaui.",
+                self.maximum_matrix_elements,
+            )
+
+        timestamp = self._pace_matrix_elements(element_count)
+        self.matrix_request_attempt_count += 1
+        self.matrix_element_attempt_count += element_count
+        self._matrix_element_events.append((timestamp, element_count))
+
+    def snapshot(self):
+        return {
+            "compute_routes_limit": self.maximum_compute_routes,
+            "compute_routes_attempt_count": self.compute_routes_attempt_count,
+            "compute_routes_remaining": (
+                self.maximum_compute_routes - self.compute_routes_attempt_count
+            ),
+            "compute_routes_per_minute_limit": (
+                self.maximum_compute_routes_per_minute
+            ),
+            "compute_routes_per_scenario_limit": (
+                self.maximum_compute_routes_per_scenario
+            ),
+            "compute_routes_attempts_by_scenario": dict(
+                self._compute_routes_per_scenario
+            ),
+            "matrix_element_limit": self.maximum_matrix_elements,
+            "matrix_element_attempt_count": self.matrix_element_attempt_count,
+            "matrix_element_remaining": (
+                self.maximum_matrix_elements - self.matrix_element_attempt_count
+            ),
+            "matrix_elements_per_minute_limit": (
+                self.maximum_matrix_elements_per_minute
+            ),
+            "matrix_request_attempt_count": self.matrix_request_attempt_count,
+            "rate_limit_wait_seconds": round(
+                self.rate_limit_wait_seconds,
+                3,
+            ),
+        }
 
 
 @dataclass(frozen=True)
@@ -206,28 +375,61 @@ class GoogleRoutesClient:
         self._active_request_budget = None
 
     @contextmanager
-    def request_budget(self, maximum_requests):
-        """Menerapkan hard limit request aktual selama satu eksperimen."""
+    def request_budget(
+        self,
+        *,
+        maximum_compute_routes,
+        maximum_compute_routes_per_minute,
+        maximum_compute_routes_per_scenario,
+        maximum_matrix_elements,
+        maximum_matrix_elements_per_minute,
+        clock=None,
+        sleeper=None,
+    ):
+        """Menerapkan hard limit dan pacing quota selama satu eksperimen."""
 
-        if isinstance(maximum_requests, bool) or not isinstance(
-            maximum_requests, int
-        ):
-            raise ValueError("Budget request API harus berupa integer.")
-        if maximum_requests <= 0:
-            raise ValueError("Budget request API harus lebih besar dari nol.")
         if self._active_request_budget is not None:
-            raise RuntimeError("Budget request API tidak dapat ditumpuk.")
+            raise RuntimeError("Budget quota API tidak dapat ditumpuk.")
 
-        budget = ApiRequestBudget(limit=maximum_requests)
+        budget = ApiQuotaBudget(
+            maximum_compute_routes=maximum_compute_routes,
+            maximum_compute_routes_per_minute=(
+                maximum_compute_routes_per_minute
+            ),
+            maximum_compute_routes_per_scenario=(
+                maximum_compute_routes_per_scenario
+            ),
+            maximum_matrix_elements=maximum_matrix_elements,
+            maximum_matrix_elements_per_minute=(
+                maximum_matrix_elements_per_minute
+            ),
+            clock=clock or time.monotonic,
+            sleeper=sleeper or time.sleep,
+        )
         self._active_request_budget = budget
         try:
             yield budget
         finally:
             self._active_request_budget = None
 
+    @contextmanager
+    def quota_scenario(self, scenario_id):
+        if self._active_request_budget is None:
+            yield
+            return
+        with self._active_request_budget.scenario(scenario_id):
+            yield
+
     def _post(self, url, payload, field_mask):
         if self._active_request_budget is not None:
-            self._active_request_budget.consume()
+            if url == COMPUTE_ROUTES_URL:
+                self._active_request_budget.consume_compute_routes()
+            elif url == COMPUTE_ROUTE_MATRIX_URL:
+                origins = payload.get("origins", ())
+                destinations = payload.get("destinations", ())
+                self._active_request_budget.consume_matrix_elements(
+                    len(origins) * len(destinations)
+                )
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": self._api_key,

@@ -64,7 +64,22 @@ class FakeEvaluationService:
         return {
             "parameters": {"minimum_soc_percent": 20},
             "candidate_summary": {"corridor_candidate_count": 3},
-            "graph": {"node_count": 5, "edge_count": 6},
+            "base_route": {
+                "distance_km": 245,
+                "duration_minutes": 290,
+            },
+            "recommended_route": {
+                "distance_km": 250,
+                "duration_minutes": 300,
+            },
+            "graph": {
+                "node_count": 5,
+                "edge_count": 6,
+                "stats": {
+                    "accepted_edges": 6,
+                    "geodesic_pruned_pairs": 2,
+                },
+            },
             "optimization": {
                 "feasible": True,
                 "reason": "feasible",
@@ -75,8 +90,32 @@ class FakeEvaluationService:
                 },
                 "itinerary": {
                     "legs": [
-                        {"arrival_soc_percent": 40},
-                        {"arrival_soc_percent": 30},
+                        {
+                            "sequence": 1,
+                            "source_name": "Awal",
+                            "target_name": "SPKLU Tengah",
+                            "arrival_soc_percent": 40,
+                        },
+                        {
+                            "sequence": 2,
+                            "source_name": "SPKLU Tengah",
+                            "target_name": "Tujuan",
+                            "arrival_soc_percent": 30,
+                        },
+                    ],
+                    "charging_stops": [
+                        {
+                            "sequence": 1,
+                            "node_id": "spklu-tengah",
+                            "name": "SPKLU Tengah",
+                            "arrival_soc_percent": 40,
+                            "departure_soc_percent": 80,
+                            "charged_soc_percent": 40,
+                            "station": {
+                                "node_id": "spklu-tengah",
+                                "unit_count": 1,
+                            },
+                        }
                     ],
                     "charging_stop_count": 1,
                     "total_road_distance_km": 250,
@@ -137,7 +176,6 @@ def test_sensitivity_file_changes_one_parameter_at_a_time():
 
     assert len(options) == 7
     assert {item["safety_factor"] for item in options} == {0.8, 0.9, 1.0}
-    assert {item["corridor_radius_km"] for item in options} == {5, 10, 15}
     assert {item["soc_step_percent"] for item in options} == {2.5, 5, 10}
 
 
@@ -157,6 +195,12 @@ def test_scenario_records_metrics_and_soc_safety():
     assert result["route_feasible"] is True
     assert result["soc_violation_count"] == 0
     assert result["charging_stop_count"] == 1
+    assert result["itinerary_leg_count"] == 2
+    assert result["charging_stop_names"] == "SPKLU Tengah"
+    assert result["base_route_distance_km"] == 245
+    assert result["recommended_route_distance_km"] == 250
+    assert result["charging_stops"][0]["node_id"] == "spklu-tengah"
+    assert result["graph_build_stats"]["accepted_edges"] == 6
     assert result["safety_factor"] is None
     assert result["total_driving_duration_minutes"] == 300
     assert result["total_external_requests"] == 3
@@ -200,10 +244,46 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
     assert [row["scenario_id"] for row in rows] == ["satu", "dua"]
     assert rows[0]["total_driving_duration_minutes"] == "300"
     assert rows[0]["minimum_soc_percent"] == "20"
+    assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"
+    assert report["schema_version"] == 2
 
     with pytest.raises(FileExistsError, match="sudah ada"):
         write_experiment_report(report, tmp_path, "hasil-uji")
+
+
+def test_experiment_batches_scenarios_with_minimum_minute_pause():
+    waits = []
+    report = run_experiment(
+        FakeEvaluationService(),
+        definition(
+            scenario("satu"),
+            scenario("dua"),
+            scenario("tiga"),
+            scenario("empat"),
+        ),
+        batch_size=2,
+        batch_interval_seconds=61,
+        sleep_fn=waits.append,
+    )
+
+    assert waits == [61]
+    assert report["batching"] == {
+        "batch_size": 2,
+        "batch_interval_seconds": 61,
+        "batch_wait_seconds": 61,
+        "batch_count": 2,
+    }
+
+
+def test_experiment_rejects_multibatch_pause_below_one_minute():
+    with pytest.raises(ValueError, match="minimal 60 detik"):
+        run_experiment(
+            FakeEvaluationService(),
+            definition(scenario("satu"), scenario("dua")),
+            batch_size=1,
+            batch_interval_seconds=59.99,
+        )
 
 
 def test_experiment_cli_requires_explicit_live_api_confirmation(
@@ -237,14 +317,25 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert "--confirm-live-api" in rejected.output
     assert accepted.exit_code == 0
     assert '"feasible_count": 1' in accepted.output
-    assert '"api_request_budget": 100' in accepted.output
+    assert '"compute_routes_limit": 60' in accepted.output
+    assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
+        "app_version": "0.9.2",
         "live_api_confirmed": True,
-        "api_request_budget": 100,
-        "api_request_attempt_count": 0,
-        "api_request_budget_remaining": 100,
-        "api_request_budget_exhausted": False,
+        "compute_routes_limit": 60,
+        "compute_routes_attempt_count": 0,
+        "compute_routes_remaining": 60,
+        "compute_routes_per_minute_limit": 30,
+        "compute_routes_per_scenario_limit": 10,
+        "compute_routes_attempts_by_scenario": {},
+        "matrix_element_limit": 2000,
+        "matrix_element_attempt_count": 0,
+        "matrix_element_remaining": 2000,
+        "matrix_elements_per_minute_limit": 625,
+        "matrix_request_attempt_count": 0,
+        "rate_limit_wait_seconds": 0.0,
     }
+    assert report["batching"]["batch_count"] == 1
     assert (tmp_path / "cli-uji.json").exists()
     assert (tmp_path / "cli-uji.csv").exists()

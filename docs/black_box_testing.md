@@ -72,3 +72,10 @@ ditambahkan pada website restriction browser key. Hasil ini bukan kegagalan CSP:
 library Maps berhasil mengaktifkan form, tetapi Google menampilkan error
 otorisasi pada canvas. Port 5000 pada mesin pengembangan sedang digunakan proses
 lain, sehingga smoke test memakai 8765 tanpa menghentikan proses tersebut.
+
+### Verifikasi ulang 13 Agustus 2026
+
+Setelah `http://127.0.0.1:8765/*` dan `http://localhost:8765/*` ditambahkan ke
+website restriction browser key, smoke test versi 0.9.2 berhasil memuat peta,
+kontrol kamera, data peta, attribution Google Maps, dan Places. Formulir aktif
+dan tidak muncul lagi pesan error otorisasi pada canvas.

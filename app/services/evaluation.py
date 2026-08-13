@@ -8,11 +8,12 @@ import math
 import re
 import time
 import tracemalloc
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 
 
-REPORT_SCHEMA_VERSION = 1
+REPORT_SCHEMA_VERSION = 2
 SCENARIO_SCHEMA_VERSION = 1
 _SAFE_LABEL = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
@@ -32,7 +33,13 @@ CSV_COLUMNS = (
     "route_feasible",
     "reason",
     "soc_violation_count",
+    "itinerary_leg_count",
     "charging_stop_count",
+    "charging_stop_names",
+    "base_route_distance_km",
+    "base_route_duration_minutes",
+    "recommended_route_distance_km",
+    "recommended_route_duration_minutes",
     "total_road_distance_km",
     "total_driving_duration_minutes",
     "total_detour_km",
@@ -180,7 +187,13 @@ def _result_template(scenario):
         "route_feasible": None,
         "reason": None,
         "soc_violation_count": None,
+        "itinerary_leg_count": None,
         "charging_stop_count": None,
+        "charging_stop_names": None,
+        "base_route_distance_km": None,
+        "base_route_duration_minutes": None,
+        "recommended_route_distance_km": None,
+        "recommended_route_duration_minutes": None,
         "total_road_distance_km": None,
         "total_driving_duration_minutes": None,
         "total_detour_km": None,
@@ -199,6 +212,10 @@ def _result_template(scenario):
         "peak_memory_mb": None,
         "error_type": None,
         "error_message": None,
+        "itinerary_legs": None,
+        "charging_stops": None,
+        "graph_build_stats": None,
+        "optimization_stats": None,
     }
 
 
@@ -221,6 +238,10 @@ def _completed_result(scenario, pipeline_result):
     optimization_stats = optimization["stats"]
     api_usage = pipeline_result["api_usage"]
     graph = pipeline_result["graph"]
+    base_route = pipeline_result["base_route"]
+    recommended_route = pipeline_result.get("recommended_route")
+    charging_stops = itinerary.get("charging_stops", []) if itinerary else []
+    itinerary_legs = itinerary.get("legs", []) if itinerary else []
 
     result.update(
         {
@@ -231,8 +252,24 @@ def _completed_result(scenario, pipeline_result):
                 itinerary,
                 optimization["parameters"]["minimum_soc_percent"],
             ),
+            "itinerary_leg_count": len(itinerary_legs),
             "charging_stop_count": (
                 itinerary["charging_stop_count"] if itinerary else 0
+            ),
+            "charging_stop_names": " | ".join(
+                stop["name"] for stop in charging_stops
+            ),
+            "base_route_distance_km": base_route["distance_km"],
+            "base_route_duration_minutes": base_route["duration_minutes"],
+            "recommended_route_distance_km": (
+                recommended_route["distance_km"]
+                if recommended_route
+                else None
+            ),
+            "recommended_route_duration_minutes": (
+                recommended_route["duration_minutes"]
+                if recommended_route
+                else None
             ),
             "total_road_distance_km": (
                 itinerary["total_road_distance_km"] if itinerary else None
@@ -272,6 +309,21 @@ def _completed_result(scenario, pipeline_result):
                 "compute_route_matrix_elements"
             ],
             "total_external_requests": api_usage["total_external_requests"],
+            "itinerary_legs": itinerary_legs,
+            "charging_stops": [
+                {
+                    "sequence": stop["sequence"],
+                    "node_id": stop["node_id"],
+                    "name": stop["name"],
+                    "arrival_soc_percent": stop["arrival_soc_percent"],
+                    "departure_soc_percent": stop["departure_soc_percent"],
+                    "charged_soc_percent": stop["charged_soc_percent"],
+                    "station": stop.get("station"),
+                }
+                for stop in charging_stops
+            ],
+            "graph_build_stats": graph["stats"],
+            "optimization_stats": optimization_stats,
         }
     )
     return result
@@ -288,9 +340,19 @@ def evaluate_scenario(service, scenario):
         tracemalloc.reset_peak()
 
     try:
-        recommendation_input = service.parse_input(_service_payload(scenario))
-        pipeline_result = service.recommend(recommendation_input)
-        result = _completed_result(scenario, pipeline_result)
+        routes_client = getattr(service, "routes_client", None)
+        scenario_context = (
+            routes_client.quota_scenario(scenario["id"])
+            if routes_client is not None
+            and hasattr(routes_client, "quota_scenario")
+            else nullcontext()
+        )
+        with scenario_context:
+            recommendation_input = service.parse_input(
+                _service_payload(scenario)
+            )
+            pipeline_result = service.recommend(recommendation_input)
+            result = _completed_result(scenario, pipeline_result)
     except Exception as error:  # Satu kegagalan tidak membatalkan batch eksperimen.
         result = _result_template(scenario)
         result["error_type"] = type(error).__name__
@@ -352,14 +414,50 @@ def summarize_results(results):
     }
 
 
-def run_experiment(service, definition, *, source_path=None):
+def run_experiment(
+    service,
+    definition,
+    *,
+    source_path=None,
+    batch_size=None,
+    batch_interval_seconds=0,
+    sleep_fn=time.sleep,
+    progress_callback=None,
+):
     """Menjalankan semua skenario secara berurutan agar metrik dapat diaudit."""
 
     validate_experiment_definition(definition)
-    results = [
-        evaluate_scenario(service, scenario)
-        for scenario in definition["scenarios"]
-    ]
+    scenarios = definition["scenarios"]
+    if batch_size is None:
+        batch_size = len(scenarios)
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int):
+        raise ValueError("Ukuran batch harus berupa integer.")
+    if batch_size <= 0:
+        raise ValueError("Ukuran batch harus lebih besar dari nol.")
+    batch_interval_seconds = float(batch_interval_seconds)
+    if not math.isfinite(batch_interval_seconds) or batch_interval_seconds < 0:
+        raise ValueError("Jeda batch tidak valid.")
+    if batch_size < len(scenarios) and batch_interval_seconds < 60:
+        raise ValueError(
+            "Eksperimen multi-batch memerlukan jeda minimal 60 detik."
+        )
+
+    results = []
+    batch_wait_seconds = 0.0
+    for index, scenario in enumerate(scenarios, start=1):
+        results.append(evaluate_scenario(service, scenario))
+        needs_next_batch = index < len(scenarios) and index % batch_size == 0
+        if needs_next_batch:
+            if progress_callback:
+                progress_callback(
+                    {
+                        "completed_scenarios": index,
+                        "remaining_scenarios": len(scenarios) - index,
+                        "wait_seconds": batch_interval_seconds,
+                    }
+                )
+            sleep_fn(batch_interval_seconds)
+            batch_wait_seconds += batch_interval_seconds
     return {
         "schema_version": REPORT_SCHEMA_VERSION,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -371,6 +469,12 @@ def run_experiment(service, definition, *, source_path=None):
             else None,
         },
         "definition": definition,
+        "batching": {
+            "batch_size": batch_size,
+            "batch_interval_seconds": batch_interval_seconds,
+            "batch_wait_seconds": batch_wait_seconds,
+            "batch_count": math.ceil(len(scenarios) / batch_size),
+        },
         "aggregate": summarize_results(results),
         "results": results,
     }

@@ -49,11 +49,53 @@ def dataset_summary_command():
     help="Konfirmasi bahwa eksperimen boleh memakai kuota Google Routes API.",
 )
 @click.option(
-    "--max-api-requests",
-    type=click.IntRange(min=1, max=1000),
-    default=100,
+    "--max-compute-routes",
+    type=click.IntRange(min=1, max=60),
+    default=60,
     show_default=True,
-    help="Hard limit request HTTP aktual selama satu batch eksperimen.",
+    help="Hard limit panggilan Compute Routes selama eksperimen.",
+)
+@click.option(
+    "--max-compute-routes-per-minute",
+    type=click.IntRange(min=1, max=30),
+    default=30,
+    show_default=True,
+    help="Batas Compute Routes dalam rolling window 60 detik.",
+)
+@click.option(
+    "--max-compute-routes-per-scenario",
+    type=click.IntRange(min=1, max=10),
+    default=10,
+    show_default=True,
+    help="Hard limit Compute Routes untuk setiap skenario.",
+)
+@click.option(
+    "--max-matrix-elements",
+    type=click.IntRange(min=1, max=2000),
+    default=2000,
+    show_default=True,
+    help="Hard limit total elemen Compute Route Matrix.",
+)
+@click.option(
+    "--max-matrix-elements-per-minute",
+    type=click.IntRange(min=1, max=625),
+    default=625,
+    show_default=True,
+    help="Batas elemen Route Matrix dalam rolling window 60 detik.",
+)
+@click.option(
+    "--batch-size",
+    type=click.IntRange(min=1, max=100),
+    default=3,
+    show_default=True,
+    help="Jumlah skenario sebelum jeda antarbatches.",
+)
+@click.option(
+    "--batch-interval-seconds",
+    type=click.FloatRange(min=60, max=3600),
+    default=61,
+    show_default=True,
+    help="Jeda antarbatches dalam detik.",
 )
 @click.option(
     "--overwrite",
@@ -66,7 +108,13 @@ def experiment_run_command(
     output_dir,
     label,
     confirm_live_api,
-    max_api_requests,
+    max_compute_routes,
+    max_compute_routes_per_minute,
+    max_compute_routes_per_scenario,
+    max_matrix_elements,
+    max_matrix_elements_per_minute,
+    batch_size,
+    batch_interval_seconds,
     overwrite,
 ):
     """Menjalankan batch evaluasi yang dapat direproduksi."""
@@ -89,18 +137,39 @@ def experiment_run_command(
 
     try:
         definition = load_experiment_definition(scenarios)
-        with routes_client.request_budget(max_api_requests) as budget:
+        with routes_client.request_budget(
+            maximum_compute_routes=max_compute_routes,
+            maximum_compute_routes_per_minute=(
+                max_compute_routes_per_minute
+            ),
+            maximum_compute_routes_per_scenario=(
+                max_compute_routes_per_scenario
+            ),
+            maximum_matrix_elements=max_matrix_elements,
+            maximum_matrix_elements_per_minute=(
+                max_matrix_elements_per_minute
+            ),
+        ) as budget:
             report = run_experiment(
                 service,
                 definition,
                 source_path=scenarios,
+                batch_size=batch_size,
+                batch_interval_seconds=batch_interval_seconds,
+                progress_callback=lambda progress: click.echo(
+                    (
+                        f"Batch selesai: {progress['completed_scenarios']} "
+                        "skenario. Menunggu "
+                        f"{progress['wait_seconds']:.0f} detik sebelum "
+                        "batch berikutnya..."
+                    ),
+                    err=True,
+                ),
             )
         report["execution"] = {
+            "app_version": current_app.config["APP_VERSION"],
             "live_api_confirmed": True,
-            "api_request_budget": budget.limit,
-            "api_request_attempt_count": budget.used,
-            "api_request_budget_remaining": budget.remaining,
-            "api_request_budget_exhausted": budget.exhausted,
+            **budget.snapshot(),
         }
         json_path, csv_path = write_experiment_report(
             report,

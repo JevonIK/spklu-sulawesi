@@ -72,7 +72,13 @@ eksplisit:
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
-  --max-api-requests 100 \
+  --max-compute-routes 60 \
+  --max-compute-routes-per-minute 30 \
+  --max-compute-routes-per-scenario 10 \
+  --max-matrix-elements 2000 \
+  --max-matrix-elements-per-minute 625 \
+  --batch-size 3 \
+  --batch-interval-seconds 61 \
   --confirm-live-api
 ```
 
@@ -135,6 +141,10 @@ Matriks pengujian fungsional dan catatan smoke test browser tersedia pada
 
 Konfigurasi Gunicorn, Docker, HTTPS, Google Maps key, quota, dan checklist
 publikasi dijelaskan pada [`docs/deployment.md`](docs/deployment.md).
+
+Hasil baseline live enam wilayah, rincian itinerary, interpretasi rute
+infeasible, serta audit quota tersedia pada
+[`docs/baseline_results.md`](docs/baseline_results.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
 pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).

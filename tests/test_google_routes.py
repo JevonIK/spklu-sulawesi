@@ -2,7 +2,7 @@ import requests
 import pytest
 
 from app.services.google_routes import (
-    ApiRequestBudgetExceeded,
+    ApiQuotaBudgetExceeded,
     COMPUTE_ROUTE_MATRIX_URL,
     COMPUTE_ROUTES_URL,
     MATRIX_FIELD_MASK,
@@ -39,6 +39,31 @@ class RecordingSession:
         if self.error:
             raise self.error
         return self.responses.pop(0)
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+        self.sleeps = []
+
+    def __call__(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def quota_options(**overrides):
+    options = {
+        "maximum_compute_routes": 60,
+        "maximum_compute_routes_per_minute": 30,
+        "maximum_compute_routes_per_scenario": 10,
+        "maximum_matrix_elements": 2000,
+        "maximum_matrix_elements_per_minute": 625,
+    }
+    options.update(overrides)
+    return options
 
 
 def route_payload(distance_meters=123_400, duration="7200s"):
@@ -150,51 +175,151 @@ def test_network_error_is_converted_to_safe_error():
     assert "secret detail" not in str(captured.value)
 
 
-def test_request_budget_stops_before_exceeding_external_call_limit():
+def test_compute_routes_budget_stops_before_external_call_limit():
     session = RecordingSession(
         [FakeResponse(route_payload()), FakeResponse(route_payload())]
     )
     client = GoogleRoutesClient("key", session=session)
 
-    with client.request_budget(1) as budget:
-        client.compute_route((0, 0), (0, 1))
-        with pytest.raises(ApiRequestBudgetExceeded) as captured:
-            client.compute_route((0, 0), (0, 2))
+    with client.request_budget(
+        **quota_options(maximum_compute_routes=1)
+    ) as budget:
+        with client.quota_scenario("skenario-a"):
+            client.compute_route((0, 0), (0, 1))
+            with pytest.raises(ApiQuotaBudgetExceeded) as captured:
+                client.compute_route((0, 0), (0, 2))
 
-    assert captured.value.code == "request_budget_exceeded"
-    assert budget.used == 1
-    assert budget.remaining == 0
-    assert budget.exhausted is True
+    assert captured.value.code == "compute_routes_budget_exceeded"
+    assert budget.compute_routes_attempt_count == 1
+    assert budget.snapshot()["compute_routes_remaining"] == 0
     assert len(session.calls) == 1
 
 
-def test_request_budget_counts_failed_attempt_and_resets_after_context():
+def test_compute_routes_budget_counts_failed_attempt_and_resets_after_context():
     failing_session = RecordingSession(error=requests.Timeout("timeout"))
     client = GoogleRoutesClient("key", session=failing_session)
 
-    with client.request_budget(2) as first_budget:
-        with pytest.raises(GoogleRoutesError, match="tidak dapat dihubungi"):
-            client.compute_route((0, 0), (0, 1))
-    assert first_budget.used == 1
+    with client.request_budget(**quota_options()) as first_budget:
+        with client.quota_scenario("gagal"):
+            with pytest.raises(GoogleRoutesError, match="tidak dapat dihubungi"):
+                client.compute_route((0, 0), (0, 1))
+    assert first_budget.compute_routes_attempt_count == 1
 
     client.session = RecordingSession([FakeResponse(route_payload())])
-    with client.request_budget(1) as second_budget:
-        client.compute_route((0, 0), (0, 1))
-    assert second_budget.used == 1
+    with client.request_budget(**quota_options()) as second_budget:
+        with client.quota_scenario("berhasil"):
+            client.compute_route((0, 0), (0, 1))
+    assert second_budget.compute_routes_attempt_count == 1
 
 
 @pytest.mark.parametrize("invalid_budget", [True, 1.5, "10", 0, -1])
-def test_invalid_or_nested_request_budget_is_rejected(invalid_budget):
+def test_invalid_or_nested_quota_budget_is_rejected(invalid_budget):
     client = GoogleRoutesClient("key", session=RecordingSession())
 
-    with pytest.raises(ValueError, match="Budget request API"):
-        with client.request_budget(invalid_budget):
+    with pytest.raises(ValueError, match="maximum_compute_routes"):
+        with client.request_budget(
+            **quota_options(maximum_compute_routes=invalid_budget)
+        ):
             pass
 
-    with client.request_budget(1):
+    with client.request_budget(**quota_options()):
         with pytest.raises(RuntimeError, match="tidak dapat ditumpuk"):
-            with client.request_budget(1):
+            with client.request_budget(**quota_options()):
                 pass
+
+
+def test_compute_routes_per_scenario_limit_is_enforced():
+    session = RecordingSession(
+        [FakeResponse(route_payload()), FakeResponse(route_payload())]
+    )
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(
+        **quota_options(maximum_compute_routes_per_scenario=1)
+    ) as budget:
+        with client.quota_scenario("skenario-a"):
+            client.compute_route((0, 0), (0, 1))
+            with pytest.raises(ApiQuotaBudgetExceeded) as captured:
+                client.compute_route((0, 0), (0, 2))
+
+    assert captured.value.code == "compute_routes_scenario_budget_exceeded"
+    assert budget.snapshot()["compute_routes_attempts_by_scenario"] == {
+        "skenario-a": 1
+    }
+    assert len(session.calls) == 1
+
+
+def test_compute_routes_rate_limit_waits_for_rolling_minute():
+    clock = FakeClock()
+    session = RecordingSession(
+        [FakeResponse(route_payload()) for _ in range(3)]
+    )
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(
+        **quota_options(maximum_compute_routes_per_minute=2),
+        clock=clock,
+        sleeper=clock.sleep,
+    ) as budget:
+        with client.quota_scenario("skenario-a"):
+            for longitude in (1, 2, 3):
+                client.compute_route((0, 0), (0, longitude))
+
+    assert len(clock.sleeps) == 1
+    assert clock.sleeps[0] >= 60
+    assert budget.compute_routes_attempt_count == 3
+    assert budget.rate_limit_wait_seconds >= 60
+
+
+def test_matrix_budget_counts_elements_and_paces_rolling_minute():
+    clock = FakeClock()
+    session = RecordingSession([FakeResponse([]), FakeResponse([])])
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(
+        **quota_options(),
+        clock=clock,
+        sleeper=clock.sleep,
+    ) as budget:
+        client._post(
+            COMPUTE_ROUTE_MATRIX_URL,
+            {"origins": [{}], "destinations": [{}] * 400},
+            MATRIX_FIELD_MASK,
+        )
+        client._post(
+            COMPUTE_ROUTE_MATRIX_URL,
+            {"origins": [{}], "destinations": [{}] * 300},
+            MATRIX_FIELD_MASK,
+        )
+
+    snapshot = budget.snapshot()
+    assert snapshot["matrix_request_attempt_count"] == 2
+    assert snapshot["matrix_element_attempt_count"] == 700
+    assert clock.sleeps[0] >= 60
+
+
+def test_matrix_total_budget_rejects_request_before_google_call():
+    session = RecordingSession([FakeResponse([]), FakeResponse([])])
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(
+        **quota_options(maximum_matrix_elements=500)
+    ) as budget:
+        client._post(
+            COMPUTE_ROUTE_MATRIX_URL,
+            {"origins": [{}], "destinations": [{}] * 400},
+            MATRIX_FIELD_MASK,
+        )
+        with pytest.raises(ApiQuotaBudgetExceeded) as captured:
+            client._post(
+                COMPUTE_ROUTE_MATRIX_URL,
+                {"origins": [{}], "destinations": [{}] * 200},
+                MATRIX_FIELD_MASK,
+            )
+
+    assert captured.value.code == "matrix_elements_budget_exceeded"
+    assert budget.matrix_element_attempt_count == 400
+    assert len(session.calls) == 1
 
 
 def test_matrix_groups_requests_by_origin_and_skips_unavailable_elements():
