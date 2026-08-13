@@ -17,7 +17,9 @@ dan graf berarah origin-SPKLU-destination. Fase 5 menambahkan model energi,
 diskretisasi SOC konservatif, Dynamic Programming, rekonstruksi itinerary, dan
 simulasi akhir setiap leg. Fase 6A mengintegrasikan Google Routes API untuk rute
 dasar, matriks edge hasil pemangkasan, rute akhir, endpoint rekomendasi, serta
-pencatatan penggunaan API. Antarmuka Google Maps akan ditambahkan pada fase 6B.
+pencatatan penggunaan API. Fase 6B mengaktifkan Place Autocomplete, peta,
+visualisasi rute dan marker SPKLU, formulir parameter, rincian SOC, serta
+statistik perhitungan yang responsif.
 
 ## Ruang lingkup sistem
 
@@ -102,3 +104,6 @@ Model energi dan Dynamic Programming dijelaskan pada
 
 Alur, keamanan, payload, dan efisiensi Google Routes API dijelaskan pada
 [`docs/google_routes.md`](docs/google_routes.md).
+
+Komponen dan alur interaksi antarmuka dijelaskan pada
+[`docs/user_interface.md`](docs/user_interface.md).

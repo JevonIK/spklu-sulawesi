@@ -1,9 +1,70 @@
 "use strict";
 
-const serviceState = document.getElementById("serviceState");
+const SULAWESI_CENTER = { lat: -2.1, lng: 121.2 };
+const INDONESIA_BIAS_RADIUS_METERS = 1_000_000;
+
+const elements = {
+    serviceState: document.getElementById("serviceState"),
+    routeForm: document.getElementById("routeForm"),
+    routeFieldset: document.getElementById("routeFieldset"),
+    submitButton: document.getElementById("submitButton"),
+    formStatus: document.getElementById("formStatus"),
+    originHost: document.getElementById("originAutocomplete"),
+    destinationHost: document.getElementById("destinationAutocomplete"),
+    currentSoc: document.getElementById("currentSoc"),
+    maxRange: document.getElementById("maxRange"),
+    minimumSoc: document.getElementById("minimumSoc"),
+    targetSoc: document.getElementById("targetSoc"),
+    safetyFactor: document.getElementById("safetyFactor"),
+    corridorRadius: document.getElementById("corridorRadius"),
+    socStep: document.getElementById("socStep"),
+    resultsPanel: document.getElementById("resultsPanel"),
+    resultsTitle: document.getElementById("resultsTitle"),
+    resultBadge: document.getElementById("resultBadge"),
+    resultMessage: document.getElementById("resultMessage"),
+    summaryGrid: document.getElementById("summaryGrid"),
+    itinerarySection: document.getElementById("itinerarySection"),
+    itineraryList: document.getElementById("itineraryList"),
+    diagnosticList: document.getElementById("diagnosticList"),
+    mapElement: document.getElementById("map"),
+    mapEmpty: document.getElementById("mapEmpty"),
+    mapLoading: document.getElementById("mapLoading"),
+};
+
+const state = {
+    config: readFrontendConfig(),
+    map: null,
+    mapsLibrary: null,
+    AdvancedMarkerElement: null,
+    infoWindow: null,
+    polyline: null,
+    markers: [],
+    selectedPlaces: {
+        origin: null,
+        destination: null,
+    },
+};
+
+function readFrontendConfig() {
+    const configElement = document.getElementById("frontendConfig");
+    if (!configElement) return {};
+    try {
+        return JSON.parse(configElement.textContent);
+    } catch (error) {
+        return {};
+    }
+}
+
+function setFormStatus(message, type = "info") {
+    if (!elements.formStatus) return;
+    elements.formStatus.textContent = message;
+    elements.formStatus.classList.remove("is-error", "is-success");
+    if (type === "error") elements.formStatus.classList.add("is-error");
+    if (type === "success") elements.formStatus.classList.add("is-success");
+}
 
 async function checkServiceHealth() {
-    if (!serviceState) return;
+    if (!elements.serviceState) return;
 
     try {
         const response = await fetch("/api/health", {
@@ -15,15 +76,521 @@ async function checkServiceHealth() {
             throw new Error("Layanan belum siap");
         }
 
-        serviceState.classList.add("is-ready");
+        const mapsReady = payload.data?.google_maps?.recommendation_endpoint_ready;
+        if (!mapsReady) throw new Error("Endpoint rekomendasi belum siap");
+
+        elements.serviceState.classList.remove("is-error");
+        elements.serviceState.classList.add("is-ready");
         const nodeCount = payload.data?.dataset?.logical_nodes;
-        serviceState.querySelector("span:last-child").textContent = nodeCount
+        elements.serviceState.querySelector("span:last-child").textContent = nodeCount
             ? `Sistem siap · ${nodeCount} lokasi`
             : "Sistem siap";
     } catch (error) {
-        serviceState.classList.add("is-error");
-        serviceState.querySelector("span:last-child").textContent = "Sistem bermasalah";
+        elements.serviceState.classList.remove("is-ready");
+        elements.serviceState.classList.add("is-error");
+        elements.serviceState.querySelector("span:last-child").textContent =
+            "Sistem bermasalah";
     }
 }
 
-checkServiceHealth();
+function loadGoogleMaps(apiKey) {
+    if (window.google?.maps?.importLibrary) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+        const callbackName = `initSpkluMaps_${Date.now()}`;
+        const script = document.createElement("script");
+        const parameters = new URLSearchParams({
+            key: apiKey,
+            loading: "async",
+            callback: callbackName,
+            v: "weekly",
+            libraries: "maps,places,marker",
+            language: "id",
+            region: "ID",
+        });
+
+        window[callbackName] = () => {
+            delete window[callbackName];
+            resolve();
+        };
+        script.async = true;
+        script.src = `https://maps.googleapis.com/maps/api/js?${parameters}`;
+        script.referrerPolicy = "strict-origin-when-cross-origin";
+        script.onerror = () => {
+            delete window[callbackName];
+            reject(new Error("Google Maps JavaScript API gagal dimuat."));
+        };
+        document.head.append(script);
+    });
+}
+
+function locationToCoordinate(location) {
+    return {
+        latitude: location.lat(),
+        longitude: location.lng(),
+    };
+}
+
+function createPlaceAutocomplete({ host, kind, placeholder, description }) {
+    const { PlaceAutocompleteElement } = state.placesLibrary;
+    const autocomplete = new PlaceAutocompleteElement({
+        includedRegionCodes: ["id"],
+        requestedLanguage: "id",
+        requestedRegion: "id",
+        placeholder,
+    });
+    autocomplete.description = description;
+    autocomplete.locationBias = {
+        center: SULAWESI_CENTER,
+        radius: INDONESIA_BIAS_RADIUS_METERS,
+    };
+
+    autocomplete.addEventListener("input", () => {
+        state.selectedPlaces[kind] = null;
+    });
+    autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
+        try {
+            const place = placePrediction.toPlace();
+            await place.fetchFields({
+                fields: ["displayName", "formattedAddress", "location"],
+            });
+            if (!place.location) {
+                throw new Error("Lokasi pilihan tidak memiliki koordinat.");
+            }
+
+            state.selectedPlaces[kind] = {
+                ...locationToCoordinate(place.location),
+                label: place.displayName || place.formattedAddress || "Lokasi pilihan",
+                address: place.formattedAddress || "",
+            };
+            setFormStatus(
+                "Lokasi tersimpan. Lengkapi kedua lokasi lalu jalankan rekomendasi.",
+                "success",
+            );
+        } catch (error) {
+            state.selectedPlaces[kind] = null;
+            setFormStatus(error.message || "Detail lokasi gagal dimuat.", "error");
+        }
+    });
+
+    host.replaceChildren(autocomplete);
+    return autocomplete;
+}
+
+async function initializeMapsInterface() {
+    const apiKey = state.config.googleMapsBrowserApiKey;
+    if (!state.config.mapsConfigured || !apiKey) {
+        throw new Error("Google Maps browser API key belum dikonfigurasi.");
+    }
+
+    await loadGoogleMaps(apiKey);
+    const [mapsLibrary, placesLibrary, markerLibrary] = await Promise.all([
+        google.maps.importLibrary("maps"),
+        google.maps.importLibrary("places"),
+        google.maps.importLibrary("marker"),
+    ]);
+
+    state.mapsLibrary = mapsLibrary;
+    state.placesLibrary = placesLibrary;
+    state.AdvancedMarkerElement = markerLibrary.AdvancedMarkerElement;
+    state.map = new mapsLibrary.Map(elements.mapElement, {
+        center: SULAWESI_CENTER,
+        zoom: 6.1,
+        mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+        clickableIcons: false,
+        gestureHandling: "greedy",
+    });
+    state.infoWindow = new mapsLibrary.InfoWindow();
+
+    createPlaceAutocomplete({
+        host: elements.originHost,
+        kind: "origin",
+        placeholder: "Cari lokasi awal, misalnya Makassar",
+        description: "Pilih lokasi awal perjalanan",
+    });
+    createPlaceAutocomplete({
+        host: elements.destinationHost,
+        kind: "destination",
+        placeholder: "Cari lokasi tujuan, misalnya Palu",
+        description: "Pilih lokasi tujuan perjalanan",
+    });
+
+    elements.routeFieldset.disabled = false;
+    setFormStatus(
+        "Peta siap. Pilih lokasi dari daftar saran Google lalu isi kondisi kendaraan.",
+        "success",
+    );
+}
+
+function numberValue(element) {
+    return Number(element.value);
+}
+
+function validateForm() {
+    if (!elements.routeForm.checkValidity()) {
+        elements.routeForm.reportValidity();
+        throw new Error("Lengkapi parameter kendaraan dengan nilai yang valid.");
+    }
+    if (!state.selectedPlaces.origin || !state.selectedPlaces.destination) {
+        throw new Error(
+            "Pilih lokasi awal dan tujuan dari daftar saran Google, bukan hanya mengetik teks.",
+        );
+    }
+
+    const currentSoc = numberValue(elements.currentSoc);
+    const minimumSoc = numberValue(elements.minimumSoc);
+    const targetSoc = numberValue(elements.targetSoc);
+    if (currentSoc <= minimumSoc) {
+        throw new Error("SOC saat ini harus lebih besar dari SOC minimum.");
+    }
+    if (targetSoc <= minimumSoc) {
+        throw new Error("Target SOC harus lebih besar dari SOC minimum.");
+    }
+}
+
+function buildRequestPayload() {
+    return {
+        origin: {
+            latitude: state.selectedPlaces.origin.latitude,
+            longitude: state.selectedPlaces.origin.longitude,
+        },
+        destination: {
+            latitude: state.selectedPlaces.destination.latitude,
+            longitude: state.selectedPlaces.destination.longitude,
+        },
+        vehicle: {
+            maximum_range_km: numberValue(elements.maxRange),
+            current_soc_percent: numberValue(elements.currentSoc),
+            connector: "CCS2",
+        },
+        options: {
+            minimum_soc_percent: numberValue(elements.minimumSoc),
+            target_soc_percent: numberValue(elements.targetSoc),
+            safety_factor: numberValue(elements.safetyFactor),
+            soc_step_percent: numberValue(elements.socStep),
+            corridor_radius_km: numberValue(elements.corridorRadius),
+        },
+    };
+}
+
+function setLoading(isLoading) {
+    elements.submitButton.disabled = isLoading;
+    elements.submitButton.querySelector("span").textContent = isLoading
+        ? "Menghitung rekomendasi…"
+        : "Cari rekomendasi SPKLU";
+    elements.mapLoading.hidden = !isLoading;
+}
+
+function clearMapOverlays() {
+    if (state.polyline) {
+        state.polyline.setMap(null);
+        state.polyline = null;
+    }
+    for (const marker of state.markers) marker.map = null;
+    state.markers = [];
+    state.infoWindow?.close();
+}
+
+function coordinateLiteral(coordinate) {
+    return { lat: coordinate.latitude, lng: coordinate.longitude };
+}
+
+function markerContent(text, modifier = "") {
+    const content = document.createElement("div");
+    content.className = `route-marker ${modifier}`.trim();
+    content.textContent = text;
+    return content;
+}
+
+function addMarker({ position, title, text, modifier, onClick, zIndex }) {
+    const marker = new state.AdvancedMarkerElement({
+        map: state.map,
+        position,
+        title,
+        content: markerContent(text, modifier),
+        gmpClickable: Boolean(onClick),
+        zIndex,
+    });
+    if (onClick) marker.addEventListener("gmp-click", onClick);
+    state.markers.push(marker);
+    return marker;
+}
+
+function stationInfoContent(stop) {
+    const station = stop.station;
+    const content = document.createElement("div");
+    content.className = "station-info";
+
+    const name = document.createElement("strong");
+    name.textContent = station.name;
+    content.append(name);
+
+    const address = document.createElement("span");
+    address.textContent = station.address;
+    content.append(address);
+
+    const charging = document.createElement("span");
+    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit`;
+    content.append(charging);
+    return content;
+}
+
+function renderMap(data) {
+    clearMapOverlays();
+    const feasible = data.optimization.feasible;
+    const route = data.recommended_route || data.base_route;
+    if (!route?.coordinates?.length) return;
+
+    const path = route.coordinates.map(coordinateLiteral);
+    state.polyline = new state.mapsLibrary.Polyline({
+        map: state.map,
+        path,
+        strokeColor: feasible ? "#087f78" : "#b4433b",
+        strokeOpacity: feasible ? 0.9 : 0.65,
+        strokeWeight: 6,
+        geodesic: true,
+    });
+
+    const origin = coordinateLiteral(data.request.origin);
+    const destination = coordinateLiteral(data.request.destination);
+    addMarker({
+        position: origin,
+        title: state.selectedPlaces.origin?.label || "Lokasi awal",
+        text: "A",
+        modifier: "is-origin",
+        zIndex: 1000,
+    });
+    addMarker({
+        position: destination,
+        title: state.selectedPlaces.destination?.label || "Lokasi tujuan",
+        text: "B",
+        modifier: "is-destination",
+        zIndex: 1000,
+    });
+
+    const stops = data.optimization.itinerary?.charging_stops || [];
+    stops.forEach((stop, index) => {
+        const station = stop.station;
+        const position = {
+            lat: station.latitude,
+            lng: station.longitude,
+        };
+        let marker;
+        marker = addMarker({
+            position,
+            title: `Pemberhentian ${index + 1}: ${station.name}`,
+            text: String(index + 1),
+            zIndex: 900 - index,
+            onClick: () => {
+                state.infoWindow.setContent(stationInfoContent(stop));
+                state.infoWindow.open({ anchor: marker, map: state.map });
+            },
+        });
+    });
+
+    const bounds = new state.mapsLibrary.LatLngBounds();
+    path.forEach((position) => bounds.extend(position));
+    state.map.fitBounds(bounds, 72);
+    google.maps.event.addListenerOnce(state.map, "idle", () => {
+        if (state.map.getZoom() > 13) state.map.setZoom(13);
+    });
+    elements.mapEmpty.classList.add("is-hidden");
+}
+
+const decimalFormatter = new Intl.NumberFormat("id-ID", {
+    maximumFractionDigits: 1,
+});
+
+function formatNumber(value) {
+    return decimalFormatter.format(Number(value));
+}
+
+function formatDistance(value) {
+    return `${formatNumber(value)} km`;
+}
+
+function formatDuration(value) {
+    if (value === null || value === undefined) return "Tidak tersedia";
+    const minutes = Math.round(Number(value));
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    if (!hours) return `${remainder} menit`;
+    return remainder ? `${hours} jam ${remainder} menit` : `${hours} jam`;
+}
+
+function formatPercent(value) {
+    return `${formatNumber(value)}%`;
+}
+
+function summaryItem(label, value) {
+    const item = document.createElement("div");
+    item.className = "summary-item";
+    const labelElement = document.createElement("small");
+    labelElement.textContent = label;
+    const valueElement = document.createElement("strong");
+    valueElement.textContent = value;
+    item.append(labelElement, valueElement);
+    return item;
+}
+
+function renderSummary(data) {
+    const optimization = data.optimization;
+    elements.summaryGrid.replaceChildren();
+    if (optimization.feasible) {
+        const itinerary = optimization.itinerary;
+        elements.summaryGrid.append(
+            summaryItem("Jarak berkendara", formatDistance(itinerary.total_road_distance_km)),
+            summaryItem("Durasi berkendara", formatDuration(itinerary.total_driving_duration_minutes)),
+            summaryItem("Pemberhentian SPKLU", String(itinerary.charging_stop_count)),
+            summaryItem("SOC tiba tujuan", formatPercent(itinerary.final_soc_percent)),
+        );
+    } else {
+        elements.summaryGrid.append(
+            summaryItem("Jarak rute dasar", formatDistance(data.base_route.distance_km)),
+            summaryItem("Durasi rute dasar", formatDuration(data.base_route.duration_minutes)),
+            summaryItem("Kandidat CCS2", String(data.candidate_summary.corridor_candidate_count)),
+            summaryItem("Status", "Tidak feasible"),
+        );
+    }
+}
+
+function stopByNodeId(stops, nodeId) {
+    return stops.find((stop) => stop.node_id === nodeId);
+}
+
+function renderItinerary(data) {
+    const itinerary = data.optimization.itinerary;
+    elements.itineraryList.replaceChildren();
+    if (!itinerary) return;
+
+    itinerary.legs.forEach((leg, index) => {
+        const item = document.createElement("li");
+        item.className = "itinerary-item";
+        const indexElement = document.createElement("span");
+        indexElement.className = "itinerary-index";
+        indexElement.textContent = String(index + 1);
+
+        const copy = document.createElement("div");
+        copy.className = "itinerary-copy";
+        const title = document.createElement("strong");
+        title.textContent = `${leg.source_name} → ${leg.target_name}`;
+        const metadata = document.createElement("small");
+        metadata.textContent = `${formatDistance(leg.road_distance_km)} · ${formatDuration(leg.road_duration_minutes)} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
+        copy.append(title, metadata);
+
+        const stop = stopByNodeId(itinerary.charging_stops, leg.source_id);
+        if (stop) {
+            const station = stop.station;
+            const stopCard = document.createElement("div");
+            stopCard.className = "stop-card";
+            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit CCS2`;
+            copy.append(stopCard);
+        }
+
+        item.append(indexElement, copy);
+        elements.itineraryList.append(item);
+    });
+}
+
+function diagnosticPair(label, value) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = String(value);
+    return [term, description];
+}
+
+function renderDiagnostics(data) {
+    const graph = data.graph;
+    const stats = data.optimization.stats;
+    const usage = data.api_usage;
+    elements.diagnosticList.replaceChildren(
+        ...diagnosticPair("Kandidat dalam koridor", data.candidate_summary.corridor_candidate_count),
+        ...diagnosticPair("Node graf", graph.node_count),
+        ...diagnosticPair("Edge graf diterima", graph.edge_count),
+        ...diagnosticPair("State DP diproses", stats.processed_states),
+        ...diagnosticPair("Elemen Route Matrix", usage.compute_route_matrix_elements),
+        ...diagnosticPair("Total permintaan Google", usage.total_external_requests),
+    );
+}
+
+function renderRecommendation(data) {
+    const feasible = data.optimization.feasible;
+    elements.resultsPanel.hidden = false;
+    elements.resultBadge.classList.toggle("is-infeasible", !feasible);
+    elements.resultBadge.textContent = feasible ? "Rute feasible" : "Tidak feasible";
+    elements.resultsTitle.textContent = feasible
+        ? "Rute perjalanan ditemukan"
+        : "Rute aman belum ditemukan";
+    elements.resultMessage.textContent = data.optimization.message;
+    elements.itinerarySection.hidden = !feasible;
+
+    renderSummary(data);
+    renderItinerary(data);
+    renderDiagnostics(data);
+    renderMap(data);
+
+    setFormStatus(
+        feasible
+            ? "Rekomendasi selesai. Rute dan rincian SOC telah diperbarui."
+            : "Perhitungan selesai, tetapi tidak ditemukan rangkaian SPKLU yang memenuhi batas SOC.",
+        feasible ? "success" : "error",
+    );
+    elements.resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function submitRecommendation(event) {
+    event.preventDefault();
+    try {
+        validateForm();
+    } catch (error) {
+        setFormStatus(error.message, "error");
+        return;
+    }
+
+    setLoading(true);
+    setFormStatus("Mengambil rute dan menjalankan Dynamic Programming…");
+    try {
+        const response = await fetch("/api/recommendations", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(buildRequestPayload()),
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.status !== "ok") {
+            throw new Error(
+                payload.error?.message || "Rekomendasi gagal diproses.",
+            );
+        }
+        renderRecommendation(payload.data);
+    } catch (error) {
+        setFormStatus(
+            error.message || "Terjadi kesalahan saat menyusun rekomendasi.",
+            "error",
+        );
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function initializeApplication() {
+    checkServiceHealth();
+    elements.routeForm?.addEventListener("submit", submitRecommendation);
+    try {
+        await initializeMapsInterface();
+    } catch (error) {
+        elements.routeFieldset.disabled = true;
+        setFormStatus(
+            `${error.message} Periksa browser key, pembatasan referrer, dan aktivasi Maps JavaScript API serta Places API (New).`,
+            "error",
+        );
+    }
+}
+
+initializeApplication();

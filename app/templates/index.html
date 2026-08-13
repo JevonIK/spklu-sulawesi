@@ -7,6 +7,7 @@
     <title>{{ app_name }}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script id="frontendConfig" type="application/json">{{ frontend_config | tojson }}</script>
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </head>
 <body>
@@ -35,70 +36,193 @@
                 <p class="eyebrow">Rencana perjalanan</p>
                 <h1 id="panelTitle">Temukan rangkaian SPKLU yang layak</h1>
                 <p>
-                    Sistem akan menyusun pemberhentian berdasarkan koridor rute,
-                    kompatibilitas konektor, dan batas State of Charge.
+                    Pilih lokasi di Sulawesi dan masukkan kondisi kendaraan.
+                    Sistem menghitung rute yang menjaga State of Charge (SOC)
+                    tetap aman.
                 </p>
             </div>
 
-            <form class="route-form" aria-describedby="developmentNotice">
-                <fieldset disabled>
+            <form class="route-form" id="routeForm" aria-describedby="formStatus">
+                <fieldset id="routeFieldset" disabled>
                     <legend class="sr-only">Parameter perjalanan</legend>
 
-                    <label for="origin">Lokasi awal</label>
-                    <input id="origin" name="origin" type="text" placeholder="Contoh: Makassar">
+                    <label id="originLabel">Lokasi awal</label>
+                    <div
+                        class="autocomplete-host"
+                        id="originAutocomplete"
+                        aria-labelledby="originLabel"
+                    ></div>
 
-                    <label for="destination">Lokasi tujuan</label>
-                    <input id="destination" name="destination" type="text" placeholder="Contoh: Palu">
+                    <label id="destinationLabel">Lokasi tujuan</label>
+                    <div
+                        class="autocomplete-host"
+                        id="destinationAutocomplete"
+                        aria-labelledby="destinationLabel"
+                    ></div>
 
                     <div class="form-grid">
                         <div>
                             <label for="currentSoc">SOC saat ini (%)</label>
-                            <input id="currentSoc" name="current_soc" type="number" min="0" max="100" value="80">
+                            <input
+                                id="currentSoc"
+                                name="current_soc"
+                                type="number"
+                                min="1"
+                                max="100"
+                                step="1"
+                                value="80"
+                                required
+                            >
                         </div>
                         <div>
                             <label for="maxRange">Jangkauan maksimum (km)</label>
-                            <input id="maxRange" name="max_range_km" type="number" min="1" value="300">
+                            <input
+                                id="maxRange"
+                                name="max_range_km"
+                                type="number"
+                                min="1"
+                                max="2000"
+                                step="1"
+                                value="300"
+                                required
+                            >
                         </div>
                         <div>
                             <label for="minimumSoc">SOC minimum (%)</label>
-                            <input id="minimumSoc" name="minimum_soc" type="number" min="0" max="100" value="{{ defaults.soc_min | int }}">
+                            <input
+                                id="minimumSoc"
+                                name="minimum_soc"
+                                type="number"
+                                min="0"
+                                max="99"
+                                step="1"
+                                value="{{ defaults.soc_min | int }}"
+                                required
+                            >
                         </div>
                         <div>
                             <label for="targetSoc">Target SOC (%)</label>
-                            <input id="targetSoc" name="target_soc" type="number" min="0" max="100" value="{{ defaults.soc_target | int }}">
+                            <input
+                                id="targetSoc"
+                                name="target_soc"
+                                type="number"
+                                min="1"
+                                max="100"
+                                step="1"
+                                value="{{ defaults.soc_target | int }}"
+                                required
+                            >
                         </div>
                     </div>
 
                     <label for="connector">Jenis konektor kendaraan</label>
-                    <select id="connector" name="connector">
-                        <option>AC Type 2</option>
-                        <option>CCS2</option>
-                        <option>CHAdeMO</option>
-                        <option>GB/T</option>
-                    </select>
+                    <div class="fixed-input">
+                        <input id="connector" value="CCS2" readonly aria-describedby="connectorNote">
+                        <span aria-hidden="true">Tetap</span>
+                    </div>
+                    <small class="field-note" id="connectorNote">
+                        Penelitian ini khusus mengevaluasi konektor CCS2.
+                    </small>
 
-                    <button type="submit">Cari rekomendasi SPKLU</button>
+                    <details class="advanced-settings">
+                        <summary>Pengaturan penelitian</summary>
+                        <div class="form-grid">
+                            <div>
+                                <label for="safetyFactor">Safety factor</label>
+                                <input
+                                    id="safetyFactor"
+                                    name="safety_factor"
+                                    type="number"
+                                    min="0.01"
+                                    max="1"
+                                    step="0.01"
+                                    value="{{ defaults.safety_factor }}"
+                                    required
+                                >
+                            </div>
+                            <div>
+                                <label for="corridorRadius">Radius koridor (km)</label>
+                                <input
+                                    id="corridorRadius"
+                                    name="corridor_radius"
+                                    type="number"
+                                    min="0.1"
+                                    max="100"
+                                    step="0.1"
+                                    value="{{ defaults.corridor_radius_km }}"
+                                    required
+                                >
+                            </div>
+                            <div>
+                                <label for="socStep">Interval SOC (%)</label>
+                                <input
+                                    id="socStep"
+                                    name="soc_step"
+                                    type="number"
+                                    min="1"
+                                    max="25"
+                                    step="1"
+                                    value="{{ defaults.soc_step | int }}"
+                                    required
+                                >
+                            </div>
+                        </div>
+                    </details>
+
+                    <button id="submitButton" type="submit">
+                        <span>Cari rekomendasi SPKLU</span>
+                    </button>
                 </fieldset>
             </form>
 
-            <p class="development-notice" id="developmentNotice">
-                Dataset dan algoritma inti telah siap. Formulir akan diaktifkan setelah Google Maps selesai diintegrasikan.
+            <p class="form-status" id="formStatus" aria-live="polite">
+                Memuat Google Maps dan layanan lokasi…
             </p>
+
+            <section class="results-panel" id="resultsPanel" aria-labelledby="resultsTitle" hidden>
+                <div class="result-heading">
+                    <div>
+                        <p class="eyebrow">Hasil rekomendasi</p>
+                        <h2 id="resultsTitle">Rute perjalanan</h2>
+                    </div>
+                    <span class="result-badge" id="resultBadge"></span>
+                </div>
+
+                <p class="result-message" id="resultMessage"></p>
+
+                <div class="summary-grid" id="summaryGrid" aria-label="Ringkasan perjalanan"></div>
+
+                <div id="itinerarySection">
+                    <h3>Urutan perjalanan</h3>
+                    <ol class="itinerary-list" id="itineraryList"></ol>
+                </div>
+
+                <details class="diagnostics" id="diagnostics">
+                    <summary>Statistik perhitungan</summary>
+                    <dl id="diagnosticList"></dl>
+                </details>
+            </section>
         </section>
 
         <section class="map-panel" aria-labelledby="mapTitle">
-            <div class="map-placeholder">
-                <div class="island-shape" aria-hidden="true"></div>
-                <div class="map-copy">
-                    <span class="map-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/>
-                        </svg>
-                    </span>
-                    <p class="eyebrow">Peta perjalanan</p>
-                    <h2 id="mapTitle">Integrasi peta disiapkan pada fase berikutnya</h2>
-                    <p>API key tidak diperlukan pada tahap inisialisasi ini.</p>
-                </div>
+            <h2 class="sr-only" id="mapTitle">Peta rekomendasi perjalanan</h2>
+            <div id="map" class="map-canvas" role="application" aria-label="Peta Google rute perjalanan"></div>
+
+            <div class="map-empty" id="mapEmpty">
+                <span class="map-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/>
+                    </svg>
+                </span>
+                <p class="eyebrow">Peta perjalanan</p>
+                <h2>Pilih lokasi awal dan tujuan</h2>
+                <p>Rute dan SPKLU yang direkomendasikan akan muncul di sini.</p>
+            </div>
+
+            <div class="map-loading" id="mapLoading" hidden>
+                <span class="spinner" aria-hidden="true"></span>
+                <strong>Menyusun rute terbaik…</strong>
+                <small>Memeriksa koridor, edge, dan batas SOC</small>
             </div>
 
             <aside class="method-strip" aria-label="Tahapan metode rekomendasi">
@@ -106,6 +230,8 @@
                 <span><strong>02</strong> Graf feasible</span>
                 <span><strong>03</strong> DP berbasis SOC</span>
             </aside>
+
+            <span class="google-attribution">Powered by Google</span>
         </section>
     </main>
 
@@ -114,6 +240,6 @@
         <span>Versi {{ app_version }}</span>
     </footer>
 
-    <noscript>Aktifkan JavaScript agar status layanan dapat diperiksa.</noscript>
+    <noscript>Aktifkan JavaScript untuk menggunakan perencana perjalanan.</noscript>
 </body>
 </html>

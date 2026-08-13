@@ -7,6 +7,29 @@ def test_index_is_available(client):
     assert response.status_code == 200
     assert b"SPKLU Sulawesi" in response.data
     assert b"State of Charge" in response.data
+    assert b'id="routeForm"' in response.data
+    assert b'id="map"' in response.data
+    assert b"CCS2" in response.data
+
+
+def test_index_exposes_only_browser_configuration():
+    from app import create_app
+
+    application = create_app(
+        config_overrides={
+            "TESTING": True,
+            "GOOGLE_MAPS_BROWSER_API_KEY": "public-browser-key",
+            "GOOGLE_MAPS_SERVER_API_KEY": "private-server-key",
+            "GOOGLE_MAPS_MAP_ID": "test-map-id",
+        }
+    )
+
+    response = application.test_client().get("/")
+
+    assert response.status_code == 200
+    assert b"public-browser-key" in response.data
+    assert b"test-map-id" in response.data
+    assert b"private-server-key" not in response.data
 
 
 def test_health_endpoint_reports_dataset(client):
@@ -16,6 +39,7 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
+    assert payload["version"] == "0.7.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["source_rows"] == 150
