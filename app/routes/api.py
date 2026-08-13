@@ -24,6 +24,7 @@ def health():
             "dataset": {
                 "filename": catalog.source_path.name,
                 "exists": True,
+                "sha256": catalog.source_sha256,
                 "source_rows": catalog.source_row_count,
                 "logical_nodes": catalog.logical_node_count,
             },

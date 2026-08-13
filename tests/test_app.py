@@ -39,9 +39,12 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
-    assert payload["version"] == "0.10.1"
+    assert payload["version"] == "0.11.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
+    assert payload["data"]["dataset"]["sha256"] == (
+        "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+    )
     assert payload["data"]["dataset"]["source_rows"] == 150
     assert payload["data"]["dataset"]["logical_nodes"] == 149
     assert payload["data"]["spatial_index"]["index_type"] == "BallTree"

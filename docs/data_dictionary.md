@@ -4,6 +4,15 @@ Dokumen ini menjelaskan dataset mentah dan transformasi yang dilakukan aplikasi.
 CSV sumber tidak diubah oleh proses normalisasi agar asal-usul data tetap dapat
 ditelusuri dan eksperimen dapat direproduksi.
 
+Dataset yang dipakai pada baseline dan sensitivitas memiliki SHA-256:
+
+```text
+24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85
+```
+
+Hash harus dihitung ulang dan perubahan dataset harus dijelaskan apabila baris,
+koordinat, konektor, atau informasi unit diperbarui.
+
 ## Kolom sumber
 
 | Kolom | Tipe | Aturan validasi | Penggunaan |

@@ -123,6 +123,7 @@ class StationCatalog:
     """Hasil pemrosesan dataset yang siap digunakan modul spasial."""
 
     source_path: Path
+    source_sha256: str
     source_columns: tuple[str, ...]
     units: tuple[StationUnit, ...]
     nodes: tuple[StationNode, ...]
@@ -152,6 +153,7 @@ class StationCatalog:
 
         return {
             "source_filename": self.source_path.name,
+            "source_sha256": self.source_sha256,
             "source_rows": self.source_row_count,
             "logical_nodes": self.logical_node_count,
             "multi_unit_node_count": len(self.multi_unit_nodes),
@@ -291,6 +293,7 @@ def load_station_catalog(dataset_path):
         raise DatasetValidationError([f"Berkas tidak ditemukan: {path}"])
 
     try:
+        source_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
         source = pd.read_csv(
             path,
             dtype=str,
@@ -393,6 +396,7 @@ def load_station_catalog(dataset_path):
     nodes, warnings = _build_nodes(units)
     return StationCatalog(
         source_path=path,
+        source_sha256=source_sha256,
         source_columns=tuple(source.columns),
         units=tuple(units),
         nodes=nodes,

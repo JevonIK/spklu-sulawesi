@@ -14,6 +14,9 @@ CSV_HEADER = (
     "Provinsi,Kota/Kabupaten,Lokasi SPKLU,Alamat,Latitude,Longitude,"
     "google maps,Jenis Konektor\n"
 )
+EXPECTED_DATASET_SHA256 = (
+    "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+)
 
 
 def write_dataset(path: Path, rows: str):
@@ -35,6 +38,8 @@ def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
     assert catalog.source_row_count == 150
     assert catalog.logical_node_count == 149
     assert len(catalog.multi_unit_nodes) == 1
+    assert catalog.source_sha256 == EXPECTED_DATASET_SHA256
+    assert catalog.summary()["source_sha256"] == EXPECTED_DATASET_SHA256
 
     bolmut = catalog.multi_unit_nodes[0]
     assert bolmut.name == "SPKLU PLN KANTOR ULP BOLMUT"

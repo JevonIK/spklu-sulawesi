@@ -32,6 +32,8 @@ pencegahan eksperimen paralel, impor laporan idempoten, dan pemulihan proses
 terhenti yang tetap mencatat pemakaian API.
 Fase 7E memperketat audit eksperimen: laporan parsial tetap disimpan ketika
 skenario error, tetapi exit code dan outcome ledger ditandai gagal.
+Fase 8 menambahkan continuous integration pada tiga versi Python, test yang
+terisolasi dari secret lokal, batas coverage, dan checklist rilis penelitian.
 
 ## Ruang lingkup sistem
 
@@ -163,6 +165,11 @@ pemakaian API tersedia pada
 
 Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia
 pada [`docs/google_maps_api_limits.md`](docs/google_maps_api_limits.md).
+
+Workflow CI tanpa secret dan cara mengaktifkan branch protection dijelaskan pada
+[`docs/continuous_integration.md`](docs/continuous_integration.md). Checklist
+rilis lengkap tersedia pada
+[`docs/release_checklist.md`](docs/release_checklist.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
 pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).

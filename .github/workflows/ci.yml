@@ -1,0 +1,62 @@
+name: Validasi aplikasi
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      APP_ENV: development
+      GOOGLE_MAPS_BROWSER_API_KEY: ""
+      GOOGLE_MAPS_SERVER_API_KEY: ""
+      GOOGLE_MAPS_MAP_ID: DEMO_MAP_ID
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Ambil source code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Siapkan Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Instal dependency
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip check
+
+      - name: Jalankan test dan coverage
+        run: >-
+          python -m pytest -q
+          --cov=app
+          --cov-report=term-missing
+          --cov-fail-under=90
+
+      - name: Periksa kompilasi Python
+        run: python -m compileall -q app tests
+
+      - name: Periksa sintaks JavaScript
+        run: node --check app/static/js/app.js

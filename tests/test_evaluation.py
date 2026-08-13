@@ -322,7 +322,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-        "app_version": "0.10.1",
+        "app_version": "0.11.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,
