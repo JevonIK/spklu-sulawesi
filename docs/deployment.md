@@ -106,6 +106,11 @@ lalu buat dua key yang berbeda.
    yang benar-benar membatasi jumlah penggunaan.
 5. Uji key setelah restriction diterapkan dan pantau request yang ditolak.
 
+Daftar hard limit Compute Routes, Route Matrix, Places, Get Place, map load, dan
+layanan yang dilarang terdokumentasi pada
+[`google_maps_api_limits.md`](google_maps_api_limits.md). Samakan nilainya dengan
+quota Google Cloud sebelum deployment atau smoke test live.
+
 ### Ledger quota eksperimen
 
 Samakan `GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT` dan

@@ -42,6 +42,10 @@ Pengujian rekomendasi live harus dicatat terpisah karena memakai quota Routes
 API. Smoke test deployment tidak boleh berulang kali mengirim rekomendasi hanya
 untuk menguji tampilan.
 
+Sebelum smoke test live, hitung batas Places Autocomplete, Get Place, dan map
+load sesuai [`google_maps_api_limits.md`](google_maps_api_limits.md). Buka satu
+tab dan hindari reload berulang. Test otomatis tidak memakai layanan Google.
+
 ## Kriteria lulus
 
 - Seluruh test otomatis lulus.

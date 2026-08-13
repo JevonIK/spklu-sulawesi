@@ -88,16 +88,21 @@ Analisis sensitivitas:
 ```bash
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_sensitivity.json \
-  --label sensitivitas-makassar-rantepao \
-  --max-compute-routes 60 \
-  --max-compute-routes-per-minute 30 \
-  --max-compute-routes-per-scenario 10 \
-  --max-matrix-elements 2000 \
+  --label sensitivitas-live-YYYYMMDD \
+  --max-compute-routes 14 \
+  --max-compute-routes-per-minute 10 \
+  --max-compute-routes-per-scenario 2 \
+  --max-matrix-elements 1200 \
   --max-matrix-elements-per-minute 625 \
-  --batch-size 3 \
+  --batch-size 2 \
   --batch-interval-seconds 61 \
   --confirm-live-api
 ```
+
+Batas contoh sensitivitas berasal dari tujuh skenario yang masing-masing memakai
+maksimal satu rute dasar dan satu rute rekomendasi. Tetap periksa sisa quota
+ledger dan Cloud Console; kurangi `--max-matrix-elements` jika sisa hari itu
+kurang dari 1.200.
 
 Keluaran default berada di `reports/generated/<label>.json` dan `.csv`. Folder
 ini diabaikan Git karena laporan live dapat mengandung hasil yang belum
@@ -213,3 +218,8 @@ Sebelum mengambil kesimpulan, periksa hal berikut:
 4. Jelaskan rute infeasible berdasarkan `reason`, kandidat koridor, dan bentuk
    graf; jangan menyimpulkan bahwa implementasi gagal hanya dari infeasibility.
 5. Catat tanggal, label keluaran, parameter, dan kondisi eksperimen pada laporan.
+
+Hasil sensitivitas live yang telah divalidasi tersedia pada
+[`sensitivity_results.md`](sensitivity_results.md). Kebijakan seluruh layanan
+Google Maps, termasuk Places dan map load, tersedia pada
+[`google_maps_api_limits.md`](google_maps_api_limits.md).

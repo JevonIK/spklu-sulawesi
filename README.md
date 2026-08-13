@@ -155,5 +155,12 @@ Hasil baseline live enam wilayah, rincian itinerary, interpretasi rute
 infeasible, serta audit quota tersedia pada
 [`docs/baseline_results.md`](docs/baseline_results.md).
 
+Hasil analisis sensitivitas live, pengaruh alpha/radius/interval SOC, dan audit
+pemakaian API tersedia pada
+[`docs/sensitivity_results.md`](docs/sensitivity_results.md).
+
+Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia
+pada [`docs/google_maps_api_limits.md`](docs/google_maps_api_limits.md).
+
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
 pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).

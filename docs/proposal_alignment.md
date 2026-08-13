@@ -19,7 +19,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Model jangkauan dan SOC | `app/services/energy.py` |
 | Dynamic Programming state `(node, SOC)` | `app/services/optimizer.py` |
 | Rekomendasi multi-stop | `app/services/recommendation.py` |
-| Evaluasi enam wilayah dan sensitivitas | `experiments/` dan `app/services/evaluation.py` |
+| Evaluasi enam wilayah dan sensitivitas | `experiments/`, `app/services/evaluation.py`, `docs/baseline_results.md`, dan `docs/sensitivity_results.md` |
 | Pengujian otomatis | `tests/` |
 
 ## Metrik proposal
