@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "experiment_id": "baseline-enam-wilayah",
+  "description": "Evaluasi baseline satu koridor pada masing-masing dari enam wilayah penelitian di Sulawesi.",
+  "scenarios": [
+    {
+      "id": "baseline-sulawesi-selatan",
+      "name": "Makassar ke Rantepao",
+      "region": "Sulawesi Selatan",
+      "origin": {
+        "label": "SPKLU PLN ULP Mattoanging",
+        "latitude": -5.148463607,
+        "longitude": 119.4158186
+      },
+      "destination": {
+        "label": "SPKLU PLN ULP Rantepao",
+        "latitude": -2.972703162,
+        "longitude": 119.8979519
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    },
+    {
+      "id": "baseline-sulawesi-tengah",
+      "name": "Palu ke Moutong",
+      "region": "Sulawesi Tengah",
+      "origin": {
+        "label": "SPKLU PLN UP3 Palu",
+        "latitude": -0.9015535604,
+        "longitude": 119.8788257
+      },
+      "destination": {
+        "label": "SPKLU PLN ULP Moutong",
+        "latitude": 0.4651606936,
+        "longitude": 121.2261387
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    },
+    {
+      "id": "baseline-sulawesi-tenggara",
+      "name": "Kolaka ke Kendari",
+      "region": "Sulawesi Tenggara",
+      "origin": {
+        "label": "SPKLU PLN ULP Kolaka",
+        "latitude": -4.052754313,
+        "longitude": 121.5919445
+      },
+      "destination": {
+        "label": "SPKLU PLN ULP Wua Wua",
+        "latitude": -4.022762724,
+        "longitude": 122.5028737
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    },
+    {
+      "id": "baseline-sulawesi-utara",
+      "name": "Bintauna ke Manado",
+      "region": "Sulawesi Utara",
+      "origin": {
+        "label": "SPKLU PLN KJ Bintauna",
+        "latitude": 0.8803369621,
+        "longitude": 123.5499441
+      },
+      "destination": {
+        "label": "SPKLU PLN Kawasan Megamas Manado",
+        "latitude": 1.486355344,
+        "longitude": 124.8338777
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    },
+    {
+      "id": "baseline-sulawesi-barat",
+      "name": "Polewali ke Mamuju",
+      "region": "Sulawesi Barat",
+      "origin": {
+        "label": "SPKLU PLN ULP Polewali",
+        "latitude": -3.432819128,
+        "longitude": 119.3469686
+      },
+      "destination": {
+        "label": "SPKLU PLN UP3 Mamuju",
+        "latitude": -2.676963041,
+        "longitude": 118.8951509
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    },
+    {
+      "id": "baseline-gorontalo",
+      "name": "Marisa ke Kota Gorontalo",
+      "region": "Gorontalo",
+      "origin": {
+        "label": "SPKLU ULP Marisa",
+        "latitude": 0.4764975711,
+        "longitude": 121.9315051
+      },
+      "destination": {
+        "label": "SPKLU PLN UP3 Gorontalo",
+        "latitude": 0.5536615568,
+        "longitude": 123.0540064
+      },
+      "vehicle": {
+        "maximum_range_km": 300,
+        "current_soc_percent": 80,
+        "connector": "CCS2"
+      },
+      "options": {
+        "minimum_soc_percent": 20,
+        "target_soc_percent": 80,
+        "safety_factor": 0.9,
+        "soc_step_percent": 5,
+        "corridor_radius_km": 10
+      }
+    }
+  ]
+}

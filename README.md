@@ -20,6 +20,9 @@ dasar, matriks edge hasil pemangkasan, rute akhir, endpoint rekomendasi, serta
 pencatatan penggunaan API. Fase 6B mengaktifkan Place Autocomplete, peta,
 visualisasi rute dan marker SPKLU, formulir parameter, rincian SOC, serta
 statistik perhitungan yang responsif.
+Fase 7A menambahkan perangkat eksperimen yang dapat direproduksi, enam skenario
+regional, analisis sensitivitas parameter, metrik SOC/API/runtime/memori, serta
+ekspor laporan JSON dan CSV.
 
 ## Ruang lingkup sistem
 
@@ -58,6 +61,19 @@ Ringkasan dataset tersedia melalui endpoint
 python -m flask --app run.py dataset-summary
 ```
 
+Eksperimen live memakai kuota Google Routes API dan harus dikonfirmasi secara
+eksplisit:
+
+```bash
+python -m flask --app run.py experiment-run \
+  --scenarios experiments/scenarios_baseline.json \
+  --label baseline-enam-wilayah \
+  --confirm-live-api
+```
+
+Definisi metrik, skenario sensitivitas, dan cara membaca laporan dijelaskan pada
+[`docs/evaluation.md`](docs/evaluation.md).
+
 ## Menjalankan pengujian
 
 ```bash
@@ -77,6 +93,7 @@ spklu-sulawesi/
 |   |-- __init__.py      # Application factory
 |   `-- config.py        # Konfigurasi environment
 |-- docs/                # Dokumentasi data dan penelitian
+|-- experiments/         # Skenario baseline dan sensitivitas
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
 |-- run.py
@@ -107,3 +124,6 @@ Alur, keamanan, payload, dan efisiensi Google Routes API dijelaskan pada
 
 Komponen dan alur interaksi antarmuka dijelaskan pada
 [`docs/user_interface.md`](docs/user_interface.md).
+
+Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
+pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).
