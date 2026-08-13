@@ -53,6 +53,10 @@ docker run --rm -p 8080:8080 \
   spklu-sulawesi:0.11.0
 ```
 
+Build kandidat rilis dapat memakai suffix sementara, misalnya
+`spklu-sulawesi:0.11.0-rc1`. Jangan push image ke registry sebelum CI hijau,
+secret produksi siap, dan target registry disetujui.
+
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
 produksi tidak dilacak Git. Healthcheck container mengakses
 `http://127.0.0.1:8080/api/health`, sehingga `127.0.0.1` harus terdapat pada

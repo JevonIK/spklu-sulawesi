@@ -15,6 +15,8 @@ COPY requirements.txt ./
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=spklu:spklu . .
+RUN mkdir -p /app/reports/generated \
+    && chown -R spklu:spklu /app/reports
 
 USER spklu
 

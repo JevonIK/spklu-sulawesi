@@ -29,6 +29,7 @@ node --check app/static/js/app.js
 - [ ] Coverage total minimal 90%.
 - [ ] CI GitHub hijau pada Python 3.11, 3.12, dan 3.13.
 - [ ] Health endpoint, validasi input, security headers, dan error handling lulus.
+- [ ] Referensi API dan panduan pengguna sesuai dengan versi kandidat rilis.
 
 ## Konfigurasi deployment
 

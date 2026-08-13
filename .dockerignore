@@ -2,12 +2,17 @@
 .env*
 .git
 .gitignore
+.github
 .pytest_cache
 .venv
 __pycache__
 *.pyc
 .coverage
 htmlcov
+docs
 logs
+README.md
 reports/generated
+requirements-dev.txt
+pytest.ini
 tests

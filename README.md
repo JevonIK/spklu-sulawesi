@@ -171,5 +171,10 @@ Workflow CI tanpa secret dan cara mengaktifkan branch protection dijelaskan pada
 rilis lengkap tersedia pada
 [`docs/release_checklist.md`](docs/release_checklist.md).
 
+Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
+panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
+kandidat rilis 0.11.0 pada
+[`docs/release_candidate.md`](docs/release_candidate.md).
+
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia
 pada [`docs/proposal_alignment.md`](docs/proposal_alignment.md).
