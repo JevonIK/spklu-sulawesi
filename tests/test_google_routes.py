@@ -2,6 +2,7 @@ import requests
 import pytest
 
 from app.services.google_routes import (
+    ApiRequestBudgetExceeded,
     COMPUTE_ROUTE_MATRIX_URL,
     COMPUTE_ROUTES_URL,
     MATRIX_FIELD_MASK,
@@ -147,6 +148,53 @@ def test_network_error_is_converted_to_safe_error():
 
     assert captured.value.code == "upstream_unavailable"
     assert "secret detail" not in str(captured.value)
+
+
+def test_request_budget_stops_before_exceeding_external_call_limit():
+    session = RecordingSession(
+        [FakeResponse(route_payload()), FakeResponse(route_payload())]
+    )
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(1) as budget:
+        client.compute_route((0, 0), (0, 1))
+        with pytest.raises(ApiRequestBudgetExceeded) as captured:
+            client.compute_route((0, 0), (0, 2))
+
+    assert captured.value.code == "request_budget_exceeded"
+    assert budget.used == 1
+    assert budget.remaining == 0
+    assert budget.exhausted is True
+    assert len(session.calls) == 1
+
+
+def test_request_budget_counts_failed_attempt_and_resets_after_context():
+    failing_session = RecordingSession(error=requests.Timeout("timeout"))
+    client = GoogleRoutesClient("key", session=failing_session)
+
+    with client.request_budget(2) as first_budget:
+        with pytest.raises(GoogleRoutesError, match="tidak dapat dihubungi"):
+            client.compute_route((0, 0), (0, 1))
+    assert first_budget.used == 1
+
+    client.session = RecordingSession([FakeResponse(route_payload())])
+    with client.request_budget(1) as second_budget:
+        client.compute_route((0, 0), (0, 1))
+    assert second_budget.used == 1
+
+
+@pytest.mark.parametrize("invalid_budget", [True, 1.5, "10", 0, -1])
+def test_invalid_or_nested_request_budget_is_rejected(invalid_budget):
+    client = GoogleRoutesClient("key", session=RecordingSession())
+
+    with pytest.raises(ValueError, match="Budget request API"):
+        with client.request_budget(invalid_budget):
+            pass
+
+    with client.request_budget(1):
+        with pytest.raises(RuntimeError, match="tidak dapat ditumpuk"):
+            with client.request_budget(1):
+                pass
 
 
 def test_matrix_groups_requests_by_origin_and_skips_unavailable_elements():

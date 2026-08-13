@@ -73,6 +73,7 @@ source .venv/bin/activate
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
+  --max-api-requests 100 \
   --confirm-live-api
 ```
 
@@ -82,6 +83,7 @@ Analisis sensitivitas:
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_sensitivity.json \
   --label sensitivitas-makassar-rantepao \
+  --max-api-requests 100 \
   --confirm-live-api
 ```
 
@@ -93,6 +95,33 @@ artefak laporan penelitian yang memang hendak dijadikan bukti versi.
 Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
+
+## Pengaman quota live
+
+`--max-api-requests` adalah hard limit jumlah percobaan HTTP aktual ke Google
+Routes API selama satu eksekusi CLI. Nilai defaultnya 100 dan rentang yang
+diterima 1–1.000. Penghitung bertambah tepat sebelum request dikirim, termasuk
+request yang kemudian timeout atau ditolak upstream. Setelah batas tercapai,
+request berikutnya gagal lokal dengan `request_budget_exceeded` dan tidak dikirim
+ke Google.
+
+Laporan JSON memiliki objek `execution` berisi:
+
+- `api_request_budget`: batas yang dipilih;
+- `api_request_attempt_count`: request HTTP yang benar-benar dicoba;
+- `api_request_budget_remaining`: sisa budget;
+- `api_request_budget_exhausted`: apakah batas telah habis; dan
+- `live_api_confirmed`: bukti flag konfirmasi diberikan.
+
+Statistik per skenario tetap mencatat request logis Compute Routes/Matrix yang
+berhasil menyelesaikan tahap terkait. Karena itu, gunakan `execution` untuk
+audit quota batch dan `results[].api_usage` untuk analisis kebutuhan algoritma.
+Jika budget habis, sebagian skenario dapat berstatus `error`; jangan menghitung
+feasibility rate final sebelum seluruh skenario selesai tanpa error.
+
+Baseline dan sensitivitas merupakan dua perintah terpisah. Dengan budget default,
+batas gabungannya paling banyak 200 percobaan request, bukan 100. Turunkan budget
+jika quota atau anggaran penelitian memerlukan batas yang lebih kecil.
 
 CLI menolak menimpa laporan lama. Gunakan label baru untuk replikasi, misalnya
 `baseline-enam-wilayah-uji-2`. Opsi `--overwrite` hanya digunakan jika

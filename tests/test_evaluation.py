@@ -12,6 +12,7 @@ from app.services.evaluation import (
     write_experiment_report,
 )
 from app.services.dataset import load_station_catalog
+from app.services.google_routes import GoogleRoutesClient
 
 
 def scenario(scenario_id="skenario-uji"):
@@ -50,6 +51,7 @@ class FakeEvaluationService:
     def __init__(self, *, error=None):
         self.error = error
         self.received_payloads = []
+        self.routes_client = GoogleRoutesClient("unused-test-key")
 
     def parse_input(self, payload):
         self.received_payloads.append(payload)
@@ -235,5 +237,14 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert "--confirm-live-api" in rejected.output
     assert accepted.exit_code == 0
     assert '"feasible_count": 1' in accepted.output
+    assert '"api_request_budget": 100' in accepted.output
+    report = json.loads((tmp_path / "cli-uji.json").read_text())
+    assert report["execution"] == {
+        "live_api_confirmed": True,
+        "api_request_budget": 100,
+        "api_request_attempt_count": 0,
+        "api_request_budget_remaining": 100,
+        "api_request_budget_exhausted": False,
+    }
     assert (tmp_path / "cli-uji.json").exists()
     assert (tmp_path / "cli-uji.csv").exists()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import requests
@@ -36,6 +37,41 @@ class GoogleRoutesError(RuntimeError):
         super().__init__(message)
         self.code = code
         self.status_code = status_code
+
+
+class ApiRequestBudgetExceeded(GoogleRoutesError):
+    """Batas request eksternal eksperimen telah tercapai."""
+
+    def __init__(self, limit):
+        super().__init__(
+            "request_budget_exceeded",
+            (
+                "Batas aman request Google Routes API untuk eksperimen "
+                f"telah tercapai ({limit} request)."
+            ),
+        )
+        self.limit = limit
+
+
+@dataclass
+class ApiRequestBudget:
+    """Penghitung hard limit request HTTP aktual ke Google Routes API."""
+
+    limit: int
+    used: int = 0
+
+    @property
+    def remaining(self):
+        return self.limit - self.used
+
+    @property
+    def exhausted(self):
+        return self.used >= self.limit
+
+    def consume(self):
+        if self.exhausted:
+            raise ApiRequestBudgetExceeded(self.limit)
+        self.used += 1
 
 
 @dataclass(frozen=True)
@@ -167,8 +203,31 @@ class GoogleRoutesClient:
         self._api_key = api_key.strip()
         self.timeout_seconds = timeout
         self.session = session or requests.Session()
+        self._active_request_budget = None
+
+    @contextmanager
+    def request_budget(self, maximum_requests):
+        """Menerapkan hard limit request aktual selama satu eksperimen."""
+
+        if isinstance(maximum_requests, bool) or not isinstance(
+            maximum_requests, int
+        ):
+            raise ValueError("Budget request API harus berupa integer.")
+        if maximum_requests <= 0:
+            raise ValueError("Budget request API harus lebih besar dari nol.")
+        if self._active_request_budget is not None:
+            raise RuntimeError("Budget request API tidak dapat ditumpuk.")
+
+        budget = ApiRequestBudget(limit=maximum_requests)
+        self._active_request_budget = budget
+        try:
+            yield budget
+        finally:
+            self._active_request_budget = None
 
     def _post(self, url, payload, field_mask):
+        if self._active_request_budget is not None:
+            self._active_request_budget.consume()
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": self._api_key,

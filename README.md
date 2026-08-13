@@ -25,6 +25,8 @@ regional, analisis sensitivitas parameter, metrik SOC/API/runtime/memori, serta
 ekspor laporan JSON dan CSV.
 Fase 7B menambahkan validasi konfigurasi produksi, hardening HTTP, halaman
 privasi/ketentuan, black-box test end-to-end, Gunicorn, dan container non-root.
+Fase 7C menambahkan hard limit request Google Routes untuk menjaga eksperimen
+live tetap berada dalam budget quota yang ditetapkan.
 
 ## Ruang lingkup sistem
 
@@ -70,6 +72,7 @@ eksplisit:
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
+  --max-api-requests 100 \
   --confirm-live-api
 ```
 

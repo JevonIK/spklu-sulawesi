@@ -47,10 +47,10 @@ validasi Google Routes pada rekomendasi yang panjang.
 ## Membangun dan menjalankan container
 
 ```bash
-docker build -t spklu-sulawesi:0.9.0 .
+docker build -t spklu-sulawesi:0.9.1 .
 docker run --rm -p 8080:8080 \
   --env-file .env.production \
-  spklu-sulawesi:0.9.0
+  spklu-sulawesi:0.9.1
 ```
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
@@ -117,6 +117,10 @@ lalu buat dua key yang berbeda.
 5. Endpoint `/api/health` dipantau tanpa memanggil layanan Google eksternal.
 6. Dataset yang ter-deploy sama dengan versi yang dilaporkan dalam penelitian.
 7. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
+
+Eksperimen CLI memiliki hard limit tambahan melalui `--max-api-requests`.
+Kontrol ini melindungi batch penelitian, tetapi tidak menggantikan quota Google
+dan limit trafik pada endpoint rekomendasi publik.
 
 ## Kontrol keamanan aplikasi
 

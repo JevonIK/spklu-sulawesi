@@ -49,6 +49,13 @@ def dataset_summary_command():
     help="Konfirmasi bahwa eksperimen boleh memakai kuota Google Routes API.",
 )
 @click.option(
+    "--max-api-requests",
+    type=click.IntRange(min=1, max=1000),
+    default=100,
+    show_default=True,
+    help="Hard limit request HTTP aktual selama satu batch eksperimen.",
+)
+@click.option(
     "--overwrite",
     is_flag=True,
     help="Ganti laporan dengan label yang sama jika sudah ada.",
@@ -59,6 +66,7 @@ def experiment_run_command(
     output_dir,
     label,
     confirm_live_api,
+    max_api_requests,
     overwrite,
 ):
     """Menjalankan batch evaluasi yang dapat direproduksi."""
@@ -73,14 +81,27 @@ def experiment_run_command(
         raise click.ClickException(
             "GOOGLE_MAPS_SERVER_API_KEY belum dikonfigurasi."
         )
+    routes_client = getattr(service, "routes_client", None)
+    if routes_client is None or not hasattr(routes_client, "request_budget"):
+        raise click.ClickException(
+            "Client Google Routes tidak mendukung budget request eksperimen."
+        )
 
     try:
         definition = load_experiment_definition(scenarios)
-        report = run_experiment(
-            service,
-            definition,
-            source_path=scenarios,
-        )
+        with routes_client.request_budget(max_api_requests) as budget:
+            report = run_experiment(
+                service,
+                definition,
+                source_path=scenarios,
+            )
+        report["execution"] = {
+            "live_api_confirmed": True,
+            "api_request_budget": budget.limit,
+            "api_request_attempt_count": budget.used,
+            "api_request_budget_remaining": budget.remaining,
+            "api_request_budget_exhausted": budget.exhausted,
+        }
         json_path, csv_path = write_experiment_report(
             report,
             output_dir,
@@ -90,7 +111,16 @@ def experiment_run_command(
     except (ExperimentDefinitionError, ValueError, FileExistsError) as error:
         raise click.ClickException(str(error)) from error
 
-    click.echo(json.dumps(report["aggregate"], ensure_ascii=False, indent=2))
+    click.echo(
+        json.dumps(
+            {
+                "aggregate": report["aggregate"],
+                "execution": report["execution"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     click.echo(f"JSON: {json_path}")
     click.echo(f"CSV: {csv_path}")
 
