@@ -47,10 +47,10 @@ validasi Google Routes pada rekomendasi yang panjang.
 ## Membangun dan menjalankan container
 
 ```bash
-docker build -t spklu-sulawesi:0.9.2 .
+docker build -t spklu-sulawesi:0.10.0 .
 docker run --rm -p 8080:8080 \
   --env-file .env.production \
-  spklu-sulawesi:0.9.2
+  spklu-sulawesi:0.10.0
 ```
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
@@ -106,6 +106,25 @@ lalu buat dua key yang berbeda.
    yang benar-benar membatasi jumlah penggunaan.
 5. Uji key setelah restriction diterapkan dan pantau request yang ditolak.
 
+### Ledger quota eksperimen
+
+Samakan `GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT` dan
+`GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT` dengan batas harian project. Pertahankan
+`GOOGLE_QUOTA_TIMEZONE=America/Los_Angeles` karena kuota per hari Google reset
+pada tengah malam Pacific Time.
+
+Path default ledger adalah
+`reports/generated/google-routes-quota.json`. Jika eksperimen CLI dijalankan di
+container, mount folder tersebut ke volume persisten; container sementara akan
+kehilangan riwayat ketika dihapus. Jalankan eksperimen hanya pada satu host dan
+satu proses. File lock lokal tidak mengoordinasikan beberapa replica atau
+filesystem jaringan.
+
+Ledger hanya mengamankan eksperimen CLI. Ia tidak menghitung request dari
+endpoint web, project lain, atau program lain yang memakai API key sama. Quota
+Google Cloud dan pembatasan trafik gateway tetap wajib sebagai pengaman biaya
+utama.
+
 ## Checklist sebelum publik
 
 1. Semua pengujian otomatis lulus dan eksperimen live terpisah dari smoke test.
@@ -119,9 +138,9 @@ lalu buat dua key yang berbeda.
 7. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
 
 Eksperimen CLI memiliki hard limit terpisah untuk panggilan Compute Routes dan
-elemen Route Matrix, termasuk pacing rolling window 60 detik. Kontrol ini
-melindungi batch penelitian, tetapi tidak menggantikan quota Google dan limit
-trafik pada endpoint rekomendasi publik.
+elemen Route Matrix, pacing rolling window 60 detik, serta ledger harian dengan
+reservasi atomik. Kontrol ini melindungi batch penelitian, tetapi tidak
+menggantikan quota Google dan limit trafik pada endpoint rekomendasi publik.
 
 ## Kontrol keamanan aplikasi
 

@@ -295,6 +295,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
         encoding="utf-8",
     )
     app.extensions["recommendation_service"] = FakeEvaluationService()
+    app.config["GOOGLE_QUOTA_LEDGER_PATH"] = tmp_path / "quota-ledger.json"
     runner = app.test_cli_runner()
 
     rejected = runner.invoke(
@@ -321,7 +322,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-        "app_version": "0.9.2",
+        "app_version": "0.10.0",
         "live_api_confirmed": True,
         "compute_routes_limit": 60,
         "compute_routes_attempt_count": 0,
@@ -336,6 +337,10 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
         "matrix_request_attempt_count": 0,
         "rate_limit_wait_seconds": 0.0,
     }
+    assert report["daily_quota"]["actual_compute_routes"] == 0
+    assert report["daily_quota"]["actual_matrix_elements"] == 0
+    assert report["daily_quota"]["completed_or_failed_run_count"] == 1
+    assert report["daily_quota"]["active_reservation_count"] == 0
     assert report["batching"]["batch_count"] == 1
     assert (tmp_path / "cli-uji.json").exists()
     assert (tmp_path / "cli-uji.csv").exists()

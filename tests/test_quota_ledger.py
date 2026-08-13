@@ -1,0 +1,321 @@
+import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import pytest
+
+from app.services.quota_ledger import (
+    GoogleRoutesQuotaLedger,
+    QuotaLedgerError,
+)
+
+
+PACIFIC = ZoneInfo("America/Los_Angeles")
+
+
+class FixedNow:
+    def __init__(self, value=None):
+        self.value = value or datetime(2026, 8, 12, 20, 0, tzinfo=PACIFIC)
+
+    def __call__(self):
+        return self.value
+
+
+def ledger(tmp_path, **overrides):
+    options = {
+        "timezone_name": "America/Los_Angeles",
+        "daily_compute_routes_limit": 100,
+        "daily_matrix_element_limit": 2000,
+        "now_fn": FixedNow(),
+    }
+    options.update(overrides)
+    return GoogleRoutesQuotaLedger(tmp_path / "quota.json", **options)
+
+
+def test_reservation_reduces_available_quota_and_finalize_uses_actual(tmp_path):
+    quota = ledger(tmp_path)
+
+    reservation = quota.reserve(
+        label="baseline",
+        maximum_compute_routes=60,
+        maximum_matrix_elements=1200,
+    )
+    reserved = quota.status()
+    finalized = quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=9,
+        matrix_element_attempt_count=150,
+        outcome="completed",
+        report_path=tmp_path / "baseline.json",
+    )
+
+    assert reserved["available_compute_routes"] == 40
+    assert reserved["available_matrix_elements"] == 800
+    assert reserved["active_reservation_count"] == 1
+    assert finalized["actual_compute_routes"] == 9
+    assert finalized["actual_matrix_elements"] == 150
+    assert finalized["available_compute_routes"] == 91
+    assert finalized["available_matrix_elements"] == 1850
+    assert finalized["active_reservation_count"] == 0
+
+
+def test_parallel_reservation_is_rejected(tmp_path):
+    quota = ledger(tmp_path)
+    quota.reserve(
+        label="run-pertama",
+        maximum_compute_routes=80,
+        maximum_matrix_elements=1800,
+    )
+
+    with pytest.raises(QuotaLedgerError, match="secara paralel"):
+        quota.reserve(
+            label="run-kedua",
+            maximum_compute_routes=1,
+            maximum_matrix_elements=1,
+        )
+
+
+def test_reservation_is_rejected_before_daily_quota_can_be_exceeded(tmp_path):
+    quota = ledger(tmp_path)
+    reservation = quota.reserve(
+        label="run-pertama",
+        maximum_compute_routes=80,
+        maximum_matrix_elements=1800,
+    )
+    quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=80,
+        matrix_element_attempt_count=1800,
+        outcome="completed",
+    )
+
+    with pytest.raises(QuotaLedgerError, match="Compute Routes"):
+        quota.reserve(
+            label="run-kedua",
+            maximum_compute_routes=21,
+            maximum_matrix_elements=1,
+        )
+    with pytest.raises(QuotaLedgerError, match="Route Matrix"):
+        quota.reserve(
+            label="run-ketiga",
+            maximum_compute_routes=1,
+            maximum_matrix_elements=201,
+        )
+
+
+def test_recover_orphan_reservation_records_possible_usage(tmp_path):
+    quota = ledger(tmp_path)
+    reservation = quota.reserve(
+        label="proses-terhenti",
+        maximum_compute_routes=10,
+        maximum_matrix_elements=200,
+    )
+
+    status = quota.recover(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=4,
+        matrix_element_attempt_count=30,
+        reason="terminal ditutup setelah batch pertama",
+    )
+
+    assert status["active_reservation_count"] == 0
+    assert status["actual_compute_routes"] == 4
+    assert status["actual_matrix_elements"] == 30
+    assert status["available_compute_routes"] == 96
+
+
+def test_finalize_rejects_usage_above_reservation(tmp_path):
+    quota = ledger(tmp_path)
+    reservation = quota.reserve(
+        label="terbatas",
+        maximum_compute_routes=5,
+        maximum_matrix_elements=10,
+    )
+
+    with pytest.raises(QuotaLedgerError, match="melebihi reservasi"):
+        quota.finalize(
+            reservation["reservation_id"],
+            compute_routes_attempt_count=6,
+            matrix_element_attempt_count=10,
+            outcome="failed",
+        )
+
+    assert quota.status()["active_reservation_count"] == 1
+
+
+def test_report_import_is_idempotent_by_sha256(tmp_path):
+    quota = ledger(tmp_path)
+    report_path = tmp_path / "report.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "generated_at_utc": "2026-08-13T02:30:00+00:00",
+                "experiment": {"id": "baseline-enam-wilayah"},
+                "execution": {
+                    "compute_routes_attempt_count": 9,
+                    "matrix_element_attempt_count": 150,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    first = quota.import_report(report_path)
+    second = quota.import_report(report_path)
+
+    assert first["imported"] is True
+    assert second["duplicate"] is True
+    assert quota.status()["actual_compute_routes"] == 9
+    assert quota.status()["actual_matrix_elements"] == 150
+
+
+def test_ledger_file_uses_restrictive_permissions(tmp_path):
+    quota = ledger(tmp_path)
+    quota.reserve(
+        label="permission-test",
+        maximum_compute_routes=1,
+        maximum_matrix_elements=1,
+    )
+
+    assert quota.path.stat().st_mode & 0o777 == 0o600
+    assert quota.lock_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_report_import_rejects_fractional_usage(tmp_path):
+    quota = ledger(tmp_path)
+    report_path = tmp_path / "invalid-usage.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "generated_at_utc": "2026-08-13T02:30:00+00:00",
+                "execution": {
+                    "compute_routes_attempt_count": 1.5,
+                    "matrix_element_attempt_count": 10,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(QuotaLedgerError, match="metadata quota"):
+        quota.import_report(report_path)
+
+
+def test_final_report_hash_prevents_later_double_import(tmp_path):
+    quota = ledger(tmp_path)
+    report_path = tmp_path / "automatic.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "generated_at_utc": "2026-08-13T02:30:00+00:00",
+                "execution": {
+                    "compute_routes_attempt_count": 2,
+                    "matrix_element_attempt_count": 10,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    reservation = quota.reserve(
+        label="automatic",
+        maximum_compute_routes=5,
+        maximum_matrix_elements=20,
+    )
+    quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=2,
+        matrix_element_attempt_count=10,
+        outcome="completed",
+        report_path=report_path,
+    )
+
+    attached_hash = quota.attach_report(
+        reservation["reservation_id"],
+        report_path,
+    )
+    imported = quota.import_report(report_path)
+
+    assert imported["duplicate"] is True
+    assert imported["source_sha256"] == attached_hash
+    assert quota.status()["actual_compute_routes"] == 2
+
+
+def test_quota_cli_import_and_status_are_auditable(app, tmp_path):
+    app.config["GOOGLE_QUOTA_LEDGER_PATH"] = tmp_path / "cli-quota.json"
+    report_path = tmp_path / "historic.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "generated_at_utc": "2026-08-13T02:30:00+00:00",
+                "experiment": {"id": "historic"},
+                "execution": {
+                    "compute_routes_attempt_count": 9,
+                    "matrix_element_attempt_count": 150,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    runner = app.test_cli_runner()
+
+    imported = runner.invoke(
+        args=["quota-import-report", "--report", str(report_path)]
+    )
+    status = runner.invoke(args=["quota-status", "--date", "2026-08-12"])
+
+    assert imported.exit_code == 0
+    assert json.loads(imported.output)[0]["imported"] is True
+    assert status.exit_code == 0
+    payload = json.loads(status.output)
+    assert payload["actual_compute_routes"] == 9
+    assert payload["actual_matrix_elements"] == 150
+    assert payload["available_compute_routes"] == 91
+
+
+def test_quota_recover_cli_requires_confirmation_and_records_attempts(
+    app,
+    tmp_path,
+):
+    ledger_path = tmp_path / "recover-cli.json"
+    app.config["GOOGLE_QUOTA_LEDGER_PATH"] = ledger_path
+    quota = GoogleRoutesQuotaLedger(
+        ledger_path,
+        timezone_name=app.config["GOOGLE_QUOTA_TIMEZONE"],
+        daily_compute_routes_limit=app.config[
+            "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT"
+        ],
+        daily_matrix_element_limit=app.config[
+            "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT"
+        ],
+    )
+    reservation = quota.reserve(
+        label="cli-terhenti",
+        maximum_compute_routes=10,
+        maximum_matrix_elements=100,
+    )
+    command = [
+        "quota-recover",
+        "--reservation",
+        reservation["reservation_id"],
+        "--compute-routes-attempts",
+        "3",
+        "--matrix-element-attempts",
+        "20",
+        "--reason",
+        "proses terminal berhenti",
+    ]
+    runner = app.test_cli_runner()
+
+    rejected = runner.invoke(args=command)
+    assert rejected.exit_code == 2
+    assert quota.status()["active_reservation_count"] == 1
+
+    recovered = runner.invoke(
+        args=[*command, "--confirm-process-stopped"]
+    )
+
+    assert quota.status()["active_reservation_count"] == 0
+    assert recovered.exit_code == 0
+    payload = json.loads(recovered.output)
+    assert payload["actual_compute_routes"] == 3
+    assert payload["actual_matrix_elements"] == 20

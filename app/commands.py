@@ -1,6 +1,7 @@
 """Perintah CLI untuk audit data dan eksperimen penelitian."""
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -9,10 +10,25 @@ from flask.cli import with_appcontext
 
 from .services.evaluation import (
     ExperimentDefinitionError,
+    experiment_report_paths,
     load_experiment_definition,
     run_experiment,
     write_experiment_report,
 )
+from .services.quota_ledger import GoogleRoutesQuotaLedger, QuotaLedgerError
+
+
+def _quota_ledger():
+    return GoogleRoutesQuotaLedger(
+        current_app.config["GOOGLE_QUOTA_LEDGER_PATH"],
+        timezone_name=current_app.config["GOOGLE_QUOTA_TIMEZONE"],
+        daily_compute_routes_limit=current_app.config[
+            "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT"
+        ],
+        daily_matrix_element_limit=current_app.config[
+            "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT"
+        ],
+    )
 
 
 @click.command("dataset-summary")
@@ -135,8 +151,29 @@ def experiment_run_command(
             "Client Google Routes tidak mendukung budget request eksperimen."
         )
 
+    reservation = None
+    budget = None
+    report = None
+    report_label = None
+    json_path = None
     try:
         definition = load_experiment_definition(scenarios)
+        report_label = label or definition["experiment_id"]
+        json_path, csv_path = experiment_report_paths(
+            output_dir,
+            report_label,
+        )
+        if not overwrite and (json_path.exists() or csv_path.exists()):
+            raise FileExistsError(
+                "Laporan dengan label tersebut sudah ada; gunakan "
+                "--overwrite jika memang ingin menggantinya."
+            )
+        ledger = _quota_ledger()
+        reservation = ledger.reserve(
+            label=report_label,
+            maximum_compute_routes=max_compute_routes,
+            maximum_matrix_elements=max_matrix_elements,
+        )
         with routes_client.request_budget(
             maximum_compute_routes=max_compute_routes,
             maximum_compute_routes_per_minute=(
@@ -174,11 +211,50 @@ def experiment_run_command(
         json_path, csv_path = write_experiment_report(
             report,
             output_dir,
-            label or definition["experiment_id"],
+            report_label,
             overwrite=overwrite,
         )
-    except (ExperimentDefinitionError, ValueError, FileExistsError) as error:
+    except Exception as error:
+        if reservation is not None:
+            usage = budget.snapshot() if budget is not None else {}
+            ledger.finalize(
+                reservation["reservation_id"],
+                compute_routes_attempt_count=usage.get(
+                    "compute_routes_attempt_count",
+                    0,
+                ),
+                matrix_element_attempt_count=usage.get(
+                    "matrix_element_attempt_count",
+                    0,
+                ),
+                outcome="failed",
+                report_path=(
+                    json_path if json_path and json_path.exists() else None
+                ),
+            )
+        if not isinstance(
+            error,
+            (ExperimentDefinitionError, QuotaLedgerError, ValueError,
+             FileExistsError, OSError),
+        ):
+            raise
         raise click.ClickException(str(error)) from error
+
+    daily_quota = ledger.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=budget.compute_routes_attempt_count,
+        matrix_element_attempt_count=budget.matrix_element_attempt_count,
+        outcome="completed",
+        report_path=json_path,
+    )
+    report["daily_quota"] = daily_quota
+    json_path, csv_path = write_experiment_report(
+        report,
+        output_dir,
+        report_label,
+        overwrite=True,
+    )
+    ledger.attach_report(reservation["reservation_id"], json_path)
 
     click.echo(
         json.dumps(
@@ -194,6 +270,105 @@ def experiment_run_command(
     click.echo(f"CSV: {csv_path}")
 
 
+@click.command("quota-status")
+@click.option(
+    "--date",
+    "date_key",
+    type=str,
+    help="Tanggal kuota Pacific Time YYYY-MM-DD; default hari ini.",
+)
+@with_appcontext
+def quota_status_command(date_key):
+    """Menampilkan pemakaian, reservasi, dan sisa quota harian."""
+
+    if date_key:
+        try:
+            date_key = datetime.strptime(
+                date_key,
+                "%Y-%m-%d",
+            ).date().isoformat()
+        except ValueError as error:
+            raise click.ClickException(
+                "Tanggal quota harus berformat YYYY-MM-DD."
+            ) from error
+    try:
+        status = _quota_ledger().status(date_key)
+    except (QuotaLedgerError, ValueError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps(status, ensure_ascii=False, indent=2))
+
+
+@click.command("quota-import-report")
+@click.option(
+    "--report",
+    "reports",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    multiple=True,
+    required=True,
+    help="Laporan JSON eksperimen yang akan dicatat; dapat diulang.",
+)
+@with_appcontext
+def quota_import_report_command(reports):
+    """Mengimpor pemakaian laporan lama secara idempoten."""
+
+    ledger = _quota_ledger()
+    try:
+        results = [ledger.import_report(report) for report in reports]
+    except (QuotaLedgerError, ValueError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps(results, ensure_ascii=False, indent=2))
+
+
+@click.command("quota-recover")
+@click.option("--reservation", required=True, help="ID reservasi aktif.")
+@click.option(
+    "--compute-routes-attempts",
+    type=click.IntRange(min=0),
+    required=True,
+    help="Percobaan Compute Routes yang sudah terjadi atau batas atas aman.",
+)
+@click.option(
+    "--matrix-element-attempts",
+    type=click.IntRange(min=0),
+    required=True,
+    help="Elemen Route Matrix yang sudah dicoba atau batas atas aman.",
+)
+@click.option("--reason", required=True, help="Alasan pemulihan reservasi.")
+@click.option(
+    "--confirm-process-stopped",
+    is_flag=True,
+    help="Konfirmasi proses pemilik reservasi sudah berhenti.",
+)
+@with_appcontext
+def quota_recover_command(
+    reservation,
+    compute_routes_attempts,
+    matrix_element_attempts,
+    reason,
+    confirm_process_stopped,
+):
+    """Memulihkan reservasi yatim dan mencatat pemakaian API-nya."""
+
+    if not confirm_process_stopped:
+        raise click.UsageError(
+            "Tambahkan --confirm-process-stopped setelah memastikan proses "
+            "eksperimen tidak lagi berjalan."
+        )
+    try:
+        status = _quota_ledger().recover(
+            reservation,
+            compute_routes_attempt_count=compute_routes_attempts,
+            matrix_element_attempt_count=matrix_element_attempts,
+            reason=reason,
+        )
+    except (QuotaLedgerError, ValueError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps(status, ensure_ascii=False, indent=2))
+
+
 def register_commands(app):
     app.cli.add_command(dataset_summary_command)
     app.cli.add_command(experiment_run_command)
+    app.cli.add_command(quota_status_command)
+    app.cli.add_command(quota_import_report_command)
+    app.cli.add_command(quota_recover_command)

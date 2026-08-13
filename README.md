@@ -27,6 +27,9 @@ Fase 7B menambahkan validasi konfigurasi produksi, hardening HTTP, halaman
 privasi/ketentuan, black-box test end-to-end, Gunicorn, dan container non-root.
 Fase 7C menambahkan hard limit request Google Routes untuk menjaga eksperimen
 live tetap berada dalam budget quota yang ditetapkan.
+Fase 7D menambahkan ledger kuota harian lintas-eksekusi, reservasi atomik,
+pencegahan eksperimen paralel, impor laporan idempoten, dan pemulihan proses
+terhenti yang tetap mencatat pemakaian API.
 
 ## Ruang lingkup sistem
 
@@ -80,6 +83,12 @@ python -m flask --app run.py experiment-run \
   --batch-size 3 \
   --batch-interval-seconds 61 \
   --confirm-live-api
+```
+
+Periksa sisa kuota yang tercatat sebelum menjalankan eksperimen:
+
+```bash
+python -m flask --app run.py quota-status
 ```
 
 Definisi metrik, skenario sensitivitas, dan cara membaca laporan dijelaskan pada

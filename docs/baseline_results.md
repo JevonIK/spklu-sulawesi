@@ -99,14 +99,21 @@ diulang untuk menyimpan nama SPKLU, setiap leg, dan statistik pemangkasan. Kedua
 run menghasilkan status kelayakan dan metrik numerik algoritmik yang sama.
 Pemakaian kumulatif hari itu adalah:
 
-| Dimensi quota | Run awal | Run terperinci | Total | Batas yang disepakati |
+| Dimensi quota | Run awal | Run terperinci | Total | Quota harian project |
 |---|---:|---:|---:|---:|
-| Compute Routes | 9 | 9 | 18 | 60 per hari, 30 per menit |
+| Compute Routes | 9 | 9 | 18 | 100 per hari, 30 per menit |
 | Elemen Route Matrix | 150 | 150 | 300 | 2.000 per hari, 625 per menit |
 
 Masing-masing run memakai dua batch dengan jeda 61 detik. Maksimum kumulatif
 Compute Routes per skenario adalah empat untuk skenario feasible dan dua untuk
 skenario infeasible, masih di bawah batas 10 per skenario.
+
+Izin pengujian menetapkan hard cap gabungan maksimum 60 Compute Routes untuk
+baseline, sedangkan 100 adalah quota harian project. Pemakaian aktual 18 tidak
+melewati keduanya. Kedua laporan telah diimpor ke ledger dan tercatat pada hari
+quota `2026-08-12` Pacific Time; waktu eksekusinya adalah 13 Agustus di
+Indonesia. Perbedaan tanggal ini mengikuti reset quota Google pada tengah malam
+Pacific Time.
 
 ## Integritas artefak lokal
 

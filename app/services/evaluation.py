@@ -480,8 +480,8 @@ def run_experiment(
     }
 
 
-def write_experiment_report(report, output_dir, label, *, overwrite=False):
-    """Mengekspor laporan yang sama ke JSON rinci dan CSV tabular."""
+def experiment_report_paths(output_dir, label):
+    """Memvalidasi label dan mengembalikan path laporan tanpa menulis."""
 
     if not isinstance(label, str) or not _SAFE_LABEL.fullmatch(label):
         raise ValueError(
@@ -489,14 +489,19 @@ def write_experiment_report(report, output_dir, label, *, overwrite=False):
             "garis bawah, dan tanda hubung."
         )
     destination = Path(output_dir).expanduser().resolve()
-    destination.mkdir(parents=True, exist_ok=True)
-    json_path = destination / f"{label}.json"
-    csv_path = destination / f"{label}.csv"
+    return destination / f"{label}.json", destination / f"{label}.csv"
+
+
+def write_experiment_report(report, output_dir, label, *, overwrite=False):
+    """Mengekspor laporan yang sama ke JSON rinci dan CSV tabular."""
+
+    json_path, csv_path = experiment_report_paths(output_dir, label)
     if not overwrite and (json_path.exists() or csv_path.exists()):
         raise FileExistsError(
             "Laporan dengan label tersebut sudah ada; gunakan --overwrite "
             "jika memang ingin menggantinya."
         )
+    json_path.parent.mkdir(parents=True, exist_ok=True)
 
     with json_path.open("w", encoding="utf-8") as json_file:
         json.dump(report, json_file, ensure_ascii=False, indent=2)

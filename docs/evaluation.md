@@ -147,10 +147,56 @@ Jika budget habis, sebagian skenario dapat berstatus `error`; jangan menghitung
 feasibility rate final sebelum seluruh skenario selesai tanpa error.
 
 Baseline dan sensitivitas merupakan dua perintah terpisah, sedangkan quota
-harian Google berlaku gabungan. Jangan menjalankan sensitivitas pada hari yang
-sama tanpa memeriksa sisa Compute Routes dan elemen Route Matrix di Google Cloud.
-Hard limit CLI membatasi eksekusi saat ini dan tidak mengetahui pemakaian dari
-eksekusi sebelumnya atau aplikasi lain.
+harian Google berlaku gabungan. CLI memakai ledger lokal untuk mencatat laporan
+lama, mereservasi hard limit sebelum eksperimen, dan mengganti reservasi dengan
+pemakaian aktual setelah proses selesai atau gagal. Eksperimen baru ditolak jika
+reservasi ditambah pemakaian hari itu dapat melewati 100 Compute Routes atau
+2.000 elemen Route Matrix. Proses live paralel juga ditolak agar pacing per menit
+tidak saling bertabrakan.
+
+Periksa ledger sebelum meminta izin atau menjalankan eksperimen:
+
+```bash
+python -m flask --app run.py quota-status
+```
+
+Kuota per hari Google reset pada tengah malam Pacific Time. Karena itu, field
+`date` pada output memakai zona `America/Los_Angeles` dan dapat berbeda satu
+tanggal dari waktu Indonesia. Konfigurasi `GOOGLE_QUOTA_TIMEZONE` sebaiknya tidak
+diubah ke `Asia/Jakarta`. Batas harian ledger harus sama dengan quota yang
+ditetapkan pada Google Cloud Console.
+
+Rujukan perilaku reset dan satuan penagihan tersedia pada dokumentasi resmi
+[Cloud Quotas](https://docs.cloud.google.com/docs/quotas/overview) dan
+[Routes API usage and billing](https://developers.google.com/maps/documentation/routes/usage-and-billing).
+
+Laporan lama yang belum dicatat dapat diimpor secara idempoten. Hash SHA-256 dan
+path laporan mencegah laporan yang sama dihitung dua kali:
+
+```bash
+python -m flask --app run.py quota-import-report \
+  --report reports/generated/baseline-live-20260813.json \
+  --report reports/generated/baseline-live-20260813-detailed.json
+```
+
+Jika terminal atau proses mati, reservasi sengaja tetap aktif dan eksperimen
+berikutnya diblokir. Setelah memastikan proses benar-benar berhenti, pulihkan
+reservasi dengan jumlah percobaan yang terlihat pada log. Bila jumlahnya tidak
+pasti, gunakan batas maksimum reservasi sebagai batas atas yang aman:
+
+```bash
+python -m flask --app run.py quota-recover \
+  --reservation ID_RESERVASI \
+  --compute-routes-attempts 60 \
+  --matrix-element-attempts 2000 \
+  --reason "proses berhenti sebelum laporan dibuat" \
+  --confirm-process-stopped
+```
+
+Ledger bersifat fail-closed dan melindungi eksperimen CLI pada satu filesystem.
+Ia tidak membaca pemakaian yang dibuat langsung di Cloud Console, program lain,
+atau endpoint web aplikasi. Google Cloud quota tetap menjadi sumber kontrol
+utama; cocokkan status ledger dengan dashboard sebelum eksperimen berbayar.
 
 CLI menolak menimpa laporan lama. Gunakan label baru untuk replikasi, misalnya
 `baseline-enam-wilayah-uji-2`. Opsi `--overwrite` hanya digunakan jika
