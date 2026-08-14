@@ -41,11 +41,12 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
+            constraints.txt
 
       - name: Instal dependency
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-dev.txt -c constraints.txt
           python -m pip check
 
       - name: Jalankan test dan coverage

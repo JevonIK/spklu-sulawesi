@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,8 +12,10 @@ WORKDIR /app
 RUN groupadd --system spklu \
     && useradd --system --gid spklu --home-dir /app spklu
 
-COPY requirements.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt constraints.txt ./
+RUN python -m pip install --no-cache-dir \
+    -r requirements.txt \
+    -c constraints.txt
 
 COPY --chown=spklu:spklu . .
 RUN mkdir -p /app/reports/generated \

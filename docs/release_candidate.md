@@ -13,10 +13,10 @@
 
 ## Bukti verifikasi lokal
 
-- 148 test lulus dengan kedua API key dikosongkan;
+- 149 test lulus dengan kedua API key dikosongkan;
 - coverage total 91,44%, di atas ambang CI 90%;
 - `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
-- audit kandidat rilis offline lulus 21/21 check;
+- audit kandidat rilis offline lulus 23/23 check;
 - health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan
 - source scan tidak menemukan API key Google tertanam.
 
@@ -27,7 +27,7 @@ Smoke test produksi lokal juga memverifikasi:
 - CSP, HSTS, anti-frame, dan header keamanan lain aktif;
 - image `spklu-sulawesi:0.12.0-rc1` berhasil dibangun;
 - healthcheck container berstatus `healthy`;
-- audit rilis di dalam container lulus 21/21 check;
+- audit rilis di dalam container lulus 23/23 check;
 - proses container berjalan sebagai user non-root `spklu`; dan
 - direktori `/app/reports/generated` dapat ditulis oleh user runtime.
 
@@ -40,10 +40,14 @@ harian atomik, pencatatan attempt sukses/gagal, hard cap 2 Compute Routes dan
 schema v1 ke v2, serta respons HTTP 429 untuk request paralel atau kapasitas yang
 tidak mencukupi.
 
-`release_manifest.json` mengunci versi, identitas dataset, ruang lingkup
-algoritma, 6 skenario baseline, 7 skenario sensitivitas, dan enam hard limit.
+`release_manifest.json` mengunci versi, hash dependency, identitas dataset,
+ruang lingkup algoritma, 6 skenario baseline, 7 skenario sensitivitas, dan enam
+hard limit.
 Command `release-audit` menjadi quality gate pada ketiga job Python di CI dan
 tidak menggunakan layanan Google Maps.
+
+Dependency lock yang sama berhasil dipasang pada image Python 3.11, 3.12, dan
+3.13. Ketiganya menjalankan NumPy 2.3.5, SciPy 1.16.3, serta lulus audit 23/23.
 
 GitHub Actions harus tetap diperiksa setelah push karena keberhasilan simulasi
 lokal tidak menggantikan hasil runner GitHub untuk Python 3.11 dan 3.13.

@@ -6,6 +6,10 @@
     "3.12",
     "3.13"
   ],
+  "dependencies": {
+    "constraints_path": "constraints.txt",
+    "sha256": "53f7044a7b05f6acae7a04c6490c1459fc00556b580c544418f4443e49917a66"
+  },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
     "source_rows": 150,

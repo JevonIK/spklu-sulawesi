@@ -39,6 +39,9 @@ termasuk pencatatan attempt aktual serta penolakan request live paralel.
 Fase 10 menambahkan manifest kandidat rilis, audit offline atas dataset,
 skenario, ruang lingkup algoritma dan hard limit, serta menjadikannya quality
 gate pada seluruh matrix CI.
+Fase 11 mengunci dependency langsung dan transitif lintas Python 3.11–3.13,
+memasukkan hash constraint ke manifest, dan memverifikasi instalasi container
+pada ketiga runtime.
 
 ## Ruang lingkup sistem
 
@@ -61,7 +64,7 @@ kompatibilitas pustaka analisis data.
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt -c constraints.txt
 cp .env.example .env
 python run.py
 ```
@@ -131,6 +134,7 @@ spklu-sulawesi/
 |-- experiments/         # Skenario baseline dan sensitivitas
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
+|-- constraints.txt
 |-- release_manifest.json
 |-- run.py
 |-- requirements.txt
@@ -184,6 +188,8 @@ rilis lengkap tersedia pada
 [`docs/release_checklist.md`](docs/release_checklist.md).
 Cara kerja manifest dan audit kandidat rilis dijelaskan pada
 [`docs/release_audit.md`](docs/release_audit.md).
+Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
+[`docs/dependencies.md`](docs/dependencies.md).
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas

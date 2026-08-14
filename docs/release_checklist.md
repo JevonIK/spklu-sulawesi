@@ -12,6 +12,7 @@ pengambilan data penelitian tambahan.
 - [ ] Tidak ada `.env`, API key, ledger, atau `reports/generated/` dalam commit.
 - [ ] Versi pada health endpoint sama dengan versi aplikasi yang dilaporkan.
 - [ ] Definisi baseline dan sensitivitas tervalidasi serta ID skenario unik.
+- [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
 - [ ] Konektor sistem tetap CCS2; tipe konektor lain hanya informasi dataset.
 

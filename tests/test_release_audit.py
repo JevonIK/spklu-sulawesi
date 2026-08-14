@@ -21,8 +21,8 @@ def test_project_release_manifest_passes_all_checks(app):
 
     assert report["status"] == "passed"
     assert report["summary"] == {
-        "check_count": 21,
-        "passed_count": 21,
+        "check_count": 23,
+        "passed_count": 23,
         "failed_count": 0,
     }
     assert all(check["passed"] for check in report["checks"])
@@ -51,6 +51,25 @@ def test_release_audit_reports_version_and_quota_mismatch(app):
         "application.version",
         "quota.GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT",
     }
+
+
+def test_release_audit_detects_constraints_hash_mismatch(app):
+    manifest_path = Path(app.config["RELEASE_MANIFEST_PATH"])
+    manifest = load_release_manifest(manifest_path)
+    manifest["dependencies"]["sha256"] = "0" * 64
+
+    report = audit_release(
+        manifest,
+        project_root=manifest_path.parent,
+        app_version=app.config["APP_VERSION"],
+        catalog=app.extensions["station_catalog"],
+        config=app.config,
+    )
+
+    failed = [check for check in report["checks"] if not check["passed"]]
+    assert [check["id"] for check in failed] == [
+        "dependencies.constraints_sha256"
+    ]
 
 
 def test_release_manifest_rejects_unknown_schema(tmp_path):

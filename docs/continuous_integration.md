@@ -9,7 +9,7 @@ dan 3.13 sesuai versi yang didukung proyek.
 Setiap job melakukan:
 
 1. checkout source code tanpa mempertahankan kredensial Git;
-2. instalasi `requirements-dev.txt` dan `pip check`;
+2. instalasi `requirements-dev.txt` dengan `constraints.txt` dan `pip check`;
 3. seluruh test dengan batas coverage minimum 90%;
 4. kompilasi modul Python; dan
 5. audit manifest kandidat rilis; dan
@@ -21,7 +21,7 @@ bahwa CI tidak bergantung pada `.env`, secret, billing, ataupun koneksi ke Googl
 Maps API. Tidak ada eksperimen live di dalam workflow.
 
 Audit manifest memeriksa versi, dataset, ruang lingkup algoritma, seluruh
-skenario penelitian, dan hard limit quota. Rinciannya tersedia pada
+skenario penelitian, hard limit quota, dan hash dependency lock. Rinciannya tersedia pada
 [`release_audit.md`](release_audit.md).
 
 Workflow menggunakan major release `actions/checkout@v6` dan

@@ -35,7 +35,7 @@ hostname produksi:
 
 ```bash
 source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt -c constraints.txt
 APP_ENV=development PORT=8000 gunicorn --config gunicorn.conf.py wsgi:app
 ```
 
@@ -58,6 +58,11 @@ docker run --rm -p 8080:8080 \
   --env-file .env.production \
   spklu-sulawesi:0.12.0
 ```
+
+Base Python dapat diuji secara eksplisit dengan
+`--build-arg PYTHON_VERSION=3.11` atau `3.13`. Image produksi kandidat tetap
+memakai default Python 3.12. Seluruh instalasi memakai `constraints.txt` yang
+hash-nya dikunci oleh manifest rilis.
 
 Build kandidat rilis dapat memakai suffix sementara, misalnya
 `spklu-sulawesi:0.12.0-rc1`. Jangan push image ke registry sebelum CI hijau,

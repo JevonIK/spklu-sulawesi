@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -91,6 +92,20 @@ def validate_release_manifest(manifest):
     if not SHA256_PATTERN.fullmatch(_text(dataset, "sha256", "root.dataset")):
         raise ReleaseManifestError("root.dataset.sha256 tidak valid.")
 
+    dependencies = _mapping(
+        manifest.get("dependencies"),
+        "root.dependencies",
+    )
+    _relative_path(
+        dependencies,
+        "constraints_path",
+        "root.dependencies",
+    )
+    if not SHA256_PATTERN.fullmatch(
+        _text(dependencies, "sha256", "root.dependencies")
+    ):
+        raise ReleaseManifestError("root.dependencies.sha256 tidak valid.")
+
     algorithm = _mapping(manifest.get("algorithm"), "root.algorithm")
     _text(algorithm, "required_connector", "root.algorithm")
     if not isinstance(algorithm.get("charging_time_included"), bool):
@@ -169,6 +184,29 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         "python.runtime_supported",
         True,
         runtime_python in manifest["supported_python_versions"],
+    )
+
+    dependencies = manifest["dependencies"]
+    constraints_path = (
+        project_root / dependencies["constraints_path"]
+    ).resolve()
+    constraints_exists = constraints_path.is_file()
+    _add_check(
+        checks,
+        "dependencies.constraints_exists",
+        True,
+        constraints_exists,
+    )
+    actual_constraints_sha256 = (
+        hashlib.sha256(constraints_path.read_bytes()).hexdigest()
+        if constraints_exists
+        else None
+    )
+    _add_check(
+        checks,
+        "dependencies.constraints_sha256",
+        dependencies["sha256"],
+        actual_constraints_sha256,
     )
 
     dataset = manifest["dataset"]

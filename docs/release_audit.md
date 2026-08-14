@@ -20,6 +20,7 @@ dibaca oleh CI.
 `release_manifest.json` mengunci identitas kandidat rilis berikut:
 
 - versi aplikasi dan versi Python yang didukung;
+- keberadaan serta SHA-256 `constraints.txt`;
 - path, jumlah baris, jumlah node logis, dan SHA-256 dataset;
 - konektor algoritma CCS2 dan ketiadaan estimasi waktu pengisian;
 - path serta jumlah skenario baseline/sensitivitas; dan
