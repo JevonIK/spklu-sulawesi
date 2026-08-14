@@ -30,6 +30,7 @@ python -m flask --app run.py release-audit
 - [ ] Seluruh test lulus.
 - [ ] Coverage total minimal 90%.
 - [ ] CI GitHub hijau pada Python 3.11, 3.12, dan 3.13.
+- [ ] Job CI `Container smoke test` hijau tanpa jaringan eksternal.
 - [ ] Health endpoint, validasi input, security headers, dan error handling lulus.
 - [ ] Referensi API dan panduan pengguna sesuai dengan versi kandidat rilis.
 

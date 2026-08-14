@@ -42,6 +42,9 @@ gate pada seluruh matrix CI.
 Fase 11 mengunci dependency langsung dan transitif lintas Python 3.11–3.13,
 memasukkan hash constraint ke manifest, dan memverifikasi instalasi container
 pada ketiga runtime.
+Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
+tanpa jaringan eksternal, healthcheck terbatas, audit rilis, user non-root, dan
+uji tulis direktori persisten.
 
 ## Ruang lingkup sistem
 

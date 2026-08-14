@@ -6,7 +6,7 @@ dan 3.13 sesuai versi yang didukung proyek.
 
 ## Pemeriksaan otomatis
 
-Setiap job melakukan:
+Setiap job matrix Python melakukan:
 
 1. checkout source code tanpa mempertahankan kredensial Git;
 2. instalasi `requirements-dev.txt` dengan `constraints.txt` dan `pip check`;
@@ -14,6 +14,15 @@ Setiap job melakukan:
 4. kompilasi modul Python; dan
 5. audit manifest kandidat rilis; dan
 6. pemeriksaan sintaks JavaScript.
+
+Setelah ketiga job Python lulus, job **Container smoke test**:
+
+1. membangun image kandidat dengan Python 3.12 dan dependency lock;
+2. menjalankan container dengan `--network none` serta dummy key;
+3. menunggu Docker healthcheck dengan batas maksimum 60 detik;
+4. memvalidasi health JSON dan menjalankan audit rilis di dalam container;
+5. memastikan proses bukan root; dan
+6. menguji akses tulis lalu membersihkan berkas serta container sementara.
 
 Fixture test menggunakan dummy API key dan ledger pada direktori sementara.
 Workflow sengaja mengosongkan environment variable Google Maps untuk membuktikan
@@ -33,7 +42,8 @@ Workflow menggunakan major release `actions/checkout@v6` dan
 
 1. Buka tab **Actions** pada repository.
 2. Pilih workflow **Validasi aplikasi**.
-3. Pastikan job Python 3.11, 3.12, dan 3.13 berwarna hijau.
+3. Pastikan job Python 3.11, Python 3.12, Python 3.13, dan
+   **Container smoke test** berwarna hijau.
 4. Buka setiap job jika ada kegagalan dan baca langkah pertama yang merah.
 5. Jangan menambahkan API key sebagai solusi kegagalan CI; test harus tetap
    berjalan tanpa secret.
@@ -45,7 +55,8 @@ Setelah workflow pertama berhasil:
 1. buka **Settings → Branches** atau **Rules → Rulesets**;
 2. buat aturan untuk branch utama (`main` atau nama branch utama repository);
 3. aktifkan kewajiban status checks sebelum merge;
-4. pilih ketiga check `Python 3.11`, `Python 3.12`, dan `Python 3.13`; dan
+4. pilih check `Python 3.11`, `Python 3.12`, `Python 3.13`, dan
+   `Container smoke test`; dan
 5. jangan aktifkan deployment otomatis yang memakai billing sebelum environment
    produksi serta approval manual tersedia.
 

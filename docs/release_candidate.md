@@ -50,7 +50,8 @@ Dependency lock yang sama berhasil dipasang pada image Python 3.11, 3.12, dan
 3.13. Ketiganya menjalankan NumPy 2.3.5, SciPy 1.16.3, serta lulus audit 23/23.
 
 GitHub Actions harus tetap diperiksa setelah push karena keberhasilan simulasi
-lokal tidak menggantikan hasil runner GitHub untuk Python 3.11 dan 3.13.
+lokal tidak menggantikan hasil runner GitHub untuk Python 3.11, Python 3.13,
+dan job container tanpa jaringan eksternal.
 
 ## Bukti penelitian
 

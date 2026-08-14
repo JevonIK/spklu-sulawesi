@@ -64,3 +64,84 @@ jobs:
 
       - name: Periksa sintaks JavaScript
         run: node --check app/static/js/app.js
+
+  container-smoke:
+    name: Container smoke test
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IMAGE_NAME: spklu-sulawesi:ci
+      CONTAINER_NAME: spklu-sulawesi-ci
+    steps:
+      - name: Ambil source code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Bangun image kandidat
+        run: >-
+          docker build
+          --build-arg PYTHON_VERSION=3.12
+          --tag "${IMAGE_NAME}"
+          .
+
+      - name: Jalankan container tanpa jaringan eksternal
+        run: |
+          docker run --rm --detach \
+            --network none \
+            --name "${CONTAINER_NAME}" \
+            --env SECRET_KEY=dummy-production-secret-key-32-chars-minimum \
+            --env GOOGLE_MAPS_BROWSER_API_KEY=dummy-browser-key \
+            --env GOOGLE_MAPS_SERVER_API_KEY=dummy-server-key \
+            --env GOOGLE_MAPS_MAP_ID=dummy-map-id \
+            --env TRUSTED_HOSTS=127.0.0.1,localhost \
+            --env PUBLIC_CONTACT_EMAIL=admin@example.test \
+            --env WEB_CONCURRENCY=1 \
+            "${IMAGE_NAME}"
+
+      - name: Tunggu healthcheck terbatas
+        run: |
+          status=starting
+          for attempt in $(seq 1 60); do
+            status=$(docker inspect \
+              --format='{{.State.Health.Status}}' \
+              "${CONTAINER_NAME}")
+            if [ "${status}" = "healthy" ]; then
+              break
+            fi
+            if [ "${status}" = "unhealthy" ]; then
+              exit 1
+            fi
+            sleep 1
+          done
+          test "${status}" = "healthy"
+
+      - name: Verifikasi health response
+        run: |
+          docker exec "${CONTAINER_NAME}" python -c \
+            "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3).read().decode())" \
+            > container-health.json
+          python -c \
+            "import json; data=json.load(open('container-health.json')); assert data['status']=='ok'; assert data['version']=='0.12.0'; assert data['data']['dataset']['logical_nodes']==149"
+
+      - name: Jalankan audit rilis dalam container
+        run: |
+          docker exec "${CONTAINER_NAME}" \
+            python -m flask --app run.py release-audit \
+            > container-release-audit.json
+          python -c \
+            "import json; data=json.load(open('container-release-audit.json')); assert data['status']=='passed'; assert data['summary']['failed_count']==0"
+
+      - name: Periksa user dan direktori runtime
+        run: |
+          user_id=$(docker exec "${CONTAINER_NAME}" id -u)
+          test "${user_id}" != "0"
+          docker exec "${CONTAINER_NAME}" python -c \
+            "from pathlib import Path; path=Path('/app/reports/generated/ci-write-test'); path.write_text('ok'); path.unlink()"
+
+      - name: Tampilkan log dan bersihkan container
+        if: always()
+        run: |
+          docker logs "${CONTAINER_NAME}" || true
+          docker stop "${CONTAINER_NAME}" || true
