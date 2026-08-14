@@ -46,6 +46,12 @@ validasi Google Routes pada rekomendasi yang panjang.
 
 ## Membangun dan menjalankan container
 
+Sebelum membangun image, jalankan audit kandidat rilis tanpa API live:
+
+```bash
+python -m flask --app run.py release-audit
+```
+
 ```bash
 docker build -t spklu-sulawesi:0.12.0 .
 docker run --rm -p 8080:8080 \

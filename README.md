@@ -36,6 +36,9 @@ Fase 8 menambahkan continuous integration pada tiga versi Python, test yang
 terisolasi dari secret lokal, batas coverage, dan checklist rilis penelitian.
 Fase 9 menerapkan ledger dan hard limit Routes API pada endpoint rekomendasi,
 termasuk pencatatan attempt aktual serta penolakan request live paralel.
+Fase 10 menambahkan manifest kandidat rilis, audit offline atas dataset,
+skenario, ruang lingkup algoritma dan hard limit, serta menjadikannya quality
+gate pada seluruh matrix CI.
 
 ## Ruang lingkup sistem
 
@@ -97,6 +100,12 @@ Periksa sisa kuota yang tercatat sebelum menjalankan eksperimen:
 python -m flask --app run.py quota-status
 ```
 
+Audit kandidat rilis tanpa menggunakan Google Maps API:
+
+```bash
+python -m flask --app run.py release-audit
+```
+
 Definisi metrik, skenario sensitivitas, dan cara membaca laporan dijelaskan pada
 [`docs/evaluation.md`](docs/evaluation.md).
 
@@ -122,6 +131,7 @@ spklu-sulawesi/
 |-- experiments/         # Skenario baseline dan sensitivitas
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
+|-- release_manifest.json
 |-- run.py
 |-- requirements.txt
 `-- requirements-dev.txt
@@ -172,6 +182,8 @@ Workflow CI tanpa secret dan cara mengaktifkan branch protection dijelaskan pada
 [`docs/continuous_integration.md`](docs/continuous_integration.md). Checklist
 rilis lengkap tersedia pada
 [`docs/release_checklist.md`](docs/release_checklist.md).
+Cara kerja manifest dan audit kandidat rilis dijelaskan pada
+[`docs/release_audit.md`](docs/release_audit.md).
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas

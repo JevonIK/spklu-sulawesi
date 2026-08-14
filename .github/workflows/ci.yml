@@ -58,5 +58,8 @@ jobs:
       - name: Periksa kompilasi Python
         run: python -m compileall -q app tests
 
+      - name: Audit kandidat rilis offline
+        run: python -m flask --app run.py release-audit
+
       - name: Periksa sintaks JavaScript
         run: node --check app/static/js/app.js

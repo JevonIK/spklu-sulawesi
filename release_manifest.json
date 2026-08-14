@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "application_version": "0.12.0",
+  "supported_python_versions": [
+    "3.11",
+    "3.12",
+    "3.13"
+  ],
+  "dataset": {
+    "path": "dataset_spklu_sulawesi.csv",
+    "source_rows": 150,
+    "logical_nodes": 149,
+    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+  },
+  "algorithm": {
+    "required_connector": "CCS2",
+    "charging_time_included": false
+  },
+  "experiments": [
+    {
+      "path": "experiments/scenarios_baseline.json",
+      "scenario_count": 6
+    },
+    {
+      "path": "experiments/scenarios_sensitivity.json",
+      "scenario_count": 7
+    }
+  ],
+  "quota_limits": {
+    "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,
+    "GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT": 30,
+    "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT": 2000,
+    "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT": 625,
+    "GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST": 2,
+    "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST": 625
+  }
+}

@@ -23,6 +23,7 @@ python -m pip check
 pytest -q --cov=app --cov-report=term-missing --cov-fail-under=90
 python -m compileall -q app tests
 node --check app/static/js/app.js
+python -m flask --app run.py release-audit
 ```
 
 - [ ] Seluruh test lulus.
@@ -30,6 +31,11 @@ node --check app/static/js/app.js
 - [ ] CI GitHub hijau pada Python 3.11, 3.12, dan 3.13.
 - [ ] Health endpoint, validasi input, security headers, dan error handling lulus.
 - [ ] Referensi API dan panduan pengguna sesuai dengan versi kandidat rilis.
+
+Command `release-audit` mencakup identitas versi, dataset, CCS2, ketiadaan waktu
+pengisian, definisi skenario, ID unik, dan hard limit. Item yang bergantung pada
+isi commit, GitHub, deployment, atau Google Cloud tetap diperiksa manual. Lihat
+[`release_audit.md`](release_audit.md) untuk batas pemeriksaannya.
 
 ## Konfigurasi deployment
 

@@ -16,6 +16,7 @@ from .services.evaluation import (
     write_experiment_report,
 )
 from .services.quota_ledger import GoogleRoutesQuotaLedger, QuotaLedgerError
+from .services.release_audit import ReleaseManifestError, run_release_audit
 
 
 def _quota_ledger():
@@ -44,6 +45,27 @@ def dataset_summary_command():
 
     catalog = current_app.extensions["station_catalog"]
     click.echo(json.dumps(catalog.summary(), ensure_ascii=False, indent=2))
+
+
+@click.command("release-audit")
+@with_appcontext
+def release_audit_command():
+    """Memverifikasi kandidat rilis secara offline tanpa Google Maps API."""
+
+    try:
+        report = run_release_audit(
+            current_app.config["RELEASE_MANIFEST_PATH"],
+            app_version=current_app.config["APP_VERSION"],
+            catalog=current_app.extensions["station_catalog"],
+            config=current_app.config,
+        )
+    except (ReleaseManifestError, OSError, ValueError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps(report, ensure_ascii=False, indent=2))
+    if report["status"] != "passed":
+        raise click.ClickException(
+            f"Audit rilis gagal pada {report['summary']['failed_count']} check."
+        )
 
 
 @click.command("experiment-run")
@@ -388,6 +410,7 @@ def quota_recover_command(
 
 def register_commands(app):
     app.cli.add_command(dataset_summary_command)
+    app.cli.add_command(release_audit_command)
     app.cli.add_command(experiment_run_command)
     app.cli.add_command(quota_status_command)
     app.cli.add_command(quota_import_report_command)

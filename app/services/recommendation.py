@@ -6,6 +6,7 @@ import math
 import uuid
 from dataclasses import dataclass
 
+from ..constants import REQUIRED_CONNECTOR
 from .dataset import normalize_connector
 from .energy import EnergyParameters
 from .graph import build_travel_graph
@@ -16,10 +17,6 @@ from .spatial import (
     find_corridor_candidates,
     normalize_coordinate,
 )
-
-
-REQUIRED_CONNECTOR = "CCS2"
-
 
 class RecommendationValidationError(ValueError):
     """Kesalahan input pengguna yang dapat dikembalikan sebagai HTTP 400."""

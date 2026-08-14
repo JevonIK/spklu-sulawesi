@@ -65,6 +65,7 @@ class Config:
     DATASET_PATH = _resolve_project_path(
         os.getenv("DATASET_PATH", "dataset_spklu_sulawesi.csv")
     )
+    RELEASE_MANIFEST_PATH = BASE_DIR / "release_manifest.json"
 
     DEFAULT_SOC_MIN = _env_float("DEFAULT_SOC_MIN", 20)
     DEFAULT_SOC_TARGET = _env_float("DEFAULT_SOC_TARGET", 80)

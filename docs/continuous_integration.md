@@ -12,12 +12,17 @@ Setiap job melakukan:
 2. instalasi `requirements-dev.txt` dan `pip check`;
 3. seluruh test dengan batas coverage minimum 90%;
 4. kompilasi modul Python; dan
-5. pemeriksaan sintaks JavaScript.
+5. audit manifest kandidat rilis; dan
+6. pemeriksaan sintaks JavaScript.
 
 Fixture test menggunakan dummy API key dan ledger pada direktori sementara.
 Workflow sengaja mengosongkan environment variable Google Maps untuk membuktikan
 bahwa CI tidak bergantung pada `.env`, secret, billing, ataupun koneksi ke Google
 Maps API. Tidak ada eksperimen live di dalam workflow.
+
+Audit manifest memeriksa versi, dataset, ruang lingkup algoritma, seluruh
+skenario penelitian, dan hard limit quota. Rinciannya tersedia pada
+[`release_audit.md`](release_audit.md).
 
 Workflow menggunakan major release `actions/checkout@v6` dan
 `actions/setup-python@v6`. Versi tersebut mengikuti dokumentasi resmi repository
