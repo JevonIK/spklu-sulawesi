@@ -28,6 +28,12 @@ def _quota_ledger():
         daily_matrix_element_limit=current_app.config[
             "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT"
         ],
+        compute_routes_per_minute_limit=current_app.config[
+            "GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT"
+        ],
+        matrix_elements_per_minute_limit=current_app.config[
+            "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT"
+        ],
     )
 
 
@@ -140,7 +146,9 @@ def experiment_run_command(
             "Tambahkan --confirm-live-api setelah memeriksa skenario dan "
             "kuota Google Routes API."
         )
-    service = current_app.extensions.get("recommendation_service")
+    service = current_app.extensions.get(
+        "experiment_recommendation_service"
+    ) or current_app.extensions.get("recommendation_service")
     if service is None:
         raise click.ClickException(
             "GOOGLE_MAPS_SERVER_API_KEY belum dikonfigurasi."
@@ -173,6 +181,7 @@ def experiment_run_command(
             label=report_label,
             maximum_compute_routes=max_compute_routes,
             maximum_matrix_elements=max_matrix_elements,
+            require_clear_per_minute_window=True,
         )
         with routes_client.request_budget(
             maximum_compute_routes=max_compute_routes,

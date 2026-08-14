@@ -1,8 +1,9 @@
 # Kebijakan hard limit Google Maps API
 
 Kebijakan ini berlaku untuk seluruh pengujian live proyek. Nilai di Google Cloud
-Console harus menjadi pengaman utama karena ledger aplikasi hanya mencatat
-eksperimen Routes API melalui CLI.
+Console tetap menjadi pengaman utama. Ledger aplikasi mencatat eksperimen CLI
+dan endpoint rekomendasi yang memakai Routes API, tetapi tidak dapat mencatat
+request browser.
 
 ## Batas aktif
 
@@ -48,6 +49,16 @@ kegagalan jaringan dihitung secara konservatif.
 ```bash
 python -m flask --app run.py quota-status
 ```
+
+Endpoint rekomendasi mereservasi maksimal 2 Compute Routes dan 625 elemen Matrix
+sebelum menjalankan pipeline. Reservasi diganti dengan attempt aktual saat
+selesai atau gagal. Request paralel ditolak HTTP 429 agar beberapa worker tidak
+menghabiskan quota per menit secara bersamaan. Ledger juga mempertahankan
+pemakaian selesai selama rolling window 60 detik; request berurutan ditolak jika
+reservasi maksimum berikutnya tidak muat dalam sisa window. Eksperimen CLI yang
+memiliki pacing internal hanya dapat dimulai saat rolling window bersama tersebut
+sudah bersih, sehingga pemakaian endpoint web sebelumnya tidak tumpang tindih
+dengan batch pertama eksperimen.
 
 ## Pengujian browser
 

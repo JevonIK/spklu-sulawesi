@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import math
+import uuid
 from dataclasses import dataclass
 
 from .dataset import normalize_connector
 from .energy import EnergyParameters
 from .graph import build_travel_graph
 from .optimizer import optimize_itinerary
+from .quota_ledger import QuotaLedgerError
 from .spatial import (
     RouteGeometry,
     find_corridor_candidates,
@@ -25,6 +27,10 @@ class RecommendationValidationError(ValueError):
     def __init__(self, field, message):
         super().__init__(message)
         self.field = field
+
+
+class RecommendationQuotaError(RuntimeError):
+    """Budget lokal tidak mengizinkan request rekomendasi baru."""
 
 
 def _mapping(value, field):
@@ -295,3 +301,130 @@ class RecommendationService:
                 ),
             },
         }
+
+
+class QuotaProtectedRecommendationService:
+    """Membatasi dan mencatat pemakaian Routes API pada endpoint publik."""
+
+    def __init__(
+        self,
+        service,
+        *,
+        quota_ledger,
+        maximum_compute_routes,
+        maximum_compute_routes_per_minute,
+        maximum_matrix_elements,
+        maximum_matrix_elements_per_minute,
+    ):
+        routes_client = getattr(service, "routes_client", None)
+        if routes_client is None or not hasattr(
+            routes_client,
+            "request_budget",
+        ):
+            raise ValueError(
+                "Service rekomendasi memerlukan client dengan budget quota."
+            )
+        self.service = service
+        self.routes_client = routes_client
+        self.quota_ledger = quota_ledger
+        self.maximum_compute_routes = maximum_compute_routes
+        self.maximum_compute_routes_per_minute = (
+            maximum_compute_routes_per_minute
+        )
+        self.maximum_matrix_elements = maximum_matrix_elements
+        self.maximum_matrix_elements_per_minute = (
+            maximum_matrix_elements_per_minute
+        )
+
+    def parse_input(self, payload):
+        return self.service.parse_input(payload)
+
+    @staticmethod
+    def _quota_payload(status, budget):
+        usage = budget.snapshot()
+        return {
+            "date": status["date"],
+            "timezone": status["timezone"],
+            "compute_routes_attempt_count": usage[
+                "compute_routes_attempt_count"
+            ],
+            "matrix_request_attempt_count": usage[
+                "matrix_request_attempt_count"
+            ],
+            "matrix_element_attempt_count": usage[
+                "matrix_element_attempt_count"
+            ],
+            "daily_compute_routes_used": status["actual_compute_routes"],
+            "daily_compute_routes_remaining": status[
+                "available_compute_routes"
+            ],
+            "daily_matrix_elements_used": status[
+                "actual_matrix_elements"
+            ],
+            "daily_matrix_elements_remaining": status[
+                "available_matrix_elements"
+            ],
+            "compute_routes_remaining_this_minute": status[
+                "available_compute_routes_this_minute"
+            ],
+            "matrix_elements_remaining_this_minute": status[
+                "available_matrix_elements_this_minute"
+            ],
+        }
+
+    def recommend(self, recommendation_input):
+        request_id = f"web-{uuid.uuid4().hex}"
+        try:
+            reservation = self.quota_ledger.reserve(
+                label=request_id,
+                maximum_compute_routes=self.maximum_compute_routes,
+                maximum_matrix_elements=self.maximum_matrix_elements,
+                enforce_per_minute_capacity=True,
+            )
+        except QuotaLedgerError as error:
+            raise RecommendationQuotaError(
+                "Quota rekomendasi sedang tidak tersedia. Coba kembali "
+                "setelah request aktif selesai atau quota harian direset."
+            ) from error
+
+        budget = None
+        try:
+            with self.routes_client.request_budget(
+                maximum_compute_routes=self.maximum_compute_routes,
+                maximum_compute_routes_per_minute=(
+                    self.maximum_compute_routes_per_minute
+                ),
+                maximum_compute_routes_per_scenario=(
+                    self.maximum_compute_routes
+                ),
+                maximum_matrix_elements=self.maximum_matrix_elements,
+                maximum_matrix_elements_per_minute=(
+                    self.maximum_matrix_elements_per_minute
+                ),
+            ) as budget:
+                with self.routes_client.quota_scenario(request_id):
+                    result = self.service.recommend(recommendation_input)
+        except Exception:
+            usage = budget.snapshot() if budget is not None else {}
+            self.quota_ledger.finalize(
+                reservation["reservation_id"],
+                compute_routes_attempt_count=usage.get(
+                    "compute_routes_attempt_count",
+                    0,
+                ),
+                matrix_element_attempt_count=usage.get(
+                    "matrix_element_attempt_count",
+                    0,
+                ),
+                outcome="failed",
+            )
+            raise
+
+        status = self.quota_ledger.finalize(
+            reservation["reservation_id"],
+            compute_routes_attempt_count=budget.compute_routes_attempt_count,
+            matrix_element_attempt_count=budget.matrix_element_attempt_count,
+            outcome="completed",
+        )
+        result["quota_guard"] = self._quota_payload(status, budget)
+        return result

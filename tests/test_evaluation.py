@@ -13,6 +13,7 @@ from app.services.evaluation import (
 )
 from app.services.dataset import load_station_catalog
 from app.services.google_routes import GoogleRoutesClient
+from app.services.quota_ledger import GoogleRoutesQuotaLedger
 
 
 def scenario(scenario_id="skenario-uji"):
@@ -294,7 +295,9 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
         json.dumps(definition(), ensure_ascii=False),
         encoding="utf-8",
     )
-    app.extensions["recommendation_service"] = FakeEvaluationService()
+    fake_service = FakeEvaluationService()
+    app.extensions["recommendation_service"] = fake_service
+    app.extensions["experiment_recommendation_service"] = fake_service
     app.config["GOOGLE_QUOTA_LEDGER_PATH"] = tmp_path / "quota-ledger.json"
     runner = app.test_cli_runner()
 
@@ -322,7 +325,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-        "app_version": "0.11.0",
+        "app_version": "0.12.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,
@@ -353,9 +356,11 @@ def test_experiment_cli_reports_scenario_errors_as_failed(app, tmp_path):
         json.dumps(definition(), ensure_ascii=False),
         encoding="utf-8",
     )
-    app.extensions["recommendation_service"] = FakeEvaluationService(
+    fake_service = FakeEvaluationService(
         error=RuntimeError("upstream tidak tersedia")
     )
+    app.extensions["recommendation_service"] = fake_service
+    app.extensions["experiment_recommendation_service"] = fake_service
     ledger_path = tmp_path / "error-quota-ledger.json"
     app.config["GOOGLE_QUOTA_LEDGER_PATH"] = ledger_path
     runner = app.test_cli_runner()
@@ -385,3 +390,45 @@ def test_experiment_cli_reports_scenario_errors_as_failed(app, tmp_path):
     assert runs[0]["outcome"] == "failed"
     assert runs[0]["source_sha256"]
     assert (tmp_path / "cli-error.csv").exists()
+
+
+def test_experiment_cli_waits_for_shared_rolling_window(app, tmp_path):
+    scenario_path = tmp_path / "scenarios.json"
+    scenario_path.write_text(
+        json.dumps(definition(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    fake_service = FakeEvaluationService()
+    app.extensions["recommendation_service"] = fake_service
+    app.extensions["experiment_recommendation_service"] = fake_service
+    ledger_path = tmp_path / "shared-quota-ledger.json"
+    app.config["GOOGLE_QUOTA_LEDGER_PATH"] = ledger_path
+    quota = GoogleRoutesQuotaLedger(ledger_path)
+    reservation = quota.reserve(
+        label="web-sebelumnya",
+        maximum_compute_routes=2,
+        maximum_matrix_elements=625,
+    )
+    quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=1,
+        matrix_element_attempt_count=25,
+        outcome="completed",
+    )
+
+    result = app.test_cli_runner().invoke(
+        args=[
+            "experiment-run",
+            "--scenarios",
+            str(scenario_path),
+            "--output-dir",
+            str(tmp_path),
+            "--label",
+            "cli-setelah-web",
+            "--confirm-live-api",
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Rolling window quota belum bersih" in result.output
+    assert not (tmp_path / "cli-setelah-web.json").exists()

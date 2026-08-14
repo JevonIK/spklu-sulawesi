@@ -1,6 +1,7 @@
 from app import create_app
 from app.services.google_routes import GoogleRoutesError
 from app.services.recommendation import RecommendationValidationError
+from app.services.recommendation import RecommendationQuotaError
 
 
 class FakeRecommendationService:
@@ -77,6 +78,18 @@ def test_recommendation_endpoint_converts_google_error(app, client):
 
     assert response.status_code == 502
     assert response.get_json()["error"]["code"] == "quota_exceeded"
+
+
+def test_recommendation_endpoint_returns_local_quota_as_429(app, client):
+    app.extensions["recommendation_service"] = FakeRecommendationService(
+        recommend_error=RecommendationQuotaError("quota lokal habis")
+    )
+
+    response = client.post("/api/recommendations", json={})
+
+    assert response.status_code == 429
+    assert response.get_json()["error"]["code"] == "local_quota_exceeded"
+    assert response.headers["Retry-After"] == "60"
 
 
 def test_recommendation_endpoint_reports_missing_server_key():

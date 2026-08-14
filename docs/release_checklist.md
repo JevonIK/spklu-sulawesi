@@ -41,6 +41,9 @@ node --check app/static/js/app.js
 - [ ] Folder ledger menggunakan volume persisten jika eksperimen dijalankan di
   container.
 - [ ] Reverse proxy/gateway memiliki rate limit untuk endpoint rekomendasi.
+- [ ] Ledger persisten mencatat eksperimen CLI dan rekomendasi web pada satu
+  instance aplikasi.
+- [ ] Hard cap web tetap 2 Compute Routes dan 625 elemen Matrix per request.
 
 ## Sebelum tindakan live
 

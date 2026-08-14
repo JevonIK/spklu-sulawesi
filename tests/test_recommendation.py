@@ -1,9 +1,16 @@
+import json
+from contextlib import contextmanager
+
 import pytest
 
 from app.services.dataset import StationNode, StationUnit
+from app.services.google_routes import ApiQuotaBudget, ApiQuotaBudgetExceeded
 from app.services.google_routes import ComputedRoute
+from app.services.quota_ledger import GoogleRoutesQuotaLedger
 from app.services.recommendation import (
+    QuotaProtectedRecommendationService,
     RecommendationInput,
+    RecommendationQuotaError,
     RecommendationService,
     RecommendationValidationError,
 )
@@ -89,6 +96,70 @@ class PipelineRoutesClient:
             external_request_count=1 if requests else 0,
         )
 
+
+class BudgetTestRoutesClient:
+    def __init__(self):
+        self.active_budget = None
+
+    @contextmanager
+    def request_budget(self, **options):
+        self.active_budget = ApiQuotaBudget(**options)
+        try:
+            yield self.active_budget
+        finally:
+            self.active_budget = None
+
+    @contextmanager
+    def quota_scenario(self, scenario_id):
+        with self.active_budget.scenario(scenario_id):
+            yield
+
+
+class BudgetTestRecommendationService:
+    def __init__(
+        self,
+        *,
+        compute_routes=1,
+        matrix_elements=3,
+        error=None,
+    ):
+        self.routes_client = BudgetTestRoutesClient()
+        self.compute_routes = compute_routes
+        self.matrix_elements = matrix_elements
+        self.error = error
+
+    def parse_input(self, payload):
+        return payload
+
+    def recommend(self, recommendation_input):
+        for _ in range(self.compute_routes):
+            self.routes_client.active_budget.consume_compute_routes()
+        if self.matrix_elements:
+            self.routes_client.active_budget.consume_matrix_elements(
+                self.matrix_elements
+            )
+        if self.error:
+            raise self.error
+        return {"api_usage": {"simulated": True}}
+
+
+def protected_service(tmp_path, service, **overrides):
+    ledger = GoogleRoutesQuotaLedger(tmp_path / "web-quota.json")
+    options = {
+        "maximum_compute_routes": 2,
+        "maximum_compute_routes_per_minute": 30,
+        "maximum_matrix_elements": 625,
+        "maximum_matrix_elements_per_minute": 625,
+    }
+    options.update(overrides)
+    return (
+        QuotaProtectedRecommendationService(
+            service,
+            quota_ledger=ledger,
+            **options,
+        ),
+        ledger,
+    )
 
 def test_recommendation_input_uses_defaults_and_requires_ccs2():
     parsed = RecommendationInput.from_payload(
@@ -186,3 +257,105 @@ def test_direct_route_reuses_base_route_without_second_compute_call():
     assert result["api_usage"]["compute_routes_requests"] == 1
     assert len(routes_client.compute_route_calls) == 1
     assert result["recommended_route"] == result["base_route"]
+
+
+def test_web_quota_guard_records_actual_usage_and_returns_status(tmp_path):
+    protected, ledger = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(
+            compute_routes=2,
+            matrix_elements=105,
+        ),
+    )
+
+    result = protected.recommend({"valid": True})
+
+    guard = result["quota_guard"]
+    assert guard["compute_routes_attempt_count"] == 2
+    assert guard["matrix_request_attempt_count"] == 1
+    assert guard["matrix_element_attempt_count"] == 105
+    assert guard["daily_compute_routes_used"] == 2
+    assert guard["daily_compute_routes_remaining"] == 98
+    assert guard["daily_matrix_elements_used"] == 105
+    assert guard["daily_matrix_elements_remaining"] == 1895
+    assert guard["compute_routes_remaining_this_minute"] == 28
+    assert guard["matrix_elements_remaining_this_minute"] == 520
+    raw = json.loads(ledger.path.read_text())
+    run = next(iter(raw["days"].values()))["runs"][0]
+    assert run["outcome"] == "completed"
+
+
+def test_web_quota_guard_records_failed_attempts(tmp_path):
+    protected, ledger = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(
+            compute_routes=1,
+            matrix_elements=4,
+            error=RuntimeError("pipeline gagal"),
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="pipeline gagal"):
+        protected.recommend({"valid": True})
+
+    raw = json.loads(ledger.path.read_text())
+    run = next(iter(raw["days"].values()))["runs"][0]
+    assert run["outcome"] == "failed"
+    assert run["compute_routes_attempt_count"] == 1
+    assert run["matrix_element_attempt_count"] == 4
+    assert ledger.status()["active_reservation_count"] == 0
+
+
+def test_web_quota_guard_stops_before_per_request_limit(tmp_path):
+    protected, ledger = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(
+            compute_routes=3,
+            matrix_elements=0,
+        ),
+    )
+
+    with pytest.raises(ApiQuotaBudgetExceeded):
+        protected.recommend({"valid": True})
+
+    status = ledger.status()
+    assert status["actual_compute_routes"] == 2
+    assert status["actual_matrix_elements"] == 0
+
+
+def test_web_quota_guard_rejects_parallel_reservation(tmp_path):
+    protected, ledger = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(),
+    )
+    reservation = ledger.reserve(
+        label="request-lain",
+        maximum_compute_routes=2,
+        maximum_matrix_elements=625,
+    )
+
+    with pytest.raises(RecommendationQuotaError, match="tidak tersedia"):
+        protected.recommend({"valid": True})
+
+    ledger.recover(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=0,
+        matrix_element_attempt_count=0,
+        reason="reservasi test dibersihkan",
+    )
+
+
+def test_web_quota_guard_rejects_sequential_request_inside_minute(tmp_path):
+    protected, ledger = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(
+            compute_routes=2,
+            matrix_elements=105,
+        ),
+    )
+    protected.recommend({"request": 1})
+
+    with pytest.raises(RecommendationQuotaError):
+        protected.recommend({"request": 2})
+
+    assert ledger.status()["completed_or_failed_run_count"] == 1

@@ -39,6 +39,40 @@ def _validate_common_config(app):
         raise ProductionConfigurationError(
             "MAX_CONTENT_LENGTH harus berupa integer minimal 1.024 byte."
         )
+    quota_limits = {
+        "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,
+        "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT": 2000,
+        "GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT": 30,
+        "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT": 625,
+        "GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST": 2,
+        "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST": 625,
+    }
+    for name, maximum in quota_limits.items():
+        value = app.config.get(name)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not 1 <= value <= maximum
+        ):
+            raise ProductionConfigurationError(
+                f"{name} harus berupa integer 1 sampai {maximum}."
+            )
+    if (
+        app.config["GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST"]
+        > app.config["GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT"]
+    ):
+        raise ProductionConfigurationError(
+            "Batas Compute Routes per request tidak boleh melebihi batas "
+            "harian."
+        )
+    if (
+        app.config["GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST"]
+        > app.config["GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT"]
+    ):
+        raise ProductionConfigurationError(
+            "Batas elemen Matrix per request tidak boleh melebihi batas "
+            "harian."
+        )
 
 
 def _validate_production_config(app):

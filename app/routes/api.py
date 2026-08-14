@@ -2,8 +2,11 @@
 
 from flask import Blueprint, current_app, jsonify, request
 
-from ..services.google_routes import GoogleRoutesError
-from ..services.recommendation import RecommendationValidationError
+from ..services.google_routes import ApiQuotaBudgetExceeded, GoogleRoutesError
+from ..services.recommendation import (
+    RecommendationQuotaError,
+    RecommendationValidationError,
+)
 
 
 api_bp = Blueprint("api", __name__)
@@ -48,6 +51,22 @@ def health():
                 "recommendation_endpoint_ready": (
                     "recommendation_service" in current_app.extensions
                 ),
+                "quota_guard": {
+                    "enabled": (
+                        "google_routes_quota_ledger"
+                        in current_app.extensions
+                    ),
+                    "maximum_compute_routes_per_request": (
+                        current_app.config[
+                            "GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST"
+                        ]
+                    ),
+                    "maximum_matrix_elements_per_request": (
+                        current_app.config[
+                            "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST"
+                        ]
+                    ),
+                },
             },
         },
     }
@@ -116,6 +135,18 @@ def create_recommendation():
             ),
             400,
         )
+    except (ApiQuotaBudgetExceeded, RecommendationQuotaError) as error:
+        response = jsonify(
+            {
+                "status": "error",
+                "error": {
+                    "code": getattr(error, "code", "local_quota_exceeded"),
+                    "message": str(error),
+                },
+            }
+        )
+        response.headers["Retry-After"] = "60"
+        return response, 429
     except GoogleRoutesError as error:
         return (
             jsonify(

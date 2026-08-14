@@ -143,3 +143,32 @@ def test_production_enforces_host_cookie_and_hsts_configuration():
 def test_invalid_request_limit_is_rejected(invalid_limit):
     with pytest.raises(ProductionConfigurationError, match="MAX_CONTENT_LENGTH"):
         create_app(config_overrides={"MAX_CONTENT_LENGTH": invalid_limit})
+
+
+@pytest.mark.parametrize(
+    "name, value",
+    [
+        ("GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT", 101),
+        ("GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT", 2001),
+        ("GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT", 31),
+        ("GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT", 626),
+        ("GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST", 3),
+        ("GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST", 626),
+    ],
+)
+def test_google_routes_hard_limits_cannot_be_raised(name, value):
+    with pytest.raises(ProductionConfigurationError, match=name):
+        create_app(config_overrides={name: value})
+
+
+def test_web_reservation_cannot_exceed_lower_daily_limit():
+    with pytest.raises(
+        ProductionConfigurationError,
+        match="per request tidak boleh melebihi batas harian",
+    ):
+        create_app(
+            config_overrides={
+                "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT": 100,
+                "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST": 101,
+            }
+        )

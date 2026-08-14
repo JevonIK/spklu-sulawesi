@@ -64,6 +64,7 @@ batas aman kendaraan aktual.
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |
 | HTTP 503 | isi server key dan restart aplikasi |
 | HTTP 400 | perbaiki field yang disebut pada respons validasi |
+| HTTP 429 | tunggu request aktif selesai atau reset quota; jangan retry berulang |
 | HTTP 502 | periksa jaringan, Routes API, billing, restriction server key, dan quota |
 | Rute tidak feasible | baca reason dan statistik graf; ini dapat menjadi hasil penelitian yang valid |
 | Perhitungan lama | tunggu satu request selesai; kandidat/edge dan latensi Google memengaruhi waktu |

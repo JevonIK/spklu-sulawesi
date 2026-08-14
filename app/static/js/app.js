@@ -508,14 +508,43 @@ function renderDiagnostics(data) {
     const graph = data.graph;
     const stats = data.optimization.stats;
     const usage = data.api_usage;
-    elements.diagnosticList.replaceChildren(
+    const pairs = [
         ...diagnosticPair("Kandidat dalam koridor", data.candidate_summary.corridor_candidate_count),
         ...diagnosticPair("Node graf", graph.node_count),
         ...diagnosticPair("Edge graf diterima", graph.edge_count),
         ...diagnosticPair("State DP diproses", stats.processed_states),
         ...diagnosticPair("Elemen Route Matrix", usage.compute_route_matrix_elements),
         ...diagnosticPair("Total permintaan Google", usage.total_external_requests),
-    );
+    ];
+    if (data.quota_guard) {
+        pairs.push(
+            ...diagnosticPair(
+                "Attempt Compute Routes request ini",
+                data.quota_guard.compute_routes_attempt_count,
+            ),
+            ...diagnosticPair(
+                "Attempt elemen Matrix request ini",
+                data.quota_guard.matrix_element_attempt_count,
+            ),
+            ...diagnosticPair(
+                "Sisa Compute Routes harian",
+                data.quota_guard.daily_compute_routes_remaining,
+            ),
+            ...diagnosticPair(
+                "Sisa elemen Matrix harian",
+                data.quota_guard.daily_matrix_elements_remaining,
+            ),
+            ...diagnosticPair(
+                "Sisa Compute Routes menit ini",
+                data.quota_guard.compute_routes_remaining_this_minute,
+            ),
+            ...diagnosticPair(
+                "Sisa elemen Matrix menit ini",
+                data.quota_guard.matrix_elements_remaining_this_minute,
+            ),
+        );
+    }
+    elements.diagnosticList.replaceChildren(...pairs);
 }
 
 function renderRecommendation(data) {

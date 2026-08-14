@@ -162,7 +162,9 @@ lama, mereservasi hard limit sebelum eksperimen, dan mengganti reservasi dengan
 pemakaian aktual setelah proses selesai atau gagal. Eksperimen baru ditolak jika
 reservasi ditambah pemakaian hari itu dapat melewati 100 Compute Routes atau
 2.000 elemen Route Matrix. Proses live paralel juga ditolak agar pacing per menit
-tidak saling bertabrakan.
+tidak saling bertabrakan. Eksperimen CLI baru hanya boleh dimulai ketika rolling
+window ledger sudah bersih dari pemakaian web atau CLI selama 60 detik terakhir;
+setelah itu pacing internal CLI mengatur batch eksperimen.
 
 Periksa ledger sebelum meminta izin atau menjalankan eksperimen:
 
@@ -203,10 +205,11 @@ python -m flask --app run.py quota-recover \
   --confirm-process-stopped
 ```
 
-Ledger bersifat fail-closed dan melindungi eksperimen CLI pada satu filesystem.
-Ia tidak membaca pemakaian yang dibuat langsung di Cloud Console, program lain,
-atau endpoint web aplikasi. Google Cloud quota tetap menjadi sumber kontrol
-utama; cocokkan status ledger dengan dashboard sebelum eksperimen berbayar.
+Ledger bersifat fail-closed dan dipakai bersama oleh eksperimen CLI serta
+endpoint web pada satu filesystem. Ia tidak membaca pemakaian yang dibuat
+langsung oleh program lain atau API key yang sama di luar aplikasi. Google Cloud
+quota tetap menjadi sumber kontrol utama; cocokkan status ledger dengan
+dashboard sebelum eksperimen berbayar.
 
 CLI menolak menimpa laporan lama. Gunakan label baru untuk replikasi, misalnya
 `baseline-enam-wilayah-uji-2`. Opsi `--overwrite` hanya digunakan jika

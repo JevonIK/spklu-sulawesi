@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -73,6 +73,52 @@ def test_parallel_reservation_is_rejected(tmp_path):
             maximum_compute_routes=1,
             maximum_matrix_elements=1,
         )
+
+
+def test_per_minute_capacity_is_enforced_across_runs(tmp_path):
+    clock = FixedNow()
+    quota = ledger(tmp_path, now_fn=clock)
+    reservation = quota.reserve(
+        label="request-pertama",
+        maximum_compute_routes=2,
+        maximum_matrix_elements=625,
+        enforce_per_minute_capacity=True,
+    )
+    quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=2,
+        matrix_element_attempt_count=105,
+        outcome="completed",
+    )
+
+    status = quota.status()
+    assert status["recent_compute_routes"] == 2
+    assert status["recent_matrix_elements"] == 105
+    assert status["available_compute_routes_this_minute"] == 28
+    assert status["available_matrix_elements_this_minute"] == 520
+    with pytest.raises(QuotaLedgerError, match="per menit elemen"):
+        quota.reserve(
+            label="request-kedua",
+            maximum_compute_routes=2,
+            maximum_matrix_elements=625,
+            enforce_per_minute_capacity=True,
+        )
+    with pytest.raises(QuotaLedgerError, match="belum bersih"):
+        quota.reserve(
+            label="eksperimen-cli",
+            maximum_compute_routes=14,
+            maximum_matrix_elements=1200,
+            require_clear_per_minute_window=True,
+        )
+
+    clock.value += timedelta(seconds=61)
+    next_reservation = quota.reserve(
+        label="request-setelah-window",
+        maximum_compute_routes=2,
+        maximum_matrix_elements=625,
+        enforce_per_minute_capacity=True,
+    )
+    assert next_reservation["label"] == "request-setelah-window"
 
 
 def test_reservation_is_rejected_before_daily_quota_can_be_exceeded(tmp_path):
@@ -179,6 +225,38 @@ def test_ledger_file_uses_restrictive_permissions(tmp_path):
 
     assert quota.path.stat().st_mode & 0o777 == 0o600
     assert quota.lock_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_schema_one_ledger_is_upgraded_on_next_write(tmp_path):
+    quota = ledger(tmp_path)
+    quota.path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "timezone": "America/Los_Angeles",
+                "daily_limits": {
+                    "compute_routes": 100,
+                    "matrix_elements": 2000,
+                },
+                "days": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    reservation = quota.reserve(
+        label="migrasi",
+        maximum_compute_routes=1,
+        maximum_matrix_elements=1,
+    )
+
+    upgraded = json.loads(quota.path.read_text())
+    assert reservation["label"] == "migrasi"
+    assert upgraded["schema_version"] == 2
+    assert upgraded["per_minute_limits"] == {
+        "compute_routes": 30,
+        "matrix_elements": 625,
+    }
 
 
 def test_report_import_rejects_fractional_usage(tmp_path):

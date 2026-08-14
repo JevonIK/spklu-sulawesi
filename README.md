@@ -34,6 +34,8 @@ Fase 7E memperketat audit eksperimen: laporan parsial tetap disimpan ketika
 skenario error, tetapi exit code dan outcome ledger ditandai gagal.
 Fase 8 menambahkan continuous integration pada tiga versi Python, test yang
 terisolasi dari secret lokal, batas coverage, dan checklist rilis penelitian.
+Fase 9 menerapkan ledger dan hard limit Routes API pada endpoint rekomendasi,
+termasuk pencatatan attempt aktual serta penolakan request live paralel.
 
 ## Ruang lingkup sistem
 
@@ -173,7 +175,7 @@ rilis lengkap tersedia pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.11.0 pada
+kandidat rilis 0.12.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

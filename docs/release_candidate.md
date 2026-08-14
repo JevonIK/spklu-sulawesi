@@ -1,10 +1,10 @@
-# Kandidat rilis 0.11.0
+# Kandidat rilis 0.12.0
 
 ## Identitas
 
 | Komponen | Nilai |
 |---|---|
-| Versi aplikasi | 0.11.0 |
+| Versi aplikasi | 0.12.0 |
 | Dataset | 150 baris, 149 node logis |
 | SHA-256 dataset | `24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85` |
 | Konektor algoritma | CCS2 |
@@ -13,8 +13,8 @@
 
 ## Bukti verifikasi lokal
 
-- 126 test lulus tanpa `.env` dan tanpa API key;
-- coverage total 91,72%, di atas ambang CI 90%;
+- 143 test lulus dengan kedua API key dikosongkan;
+- coverage total 91,81%, di atas ambang CI 90%;
 - `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
 - health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan
 - source scan tidak menemukan API key Google tertanam.
@@ -24,13 +24,19 @@ Smoke test produksi lokal juga memverifikasi:
 - Gunicorn satu worker dapat boot dan melayani health HTTP 200;
 - hostname tidak tepercaya ditolak dengan HTTP 400;
 - CSP, HSTS, anti-frame, dan header keamanan lain aktif;
-- image `spklu-sulawesi:0.11.0-rc1` berhasil dibangun;
+- image `spklu-sulawesi:0.12.0-rc1` berhasil dibangun;
 - healthcheck container berstatus `healthy`;
 - proses container berjalan sebagai user non-root `spklu`; dan
 - direktori `/app/reports/generated` dapat ditulis oleh user runtime.
 
 Smoke test hanya mengakses halaman utama dan health endpoint dengan dummy key.
 Tidak ada Maps, Places, Compute Routes, atau Route Matrix yang dipanggil.
+
+Quota guard endpoint juga telah diverifikasi dengan layanan palsu: reservasi
+harian atomik, pencatatan attempt sukses/gagal, hard cap 2 Compute Routes dan
+625 elemen Matrix per request, rolling window lintas-request, migrasi ledger
+schema v1 ke v2, serta respons HTTP 429 untuk request paralel atau kapasitas yang
+tidak mencukupi.
 
 GitHub Actions harus tetap diperiksa setelah push karena keberhasilan simulasi
 lokal tidak menggantikan hasil runner GitHub untuk Python 3.11 dan 3.13.

@@ -1,5 +1,10 @@
 import json
 
+from app.services.recommendation import (
+    QuotaProtectedRecommendationService,
+    RecommendationService,
+)
+
 
 def test_index_is_available(client):
     response = client.get("/")
@@ -39,7 +44,7 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
-    assert payload["version"] == "0.11.0"
+    assert payload["version"] == "0.12.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["sha256"] == (
@@ -67,6 +72,11 @@ def test_health_endpoint_reports_dataset(client):
         payload["data"]["google_maps"]["recommendation_endpoint_ready"]
         is True
     )
+    assert payload["data"]["google_maps"]["quota_guard"] == {
+        "enabled": True,
+        "maximum_compute_routes_per_request": 2,
+        "maximum_matrix_elements_per_request": 625,
+    }
 
 
 def test_station_summary_endpoint(client):
@@ -86,3 +96,14 @@ def test_dataset_summary_cli(app):
     assert result.exit_code == 0
     assert payload["source_rows"] == 150
     assert payload["logical_nodes"] == 149
+
+
+def test_app_separates_web_quota_guard_from_experiment_service(app):
+    assert isinstance(
+        app.extensions["recommendation_service"],
+        QuotaProtectedRecommendationService,
+    )
+    assert isinstance(
+        app.extensions["experiment_recommendation_service"],
+        RecommendationService,
+    )

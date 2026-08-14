@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -93,6 +93,11 @@ Objek `data` mencakup request ternormalisasi, parameter energi, rute dasar,
 jumlah kandidat, statistik graf, hasil DP, rute rekomendasi, dan pemakaian API.
 Waktu yang dilaporkan adalah waktu berkendara, bukan waktu pengisian.
 
+`data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
+Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal
+quota Pacific Time, pemakaian harian, serta sisa harian dan rolling window
+60 detik menurut ledger lokal.
+
 ## Respons error
 
 Semua error memakai envelope berikut tanpa stack trace atau isi respons Google:
@@ -114,6 +119,7 @@ Semua error memakai envelope berikut tanpa stack trace atau isi respons Google:
 | 404 | `not_found` | endpoint API tidak tersedia |
 | 405 | `method_not_allowed` | metode HTTP salah |
 | 413 | `payload_too_large` | body melewati 64 KiB secara default |
+| 429 | `local_quota_exceeded` atau kode budget | quota lokal habis, request paralel, atau hard cap tercapai |
 | 502 | kode aman Google Routes | upstream menolak, timeout, atau respons tidak valid |
 | 503 | `configuration_error` | server key belum tersedia |
 | 500 | `internal_error` | kesalahan internal yang sudah disanitasi |

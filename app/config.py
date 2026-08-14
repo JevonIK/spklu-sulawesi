@@ -42,7 +42,7 @@ class Config:
     """Konfigurasi default untuk pengembangan lokal."""
 
     APP_NAME = "Sistem Rekomendasi SPKLU Sulawesi"
-    APP_VERSION = "0.11.0"
+    APP_VERSION = "0.12.0"
     APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
@@ -102,6 +102,22 @@ class Config:
     GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT = _env_int(
         "GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT",
         2000,
+    )
+    GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT = _env_int(
+        "GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT",
+        30,
+    )
+    GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT = _env_int(
+        "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT",
+        625,
+    )
+    GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST = _env_int(
+        "GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST",
+        2,
+    )
+    GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST = _env_int(
+        "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST",
+        625,
     )
 
     PUBLIC_CONTACT_EMAIL = os.getenv("PUBLIC_CONTACT_EMAIL", "").strip()

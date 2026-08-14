@@ -1,4 +1,4 @@
-"""Ledger lokal untuk menjaga quota Google Routes lintas eksekusi CLI."""
+"""Ledger lokal untuk menjaga quota Google Routes lintas eksekusi."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
-LEDGER_SCHEMA_VERSION = 1
+LEDGER_SCHEMA_VERSION = 2
 
 
 class QuotaLedgerError(RuntimeError):
@@ -43,6 +43,8 @@ class GoogleRoutesQuotaLedger:
         timezone_name="America/Los_Angeles",
         daily_compute_routes_limit=100,
         daily_matrix_element_limit=2000,
+        compute_routes_per_minute_limit=30,
+        matrix_elements_per_minute_limit=625,
         now_fn=None,
     ):
         self.path = Path(path).expanduser().resolve()
@@ -60,6 +62,14 @@ class GoogleRoutesQuotaLedger:
             daily_matrix_element_limit,
             "Batas harian elemen Route Matrix",
         )
+        self.compute_routes_per_minute_limit = _positive_integer(
+            compute_routes_per_minute_limit,
+            "Batas per menit Compute Routes",
+        )
+        self.matrix_elements_per_minute_limit = _positive_integer(
+            matrix_elements_per_minute_limit,
+            "Batas per menit elemen Route Matrix",
+        )
         self.now_fn = now_fn or (
             lambda: datetime.now(timezone.utc).astimezone(self.timezone)
         )
@@ -72,10 +82,20 @@ class GoogleRoutesQuotaLedger:
                 "compute_routes": self.daily_compute_routes_limit,
                 "matrix_elements": self.daily_matrix_element_limit,
             },
+            "per_minute_limits": {
+                "compute_routes": self.compute_routes_per_minute_limit,
+                "matrix_elements": self.matrix_elements_per_minute_limit,
+            },
             "days": {},
         }
 
     def _validate_metadata(self, data):
+        if data.get("schema_version") == 1:
+            data["schema_version"] = LEDGER_SCHEMA_VERSION
+            data["per_minute_limits"] = {
+                "compute_routes": self.compute_routes_per_minute_limit,
+                "matrix_elements": self.matrix_elements_per_minute_limit,
+            }
         if data.get("schema_version") != LEDGER_SCHEMA_VERSION:
             raise QuotaLedgerError("Versi schema ledger quota tidak didukung.")
         if data.get("timezone") != self.timezone_name:
@@ -87,6 +107,14 @@ class GoogleRoutesQuotaLedger:
         if data.get("daily_limits") != expected_limits:
             raise QuotaLedgerError(
                 "Batas harian ledger berbeda dari konfigurasi aplikasi."
+            )
+        expected_rate_limits = {
+            "compute_routes": self.compute_routes_per_minute_limit,
+            "matrix_elements": self.matrix_elements_per_minute_limit,
+        }
+        if data.get("per_minute_limits") != expected_rate_limits:
+            raise QuotaLedgerError(
+                "Batas per menit ledger berbeda dari konfigurasi aplikasi."
             )
         if not isinstance(data.get("days"), dict):
             raise QuotaLedgerError("Struktur hari pada ledger tidak valid.")
@@ -172,6 +200,29 @@ class GoogleRoutesQuotaLedger:
             item["maximum_matrix_elements"]
             for item in reservations.values()
         )
+        now = self.now_fn()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=self.timezone)
+        recent_runs = []
+        for run in runs:
+            finished_at = run.get("finished_at")
+            if not finished_at:
+                continue
+            try:
+                finished = datetime.fromisoformat(finished_at)
+            except (TypeError, ValueError):
+                continue
+            if finished.tzinfo is None:
+                finished = finished.replace(tzinfo=self.timezone)
+            elapsed = (now - finished.astimezone(now.tzinfo)).total_seconds()
+            if 0 <= elapsed < 60:
+                recent_runs.append(run)
+        recent_compute = sum(
+            run["compute_routes_attempt_count"] for run in recent_runs
+        )
+        recent_matrix = sum(
+            run["matrix_element_attempt_count"] for run in recent_runs
+        )
         return {
             "date": date_key,
             "timezone": self.timezone_name,
@@ -196,6 +247,22 @@ class GoogleRoutesQuotaLedger:
             "completed_or_failed_run_count": len(runs),
             "active_reservation_count": len(reservations),
             "active_reservations": list(reservations.values()),
+            "compute_routes_per_minute_limit": (
+                self.compute_routes_per_minute_limit
+            ),
+            "recent_compute_routes": recent_compute,
+            "available_compute_routes_this_minute": max(
+                0,
+                self.compute_routes_per_minute_limit - recent_compute,
+            ),
+            "matrix_elements_per_minute_limit": (
+                self.matrix_elements_per_minute_limit
+            ),
+            "recent_matrix_elements": recent_matrix,
+            "available_matrix_elements_this_minute": max(
+                0,
+                self.matrix_elements_per_minute_limit - recent_matrix,
+            ),
         }
 
     def status(self, date_key=None):
@@ -209,6 +276,8 @@ class GoogleRoutesQuotaLedger:
         label,
         maximum_compute_routes,
         maximum_matrix_elements,
+        enforce_per_minute_capacity=False,
+        require_clear_per_minute_window=False,
     ):
         maximum_compute_routes = _positive_integer(
             maximum_compute_routes,
@@ -230,6 +299,33 @@ class GoogleRoutesQuotaLedger:
                     "Masih ada reservasi quota aktif. Jangan menjalankan "
                     "eksperimen live secara paralel; selesaikan proses atau "
                     "pulihkan reservasi yatim terlebih dahulu."
+                )
+            if require_clear_per_minute_window and (
+                status["recent_compute_routes"]
+                or status["recent_matrix_elements"]
+            ):
+                raise QuotaLedgerError(
+                    "Rolling window quota belum bersih. Tunggu 60 detik "
+                    "sejak request Routes terakhir sebelum memulai "
+                    "eksperimen CLI."
+                )
+            if (
+                enforce_per_minute_capacity
+                and maximum_compute_routes
+                > status["available_compute_routes_this_minute"]
+            ):
+                raise QuotaLedgerError(
+                    "Sisa kapasitas per menit Compute Routes tidak "
+                    "mencukupi."
+                )
+            if (
+                enforce_per_minute_capacity
+                and maximum_matrix_elements
+                > status["available_matrix_elements_this_minute"]
+            ):
+                raise QuotaLedgerError(
+                    "Sisa kapasitas per menit elemen Route Matrix tidak "
+                    "mencukupi."
                 )
             if maximum_compute_routes > status["available_compute_routes"]:
                 raise QuotaLedgerError(

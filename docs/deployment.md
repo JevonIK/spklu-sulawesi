@@ -47,14 +47,14 @@ validasi Google Routes pada rekomendasi yang panjang.
 ## Membangun dan menjalankan container
 
 ```bash
-docker build -t spklu-sulawesi:0.11.0 .
+docker build -t spklu-sulawesi:0.12.0 .
 docker run --rm -p 8080:8080 \
   --env-file .env.production \
-  spklu-sulawesi:0.11.0
+  spklu-sulawesi:0.12.0
 ```
 
 Build kandidat rilis dapat memakai suffix sementara, misalnya
-`spklu-sulawesi:0.11.0-rc1`. Jangan push image ke registry sebelum CI hijau,
+`spklu-sulawesi:0.12.0-rc1`. Jangan push image ke registry sebelum CI hijau,
 secret produksi siap, dan target registry disetujui.
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
@@ -115,7 +115,7 @@ layanan yang dilarang terdokumentasi pada
 [`google_maps_api_limits.md`](google_maps_api_limits.md). Samakan nilainya dengan
 quota Google Cloud sebelum deployment atau smoke test live.
 
-### Ledger quota eksperimen
+### Ledger quota Routes API
 
 Samakan `GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT` dan
 `GOOGLE_ROUTE_MATRIX_DAILY_ELEMENT_LIMIT` dengan batas harian project. Pertahankan
@@ -124,15 +124,16 @@ pada tengah malam Pacific Time.
 
 Path default ledger adalah
 `reports/generated/google-routes-quota.json`. Jika eksperimen CLI dijalankan di
-container, mount folder tersebut ke volume persisten; container sementara akan
-kehilangan riwayat ketika dihapus. Jalankan eksperimen hanya pada satu host dan
-satu proses. File lock lokal tidak mengoordinasikan beberapa replica atau
-filesystem jaringan.
+container atau endpoint web dipublikasikan, mount folder tersebut ke volume
+persisten; container sementara akan kehilangan riwayat ketika dihapus. Jalankan
+satu instance aplikasi pada filesystem lokal. File lock tidak mengoordinasikan
+beberapa replica atau filesystem jaringan.
 
-Ledger hanya mengamankan eksperimen CLI. Ia tidak menghitung request dari
-endpoint web, project lain, atau program lain yang memakai API key sama. Quota
-Google Cloud dan pembatasan trafik gateway tetap wajib sebagai pengaman biaya
-utama.
+Ledger mengamankan eksperimen CLI dan endpoint web. Setiap rekomendasi
+mereservasi maksimal 2 Compute Routes dan 625 elemen Matrix, kemudian mencatat
+attempt aktual. Ia tidak menghitung request dari project atau program lain yang
+memakai API key sama. Quota Google Cloud dan pembatasan trafik gateway tetap
+wajib sebagai pengaman biaya utama.
 
 ## Checklist sebelum publik
 
@@ -146,10 +147,10 @@ utama.
 6. Dataset yang ter-deploy sama dengan versi yang dilaporkan dalam penelitian.
 7. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
 
-Eksperimen CLI memiliki hard limit terpisah untuk panggilan Compute Routes dan
-elemen Route Matrix, pacing rolling window 60 detik, serta ledger harian dengan
-reservasi atomik. Kontrol ini melindungi batch penelitian, tetapi tidak
-menggantikan quota Google dan limit trafik pada endpoint rekomendasi publik.
+Eksperimen CLI dan endpoint web memiliki hard limit terpisah untuk panggilan
+Compute Routes dan elemen Route Matrix, pacing rolling window 60 detik, serta
+ledger harian dengan reservasi atomik. Kontrol ini tidak menggantikan quota
+Google dan limit trafik gateway.
 
 ## Kontrol keamanan aplikasi
 
