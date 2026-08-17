@@ -10,7 +10,7 @@ perhitungan energi tetap dilakukan oleh model SOC lokal.
 
 1. `Compute Routes` mengambil rute dasar dari origin ke destination.
 2. Overview polyline didekode menjadi koordinat dan dipakai oleh Ball Tree untuk
-   memilih SPKLU CCS2 di dalam koridor.
+   memilih SPKLU dengan konektor kompatibel di dalam koridor.
 3. Pemangkasan geodesik membuang pasangan node yang pasti melebihi usable range.
 4. `Compute Route Matrix` hanya memvalidasi pasangan edge yang tersisa.
 5. Dynamic Programming memilih itinerary berdasarkan durasi/jarak, jumlah
@@ -54,7 +54,7 @@ menjalankan `pytest` tidak menggunakan kuota.
   "vehicle": {
     "maximum_range_km": 300,
     "current_soc_percent": 80,
-    "connector": "CCS2"
+    "connectors": ["CCS2", "CHADEMO"]
   },
   "options": {
     "minimum_soc_percent": 20,
@@ -67,7 +67,10 @@ menjalankan `pytest` tidak menggunakan kuota.
 ```
 
 Objek `options` bersifat opsional dan menggunakan nilai default dari konfigurasi.
-Konektor dibatasi ke CCS2 sesuai ruang lingkup penelitian.
+Aplikasi umum menerima satu atau beberapa konektor dataset dan mempertahankan
+node yang mendukung sedikitnya satu pilihan. Field tunggal `connector` tetap
+diterima untuk kompatibilitas. Eksperimen baseline dan sensitivitas tetap
+dibatasi ke CCS2 sesuai rancangan penelitian.
 
 Respons sukses berisi rute dasar, statistik kandidat dan graf, hasil optimasi,
 rute rekomendasi, serta statistik penggunaan API. Rute yang tidak feasible tetap

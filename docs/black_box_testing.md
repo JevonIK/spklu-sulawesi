@@ -25,6 +25,9 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 | BB-15 | Header keamanan | CSP nonce, anti-frame, nosniff, referrer dan permissions policy | `test_security.py` |
 | BB-16 | Setiap konektor dataset dipilih | Pipeline menerima AC Type 2, CCS2, CHAdeMO, dan GB/T | `test_black_box.py` |
 | BB-17 | Opsi penelitian dikirim ke endpoint publik | SOC minimum/target dipakai; parameter lanjutan tetap memakai default backend | `test_recommendation.py` |
+| BB-18 | Beberapa konektor kendaraan dipilih | Pipeline menerima daftar dan memakai SPKLU yang cocok dengan salah satu konektor | `test_black_box.py` |
+| BB-19 | Hasil rute dirender | Overlay petunjuk disembunyikan sebelum bounds peta dihitung | `test_app.py` |
+| BB-20 | Browser memakai mode gelap | Place Autocomplete tetap dipaksa ke skema warna terang yang terbaca | `test_app.py` |
 
 ## Smoke test browser
 
@@ -33,11 +36,13 @@ Setelah test otomatis lulus, jalankan aplikasi lokal dan periksa:
 1. layout desktop dan mobile tidak mengalami overflow;
 2. status sistem berubah dari `Memeriksa sistem` menjadi `Sistem siap`;
 3. autocomplete origin/destination dapat dipilih;
-4. input angka dan pengaturan penelitian dapat diubah;
+4. input angka dan satu atau beberapa checkbox konektor dapat diubah;
 5. loading state tampil ketika rekomendasi dikirim;
 6. hasil feasible dan infeasible dapat dibaca tanpa membuka console;
 7. link privasi/ketentuan berfungsi dan dapat kembali ke aplikasi;
-8. tidak ada error CSP pada console browser.
+8. tidak ada error CSP pada console browser;
+9. overlay petunjuk awal hilang setelah rute ditampilkan; dan
+10. daftar saran lokasi tetap terbaca pada mode tampilan terang maupun gelap.
 
 Interaksi yang memerlukan Google Maps hanya dilakukan jika browser key aktif.
 Pengujian rekomendasi live harus dicatat terpisah karena memakai quota Routes

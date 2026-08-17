@@ -56,7 +56,7 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
   "vehicle": {
     "maximum_range_km": 300,
     "current_soc_percent": 80,
-    "connector": "CCS2"
+    "connectors": ["CCS2", "CHADEMO"]
   },
   "options": {
     "minimum_soc_percent": 20,
@@ -78,7 +78,12 @@ eksperimen CLI yang terdokumentasi. Aturan input:
 | `current_soc_percent` | di atas SOC minimum dan maksimal 100% |
 | `minimum_soc_percent` | 0 sampai kurang dari 100% |
 | `target_soc_percent` | lebih besar dari SOC minimum dan maksimal 100% |
-| `connector` | `AC TYPE 2`, `CCS2`, `CHADEMO`, atau `GB/T` |
+| `connectors` | daftar berisi sedikitnya satu dari `AC TYPE 2`, `CCS2`, `CHADEMO`, atau `GB/T` |
+
+Node SPKLU dianggap kompatibel jika mendukung sedikitnya satu konektor yang
+dipilih. Field tunggal `vehicle.connector` tetap diterima untuk kompatibilitas
+dengan skenario eksperimen dan klien versi lama. Respons ternormalisasi memuat
+`connectors` serta `connector` sebagai konektor utama kompatibilitas lama.
 
 Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
 `data.optimization.feasible`:

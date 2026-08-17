@@ -14,8 +14,8 @@
 
 ## Bukti verifikasi lokal
 
-- 159 test lulus dengan kedua API key dikosongkan;
-- coverage total 91,44%, di atas ambang CI 90%;
+- 167 test lulus dengan kedua API key dikosongkan;
+- coverage total 91,43%, di atas ambang CI 90%;
 - `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
 - audit kandidat rilis offline lulus 24/24 check;
 - health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan

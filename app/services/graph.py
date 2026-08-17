@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dataset import StationNode, normalize_connector
+from .dataset import StationNode, parse_connectors
 from .road_metrics import RoadMetricBatch, RoadMetricProvider, RoadMetricRequest
 from .spatial import (
     DISTANCE_TOLERANCE_KM,
@@ -168,15 +168,17 @@ def _positive_distance(value, label):
 
 
 def _graph_nodes(origin, destination, route, candidates, connector):
-    normalized_connector = normalize_connector(connector) if connector else None
+    normalized_connectors = (
+        frozenset(parse_connectors(connector)) if connector else None
+    )
     compatible = {}
 
     for candidate in candidates:
         if not isinstance(candidate, CorridorCandidate):
             raise TypeError("Kandidat graf harus berupa CorridorCandidate.")
         if (
-            normalized_connector is not None
-            and normalized_connector not in candidate.node.connectors
+            normalized_connectors is not None
+            and normalized_connectors.isdisjoint(candidate.node.connectors)
         ):
             continue
         if candidate.route_progress_km <= DISTANCE_TOLERANCE_KM:

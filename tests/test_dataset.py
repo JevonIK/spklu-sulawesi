@@ -32,6 +32,13 @@ def test_connector_normalization():
     )
 
 
+def test_connector_parser_accepts_checkbox_style_list():
+    assert parse_connectors(["GB/T", "ccs 2", "GB/T"]) == (
+        "CCS2",
+        "GB/T",
+    )
+
+
 def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
     catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
 

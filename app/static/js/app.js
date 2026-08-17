@@ -22,7 +22,9 @@ const elements = {
     maxRange: document.getElementById("maxRange"),
     minimumSoc: document.getElementById("minimumSoc"),
     targetSoc: document.getElementById("targetSoc"),
-    connector: document.getElementById("connector"),
+    connectorInputs: Array.from(
+        document.querySelectorAll('input[name="connectors"]'),
+    ),
     resultsPanel: document.getElementById("resultsPanel"),
     resultsTitle: document.getElementById("resultsTitle"),
     resultBadge: document.getElementById("resultBadge"),
@@ -132,8 +134,10 @@ function updateSubmitAvailability() {
     const locationsReady = Boolean(
         state.selectedPlaces.origin && state.selectedPlaces.destination,
     );
+    const connectorsReady = selectedConnectorValues().length > 0;
     elements.submitButton.disabled = !state.interfaceReady
         || !locationsReady
+        || !connectorsReady
         || state.isSubmitting;
 }
 
@@ -305,6 +309,21 @@ function numberValue(element) {
     return Number(element.value);
 }
 
+function selectedConnectorValues() {
+    return elements.connectorInputs
+        .filter((input) => input.checked)
+        .map((input) => input.value);
+}
+
+function requestConnectors(data) {
+    if (Array.isArray(data.request.connectors)) return data.request.connectors;
+    return data.request.connector ? [data.request.connector] : [];
+}
+
+function requestConnectorLabel(data) {
+    return requestConnectors(data).join(", ");
+}
+
 function validateForm() {
     if (!elements.routeForm.checkValidity()) {
         elements.routeForm.reportValidity();
@@ -314,6 +333,9 @@ function validateForm() {
         throw new Error(
             "Pilih lokasi awal dan tujuan dari daftar saran Google, bukan hanya mengetik teks.",
         );
+    }
+    if (!selectedConnectorValues().length) {
+        throw new Error("Pilih sedikitnya satu jenis konektor kendaraan.");
     }
 
     const currentSoc = numberValue(elements.currentSoc);
@@ -340,7 +362,7 @@ function buildRequestPayload() {
         vehicle: {
             maximum_range_km: numberValue(elements.maxRange),
             current_soc_percent: numberValue(elements.currentSoc),
-            connector: elements.connector.value,
+            connectors: selectedConnectorValues(),
         },
         options: {
             minimum_soc_percent: numberValue(elements.minimumSoc),
@@ -419,6 +441,7 @@ function renderMap(data) {
     if (!route?.coordinates?.length) return;
 
     const path = route.coordinates.map(coordinateLiteral);
+    elements.mapEmpty.classList.add("is-hidden");
     state.polyline = new state.mapsLibrary.Polyline({
         map: state.map,
         path,
@@ -465,13 +488,12 @@ function renderMap(data) {
         });
     });
 
-    const bounds = new state.mapsLibrary.LatLngBounds();
+    const bounds = new google.maps.LatLngBounds();
     path.forEach((position) => bounds.extend(position));
     state.map.fitBounds(bounds, 72);
     google.maps.event.addListenerOnce(state.map, "idle", () => {
         if (state.map.getZoom() > 13) state.map.setZoom(13);
     });
-    elements.mapEmpty.classList.add("is-hidden");
 }
 
 const decimalFormatter = new Intl.NumberFormat("id-ID", {
@@ -525,7 +547,7 @@ function renderSummary(data) {
         elements.summaryGrid.append(
             summaryItem("Jarak rute dasar", formatDistance(data.base_route.distance_km)),
             summaryItem("Durasi rute dasar", formatDuration(data.base_route.duration_minutes)),
-            summaryItem(`Kandidat ${data.request.connector}`, String(data.candidate_summary.corridor_candidate_count)),
+            summaryItem(`Kandidat ${requestConnectorLabel(data)}`, String(data.candidate_summary.corridor_candidate_count)),
             summaryItem("Status", "Tidak feasible"),
         );
     }
@@ -560,7 +582,7 @@ function renderItinerary(data) {
             const station = stop.station;
             const stopCard = document.createElement("div");
             stopCard.className = "stop-card";
-            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${data.request.connector}`;
+            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${requestConnectorLabel(data)}`;
             copy.append(stopCard);
         }
 
@@ -690,6 +712,9 @@ async function submitRecommendation(event) {
 
 async function initializeApplication() {
     elements.routeForm?.addEventListener("submit", submitRecommendation);
+    elements.connectorInputs.forEach((input) => {
+        input.addEventListener("change", updateSubmitAvailability);
+    });
     updateSubmitAvailability();
     try {
         await Promise.all([

@@ -144,4 +144,22 @@ def test_black_box_recommendation_supports_dataset_connectors(
 
     assert response.status_code == 200
     assert result["request"]["connector"] == connector
+    assert result["request"]["connectors"] == [connector]
+    assert result["optimization"]["feasible"] is True
+
+
+def test_black_box_recommendation_matches_any_vehicle_connector(app, client):
+    install_real_pipeline(app, "CHADEMO")
+    request_payload = payload(100)
+    request_payload["vehicle"]["connectors"] = ["CCS2", "CHADEMO"]
+
+    response = client.post("/api/recommendations", json=request_payload)
+    result = response.get_json()["data"]
+
+    assert response.status_code == 200
+    assert result["request"]["connectors"] == ["CCS2", "CHADEMO"]
+    assert result["candidate_summary"]["compatible_connectors"] == [
+        "CCS2",
+        "CHADEMO",
+    ]
     assert result["optimization"]["feasible"] is True

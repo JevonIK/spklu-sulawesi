@@ -186,6 +186,18 @@ def test_recommendation_input_defaults_to_ccs2_when_connector_is_omitted():
     parsed = RecommendationInput.from_payload(body, defaults=DEFAULTS)
 
     assert parsed.connector == "CCS2"
+    assert parsed.connectors == ("CCS2",)
+
+
+def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
+    parsed = RecommendationInput.from_payload(
+        valid_payload(connectors=["GB/T", "CCS2"]),
+        defaults=DEFAULTS,
+    )
+
+    assert parsed.connectors == ("CCS2", "GB/T")
+    assert parsed.connector == "CCS2"
+    assert parsed.to_dict()["connectors"] == ["CCS2", "GB/T"]
 
 
 @pytest.mark.parametrize(
@@ -211,6 +223,10 @@ def test_recommendation_input_defaults_to_ccs2_when_connector_is_omitted():
         (
             lambda body: body["vehicle"].update({"connector": "unknown"}),
             "vehicle.connector",
+        ),
+        (
+            lambda body: body["vehicle"].update({"connectors": []}),
+            "vehicle.connectors",
         ),
     ],
 )

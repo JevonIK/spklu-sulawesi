@@ -126,16 +126,28 @@
                         </div>
                     </div>
 
-                    <label for="connector">Jenis konektor kendaraan</label>
-                    <select id="connector" name="connector" aria-describedby="connectorNote" required>
-                        {% for connector in connectors %}
-                        <option value="{{ connector.value }}" {% if connector.value == "CCS2" %}selected{% endif %}>
-                            {{ connector.label }} — {{ connector.location_count }} lokasi
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <fieldset class="connector-fieldset" aria-describedby="connectorNote">
+                        <legend>Jenis konektor kendaraan</legend>
+                        <div class="connector-options">
+                            {% for connector in connectors %}
+                            <label class="connector-option" for="connector-{{ loop.index }}">
+                                <input
+                                    id="connector-{{ loop.index }}"
+                                    name="connectors"
+                                    type="checkbox"
+                                    value="{{ connector.value }}"
+                                    {% if connector.value == "CCS2" %}checked{% endif %}
+                                >
+                                <span>
+                                    <strong>{{ connector.label }}</strong>
+                                    <small>{{ connector.location_count }} lokasi</small>
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
                     <small class="field-note" id="connectorNote">
-                        Pilih konektor yang benar-benar kompatibel dengan kendaraan Anda.
+                        Pilih satu atau beberapa konektor yang benar-benar dapat digunakan kendaraan Anda.
                         Jumlah lokasi mengikuti dataset saat ini.
                     </small>
 

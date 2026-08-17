@@ -14,6 +14,8 @@ berada di dalam ambang jarak yang ditentukan.
 
 Filter konektor diterapkan setelah query radius. Label input dinormalisasi dengan
 aturan yang sama seperti dataset sehingga variasi penulisan tidak mengubah hasil.
+Jika kendaraan memiliki beberapa konektor, node dipertahankan ketika mendukung
+sedikitnya satu dari konektor pilihan.
 
 ## Penghimpunan kandidat koridor
 
@@ -43,7 +45,7 @@ Urutan hasil mengikuti progres perjalanan, bukan jarak lurus dari titik awal.
 Untuk origin atau node SPKLU tertentu, Ball Tree juga dapat mencari seluruh node
 dalam `usable_range_km`. Kandidat kemudian harus memenuhi tiga syarat:
 
-1. konektornya kompatibel;
+1. sedikitnya satu konektornya kompatibel;
 2. lokasinya masih berada dalam batas koridor;
 3. progresnya lebih besar daripada progres node saat ini.
 

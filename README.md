@@ -46,14 +46,16 @@ Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
 tanpa jaringan eksternal, healthcheck terbatas, audit rilis, user non-root, dan
 uji tulis direktori persisten.
 Fase 13 menyederhanakan antarmuka untuk pengguna umum, menyediakan pilihan
-seluruh konektor pada dataset, memindahkan parameter penelitian lanjutan ke
-default backend, serta memperjelas kesiapan lokasi dan endpoint sebelum tombol
-rekomendasi dapat digunakan.
+multi-konektor dari seluruh tipe pada dataset, memindahkan parameter penelitian
+lanjutan ke default backend, memperbaiki pengalaman Place Autocomplete, serta
+memperjelas kesiapan lokasi dan endpoint sebelum tombol rekomendasi dapat
+digunakan.
 
 ## Ruang lingkup sistem
 
 - Pencarian kandidat SPKLU di sepanjang koridor rute.
-- Penyaringan berdasarkan konektor, detour, dan progres perjalanan.
+- Penyaringan berdasarkan satu atau beberapa konektor kendaraan, detour, dan
+  progres perjalanan.
 - Pembentukan graf berarah dengan edge yang memenuhi batas jangkauan.
 - Dynamic Programming dengan state SOC diskret.
 - Rekomendasi urutan SPKLU, jarak setiap leg, SOC tiba/berangkat, dan detour.

@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 
 from ..constants import DEFAULT_CONNECTOR
-from .dataset import normalize_connector
+from .dataset import parse_connectors
 from .energy import EnergyParameters
 from .graph import build_travel_graph
 from .optimizer import optimize_itinerary
@@ -69,7 +69,7 @@ class RecommendationInput:
     destination: tuple[float, float]
     current_soc_percent: float
     parameters: EnergyParameters
-    connector: str
+    connectors: tuple[str, ...]
     corridor_radius_km: float
     route_sample_step_km: float
 
@@ -88,13 +88,20 @@ class RecommendationInput:
         options = payload.get("options", {})
         options = _mapping(options, "options")
 
+        connector_field = (
+            "vehicle.connectors"
+            if "connectors" in vehicle
+            else "vehicle.connector"
+        )
+        raw_connectors = vehicle.get(
+            "connectors",
+            vehicle.get("connector", DEFAULT_CONNECTOR),
+        )
         try:
-            connector = normalize_connector(
-                vehicle.get("connector", DEFAULT_CONNECTOR)
-            )
+            connectors = parse_connectors(raw_connectors)
         except ValueError as error:
             raise RecommendationValidationError(
-                "vehicle.connector", str(error)
+                connector_field, str(error)
             ) from error
         maximum_range = _number(
             vehicle,
@@ -173,7 +180,7 @@ class RecommendationInput:
             destination=destination,
             current_soc_percent=current_soc,
             parameters=parameters,
-            connector=connector,
+            connectors=connectors,
             corridor_radius_km=corridor_radius,
             route_sample_step_km=route_sample_step,
         )
@@ -189,10 +196,18 @@ class RecommendationInput:
                 "longitude": self.destination[1],
             },
             "current_soc_percent": self.current_soc_percent,
+            # `connector` dipertahankan untuk kompatibilitas klien lama.
             "connector": self.connector,
+            "connectors": list(self.connectors),
             "corridor_radius_km": self.corridor_radius_km,
             "route_sample_step_km": self.route_sample_step_km,
         }
+
+    @property
+    def connector(self):
+        """Konektor utama untuk kompatibilitas integrasi versi lama."""
+
+        return self.connectors[0]
 
 
 class RecommendationService:
@@ -222,7 +237,7 @@ class RecommendationService:
             self.spatial_index,
             route_geometry,
             recommendation_input.corridor_radius_km,
-            connector=recommendation_input.connector,
+            connector=recommendation_input.connectors,
             sample_step_km=recommendation_input.route_sample_step_km,
         )
 
@@ -232,7 +247,7 @@ class RecommendationService:
             destination=recommendation_input.destination,
             route=route_geometry,
             candidates=candidates,
-            connector=recommendation_input.connector,
+            connector=recommendation_input.connectors,
             initial_usable_range_km=parameters.usable_range_km(
                 recommendation_input.current_soc_percent
             ),
@@ -271,6 +286,7 @@ class RecommendationService:
             "candidate_summary": {
                 "corridor_candidate_count": len(candidates),
                 "compatible_connector": recommendation_input.connector,
+                "compatible_connectors": list(recommendation_input.connectors),
             },
             "graph": {
                 "stats": graph.stats.to_dict(),

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 from sklearn.neighbors import BallTree
 
-from .dataset import StationNode, normalize_connector
+from .dataset import StationNode, parse_connectors
 
 
 EARTH_RADIUS_KM = 6371.0088
@@ -233,8 +233,8 @@ class StationSpatialIndex:
         if not math.isfinite(radius_km) or radius_km <= 0:
             raise ValueError("Radius pencarian harus lebih besar dari nol.")
 
-        normalized_connector = (
-            normalize_connector(connector) if connector else None
+        normalized_connectors = (
+            frozenset(parse_connectors(connector)) if connector else None
         )
         center_radians = np.radians(np.asarray([center], dtype=float))
         indexes, angular_distances = self._tree.query_radius(
@@ -250,8 +250,8 @@ class StationSpatialIndex:
         ):
             node = self.nodes[int(node_index)]
             if (
-                normalized_connector is not None
-                and normalized_connector not in node.connectors
+                normalized_connectors is not None
+                and normalized_connectors.isdisjoint(node.connectors)
             ):
                 continue
             matches.append(

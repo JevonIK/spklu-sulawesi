@@ -17,7 +17,8 @@ def test_index_is_available(client):
     assert b'id="map"' in response.data
     assert b'id="originSelectionStatus"' in response.data
     assert b'id="destinationSelectionStatus"' in response.data
-    assert b'id="connector"' in response.data
+    assert b'name="connectors"' in response.data
+    assert response.data.count(b'type="checkbox"') == 4
     assert b'value="AC TYPE 2"' in response.data
     assert b'value="CCS2"' in response.data
     assert b'value="CHADEMO"' in response.data
@@ -33,6 +34,27 @@ def test_places_autocomplete_uses_sulawesi_bounds_not_invalid_large_radius():
     assert "autocomplete.locationRestriction = SULAWESI_BOUNDS" in source
     assert "INDONESIA_BIAS_RADIUS_METERS" not in source
     assert "1_000_000" not in source
+
+
+def test_map_render_uses_global_bounds_and_hides_empty_overlay_first():
+    source = Path("app/static/js/app.js").read_text(encoding="utf-8")
+
+    hide_overlay = 'elements.mapEmpty.classList.add("is-hidden")'
+    create_bounds = "new google.maps.LatLngBounds()"
+    assert "state.mapsLibrary.LatLngBounds" not in source
+    assert create_bounds in source
+    assert source.index(hide_overlay) < source.index(create_bounds)
+
+
+def test_autocomplete_forces_readable_light_color_scheme():
+    source = Path("app/static/css/app.css").read_text(encoding="utf-8")
+
+    autocomplete_rule = source.split(
+        ".autocomplete-host gmp-place-autocomplete {",
+        maxsplit=2,
+    )[-1].split("}", maxsplit=1)[0]
+    assert "color-scheme: light" in autocomplete_rule
+    assert "--gmp-mat-color-on-surface: #102a3a" in autocomplete_rule
 
 
 def test_index_exposes_only_browser_configuration():

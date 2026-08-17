@@ -87,6 +87,21 @@ def test_ball_tree_connector_filter_excludes_incompatible_nodes():
     assert [match.node.name for match in matches] == ["Type 2"]
 
 
+def test_ball_tree_connector_filter_accepts_any_selected_connector():
+    ccs = make_node("CCS", 0, 0.1, connectors=("CCS2",))
+    type_two = make_node("Type 2", 0, 0.2, connectors=("AC TYPE 2",))
+    chademo = make_node("CHAdeMO", 0, 0.3, connectors=("CHADEMO",))
+    index = StationSpatialIndex((ccs, type_two, chademo))
+
+    matches = index.query_radius(
+        (0, 0),
+        50,
+        connector=("AC TYPE 2", "CHADEMO"),
+    )
+
+    assert [match.node.name for match in matches] == ["Type 2", "CHAdeMO"]
+
+
 def test_corridor_search_filters_distance_and_sorts_by_progress():
     early = make_node("Awal", 0.02, 0.2)
     late = make_node("Akhir", -0.01, 0.8)

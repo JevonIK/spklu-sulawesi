@@ -145,6 +145,30 @@ def test_incompatible_station_is_excluded_from_graph_nodes():
     }
 
 
+def test_graph_accepts_station_matching_any_selected_connector():
+    provider = RecordingRoadMetricProvider(factor=1.0)
+    graph = build_travel_graph(
+        origin=(0, 0),
+        destination=(0, 1),
+        route=((0, 0), (0, 1)),
+        candidates=(
+            make_candidate("Type 2", 0.3, connectors=("AC TYPE 2",)),
+            make_candidate("CHAdeMO", 0.4, connectors=("CHADEMO",)),
+            make_candidate("GB/T", 0.5, connectors=("GB/T",)),
+        ),
+        connector=("AC TYPE 2", "CHADEMO"),
+        initial_usable_range_km=200,
+        post_charge_usable_range_km=200,
+        road_metric_provider=provider,
+    )
+
+    assert graph.stats.compatible_station_nodes == 2
+    assert {node.name for node in graph.nodes if node.kind == "station"} == {
+        "Type 2",
+        "CHAdeMO",
+    }
+
+
 def test_edge_is_removed_when_road_distance_exceeds_usable_range():
     provider = RecordingRoadMetricProvider(
         overrides={"station-b->destination": 60}

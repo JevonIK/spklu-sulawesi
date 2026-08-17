@@ -232,8 +232,13 @@ fieldset {
 
 .autocomplete-host gmp-place-autocomplete {
     display: block;
+    color-scheme: light;
+    color: var(--ink);
+    background-color: #fbfcfc;
     --gmp-mat-color-surface: #fbfcfc;
-    --gmp-mat-color-on-surface: var(--ink);
+    --gmp-mat-color-on-surface: #102a3a;
+    --gmp-mat-color-on-surface-variant: #52646e;
+    --gmp-mat-color-outline-decorative: #cbd7dc;
     --gmp-mat-color-primary: var(--teal-600);
 }
 
@@ -259,6 +264,73 @@ fieldset {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 12px;
+}
+
+.connector-fieldset {
+    margin-top: 15px !important;
+}
+
+.connector-fieldset legend {
+    margin-bottom: 7px;
+    color: var(--navy-800);
+    font-size: 0.77rem;
+    font-weight: 760;
+}
+
+.connector-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.route-form .connector-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    min-height: 54px;
+    margin: 0;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    color: var(--ink);
+    background: #fbfcfc;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.route-form .connector-option:has(input:checked) {
+    border-color: var(--teal-500);
+    background: var(--mint-100);
+    box-shadow: 0 0 0 2px rgba(10, 155, 143, 0.08);
+}
+
+.route-form .connector-option input {
+    flex: 0 0 auto;
+    width: 17px;
+    min-height: 17px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--teal-600);
+}
+
+.connector-option span,
+.connector-option strong,
+.connector-option small {
+    display: block;
+    min-width: 0;
+}
+
+.connector-option strong {
+    color: var(--navy-900);
+    font-size: 0.76rem;
+}
+
+.connector-option small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.65rem;
+    font-weight: 600;
 }
 
 .field-note {
@@ -829,6 +901,7 @@ fieldset {
     }
 
     .form-grid,
+    .connector-options,
     .summary-grid,
     .method-strip {
         grid-template-columns: 1fr;

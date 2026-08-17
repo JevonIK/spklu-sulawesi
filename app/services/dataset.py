@@ -193,7 +193,14 @@ def normalize_connector(value):
 def parse_connectors(value):
     """Memecah daftar konektor dan mengembalikan tuple unik terurut."""
 
-    parts = [part for part in re.split(r"[,;|]+", str(value)) if part.strip()]
+    if isinstance(value, str):
+        parts = [
+            part for part in re.split(r"[,;|]+", value) if part.strip()
+        ]
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        parts = list(value)
+    else:
+        parts = [value]
     if not parts:
         raise ValueError("jenis konektor kosong")
 

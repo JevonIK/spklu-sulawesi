@@ -17,8 +17,9 @@ troubleshooting di bawah.
 1. Pilih lokasi awal dari hasil Place Autocomplete.
 2. Pilih lokasi tujuan yang berbeda.
 3. Masukkan SOC saat ini dan jangkauan maksimum kendaraan dalam kilometer.
-4. Pilih konektor yang sesuai dengan kendaraan: AC Type 2, CCS2, CHAdeMO, atau
-   GB/T. Angka pada pilihan menunjukkan jumlah lokasi pada dataset.
+4. Centang satu atau beberapa konektor yang benar-benar dapat digunakan
+   kendaraan: AC Type 2, CCS2, CHAdeMO, atau GB/T. Angka pada pilihan
+   menunjukkan jumlah lokasi pada dataset.
 5. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
    batas SOC keberangkatan setelah berhenti di SPKLU.
 6. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
@@ -55,7 +56,8 @@ kendaraan aktual.
 - **SOC minimum** adalah batas tiba terendah yang diizinkan model.
 - **Target SOC** adalah batas maksimum keberangkatan yang dievaluasi setelah
   berhenti di SPKLU, bukan estimasi waktu pengisian.
-- **Jenis konektor** harus sama dengan konektor yang didukung kendaraan.
+- **Jenis konektor** dapat dipilih lebih dari satu. Sistem mempertimbangkan
+  SPKLU yang mendukung sedikitnya satu konektor pilihan.
 
 Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
 5 km menjadi default backend. Nilai ini tidak ditampilkan pada formulir umum.
@@ -68,6 +70,9 @@ interaksi pengguna harian.
 |---|---|
 | Form tetap nonaktif | periksa browser key, server key, restriction referrer, Maps JavaScript API, Places API, dan Routes API |
 | Tombol pencarian tetap nonaktif | pilih lokasi awal dan tujuan dari daftar saran Google; teks yang hanya diketik belum menyimpan koordinat |
+| Tombol nonaktif setelah lokasi dipilih | pastikan sedikitnya satu checkbox konektor masih dicentang |
+| Saran lokasi gelap/tidak terbaca | muat ulang aset aplikasi terbaru; widget dipaksa memakai skema warna terang |
+| Rute terlihat tetapi petunjuk awal masih menutupi peta | muat ulang aset JavaScript terbaru; overlay semestinya hilang saat rute tersedia |
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |
 | HTTP 503 | isi server key dan restart aplikasi |
 | HTTP 400 | perbaiki field yang disebut pada respons validasi |
