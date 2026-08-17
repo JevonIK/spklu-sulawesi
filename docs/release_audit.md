@@ -22,13 +22,14 @@ dibaca oleh CI.
 - versi aplikasi dan versi Python yang didukung;
 - keberadaan serta SHA-256 `constraints.txt`;
 - path, jumlah baris, jumlah node logis, dan SHA-256 dataset;
-- konektor algoritma CCS2 dan ketiadaan estimasi waktu pengisian;
+- empat konektor aplikasi, konektor eksperimen CCS2, dan ketiadaan estimasi
+  waktu pengisian;
 - path serta jumlah skenario baseline/sensitivitas; dan
 - hard limit harian, per menit, serta per request untuk Google Routes.
 
 Audit memuat definisi eksperimen melalui validator yang sama dengan command
-`experiment-run`. Selain jumlah skenario, semua konektor skenario harus
-dinormalisasi menjadi CCS2 dan ID skenario harus unik lintas berkas.
+`experiment-run`. Selain jumlah skenario, semua konektor skenario penelitian
+harus dinormalisasi menjadi CCS2 dan ID skenario harus unik lintas berkas.
 
 Manifest hanya boleh diubah ketika perubahan source memang disengaja. Jika
 dataset berubah, validasi dataset terlebih dahulu dan perbarui jumlah/hash

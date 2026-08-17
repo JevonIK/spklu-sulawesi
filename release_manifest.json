@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "application_version": "0.12.0",
+  "schema_version": 2,
+  "application_version": "0.13.0",
   "supported_python_versions": [
     "3.11",
     "3.12",
@@ -17,7 +17,13 @@
     "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
   },
   "algorithm": {
-    "required_connector": "CCS2",
+    "supported_connectors": [
+      "AC TYPE 2",
+      "CCS2",
+      "CHADEMO",
+      "GB/T"
+    ],
+    "research_connector": "CCS2",
     "charging_time_included": false
   },
   "experiments": [

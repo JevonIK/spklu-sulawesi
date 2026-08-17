@@ -1,7 +1,12 @@
 "use strict";
 
 const SULAWESI_CENTER = { lat: -2.1, lng: 121.2 };
-const INDONESIA_BIAS_RADIUS_METERS = 1_000_000;
+const SULAWESI_BOUNDS = {
+    south: -7,
+    west: 118,
+    north: 3,
+    east: 126.5,
+};
 
 const elements = {
     serviceState: document.getElementById("serviceState"),
@@ -11,13 +16,13 @@ const elements = {
     formStatus: document.getElementById("formStatus"),
     originHost: document.getElementById("originAutocomplete"),
     destinationHost: document.getElementById("destinationAutocomplete"),
+    originSelectionStatus: document.getElementById("originSelectionStatus"),
+    destinationSelectionStatus: document.getElementById("destinationSelectionStatus"),
     currentSoc: document.getElementById("currentSoc"),
     maxRange: document.getElementById("maxRange"),
     minimumSoc: document.getElementById("minimumSoc"),
     targetSoc: document.getElementById("targetSoc"),
-    safetyFactor: document.getElementById("safetyFactor"),
-    corridorRadius: document.getElementById("corridorRadius"),
-    socStep: document.getElementById("socStep"),
+    connector: document.getElementById("connector"),
     resultsPanel: document.getElementById("resultsPanel"),
     resultsTitle: document.getElementById("resultsTitle"),
     resultBadge: document.getElementById("resultBadge"),
@@ -39,6 +44,8 @@ const state = {
     infoWindow: null,
     polyline: null,
     markers: [],
+    interfaceReady: false,
+    isSubmitting: false,
     selectedPlaces: {
         origin: null,
         destination: null,
@@ -63,8 +70,33 @@ function setFormStatus(message, type = "info") {
     if (type === "success") elements.formStatus.classList.add("is-success");
 }
 
+function initializationErrorMessage(error) {
+    const message = error?.message || "Sistem belum siap.";
+    if (message.includes("Endpoint rekomendasi")) {
+        return `${message} Pastikan server API key untuk Routes API tersedia, lalu restart aplikasi.`;
+    }
+    if (message.includes("browser API key") || message.includes("Google Maps")) {
+        return `${message} Periksa browser key, restriction referrer, Maps JavaScript API, dan Places API (New).`;
+    }
+    return `${message} Periksa konfigurasi Maps/Places di browser dan Routes API di backend.`;
+}
+
+function recommendationErrorMessage(response, payload) {
+    const serverMessage = payload?.error?.message;
+    if (response.status === 429) {
+        return `${serverMessage || "Batas pemakaian sementara tercapai."} Tunggu sekurang-kurangnya 60 detik dan periksa sisa quota sebelum mencoba lagi.`;
+    }
+    if (response.status === 502) {
+        return `${serverMessage || "Layanan rute Google tidak dapat memproses permintaan."} Periksa Routes API, billing, restriction server key, jaringan, dan quota.`;
+    }
+    if (response.status === 503) {
+        return `${serverMessage || "Endpoint rekomendasi belum dikonfigurasi."} Isi server API key lalu restart aplikasi.`;
+    }
+    return serverMessage || "Rekomendasi gagal diproses.";
+}
+
 async function checkServiceHealth() {
-    if (!elements.serviceState) return;
+    if (!elements.serviceState) throw new Error("Indikator layanan tidak tersedia.");
 
     try {
         const response = await fetch("/api/health", {
@@ -85,12 +117,35 @@ async function checkServiceHealth() {
         elements.serviceState.querySelector("span:last-child").textContent = nodeCount
             ? `Sistem siap · ${nodeCount} lokasi`
             : "Sistem siap";
+        return payload.data;
     } catch (error) {
         elements.serviceState.classList.remove("is-ready");
         elements.serviceState.classList.add("is-error");
         elements.serviceState.querySelector("span:last-child").textContent =
             "Sistem bermasalah";
+        throw error;
     }
+}
+
+function updateSubmitAvailability() {
+    if (!elements.submitButton) return;
+    const locationsReady = Boolean(
+        state.selectedPlaces.origin && state.selectedPlaces.destination,
+    );
+    elements.submitButton.disabled = !state.interfaceReady
+        || !locationsReady
+        || state.isSubmitting;
+}
+
+function setPlaceSelectionStatus(kind, selected) {
+    const status = kind === "origin"
+        ? elements.originSelectionStatus
+        : elements.destinationSelectionStatus;
+    if (!status) return;
+    status.classList.toggle("is-selected", selected);
+    status.textContent = selected
+        ? "Lokasi tersimpan dan koordinat siap digunakan."
+        : "Belum dipilih dari daftar saran Google.";
 }
 
 function loadGoogleMaps(apiKey) {
@@ -132,6 +187,10 @@ function locationToCoordinate(location) {
     };
 }
 
+function normalizedAutocompleteValue(autocomplete) {
+    return String(autocomplete.value || "").trim();
+}
+
 function createPlaceAutocomplete({ host, kind, placeholder, description }) {
     const { PlaceAutocompleteElement } = state.placesLibrary;
     const autocomplete = new PlaceAutocompleteElement({
@@ -141,13 +200,20 @@ function createPlaceAutocomplete({ host, kind, placeholder, description }) {
         placeholder,
     });
     autocomplete.description = description;
-    autocomplete.locationBias = {
-        center: SULAWESI_CENTER,
-        radius: INDONESIA_BIAS_RADIUS_METERS,
-    };
+    autocomplete.locationRestriction = SULAWESI_BOUNDS;
 
     autocomplete.addEventListener("input", () => {
+        const selectedPlace = state.selectedPlaces[kind];
+        if (
+            selectedPlace
+            && normalizedAutocompleteValue(autocomplete)
+                === selectedPlace.autocompleteValue
+        ) {
+            return;
+        }
         state.selectedPlaces[kind] = null;
+        setPlaceSelectionStatus(kind, false);
+        updateSubmitAvailability();
     });
     autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
         try {
@@ -163,15 +229,29 @@ function createPlaceAutocomplete({ host, kind, placeholder, description }) {
                 ...locationToCoordinate(place.location),
                 label: place.displayName || place.formattedAddress || "Lokasi pilihan",
                 address: place.formattedAddress || "",
+                autocompleteValue: normalizedAutocompleteValue(autocomplete),
             };
+            setPlaceSelectionStatus(kind, true);
+            updateSubmitAvailability();
             setFormStatus(
                 "Lokasi tersimpan. Lengkapi kedua lokasi lalu jalankan rekomendasi.",
                 "success",
             );
         } catch (error) {
             state.selectedPlaces[kind] = null;
+            setPlaceSelectionStatus(kind, false);
+            updateSubmitAvailability();
             setFormStatus(error.message || "Detail lokasi gagal dimuat.", "error");
         }
+    });
+    autocomplete.addEventListener("gmp-error", () => {
+        state.selectedPlaces[kind] = null;
+        setPlaceSelectionStatus(kind, false);
+        updateSubmitAvailability();
+        setFormStatus(
+            "Saran lokasi Google gagal dimuat. Periksa Places API, browser key, dan quota sebelum mencoba lagi.",
+            "error",
+        );
     });
 
     host.replaceChildren(autocomplete);
@@ -219,11 +299,6 @@ async function initializeMapsInterface() {
         description: "Pilih lokasi tujuan perjalanan",
     });
 
-    elements.routeFieldset.disabled = false;
-    setFormStatus(
-        "Peta siap. Pilih lokasi dari daftar saran Google lalu isi kondisi kendaraan.",
-        "success",
-    );
 }
 
 function numberValue(element) {
@@ -265,20 +340,18 @@ function buildRequestPayload() {
         vehicle: {
             maximum_range_km: numberValue(elements.maxRange),
             current_soc_percent: numberValue(elements.currentSoc),
-            connector: "CCS2",
+            connector: elements.connector.value,
         },
         options: {
             minimum_soc_percent: numberValue(elements.minimumSoc),
             target_soc_percent: numberValue(elements.targetSoc),
-            safety_factor: numberValue(elements.safetyFactor),
-            soc_step_percent: numberValue(elements.socStep),
-            corridor_radius_km: numberValue(elements.corridorRadius),
         },
     };
 }
 
 function setLoading(isLoading) {
-    elements.submitButton.disabled = isLoading;
+    state.isSubmitting = isLoading;
+    updateSubmitAvailability();
     elements.submitButton.querySelector("span").textContent = isLoading
         ? "Menghitung rekomendasi…"
         : "Cari rekomendasi SPKLU";
@@ -334,7 +407,7 @@ function stationInfoContent(stop) {
     content.append(address);
 
     const charging = document.createElement("span");
-    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit`;
+    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${station.connectors.join(", ")}`;
     content.append(charging);
     return content;
 }
@@ -452,7 +525,7 @@ function renderSummary(data) {
         elements.summaryGrid.append(
             summaryItem("Jarak rute dasar", formatDistance(data.base_route.distance_km)),
             summaryItem("Durasi rute dasar", formatDuration(data.base_route.duration_minutes)),
-            summaryItem("Kandidat CCS2", String(data.candidate_summary.corridor_candidate_count)),
+            summaryItem(`Kandidat ${data.request.connector}`, String(data.candidate_summary.corridor_candidate_count)),
             summaryItem("Status", "Tidak feasible"),
         );
     }
@@ -487,7 +560,7 @@ function renderItinerary(data) {
             const station = stop.station;
             const stopCard = document.createElement("div");
             stopCard.className = "stop-card";
-            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit CCS2`;
+            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${data.request.connector}`;
             copy.append(stopCard);
         }
 
@@ -592,11 +665,16 @@ async function submitRecommendation(event) {
             },
             body: JSON.stringify(buildRequestPayload()),
         });
-        const payload = await response.json();
-        if (!response.ok || payload.status !== "ok") {
+        let payload;
+        try {
+            payload = await response.json();
+        } catch (error) {
             throw new Error(
-                payload.error?.message || "Rekomendasi gagal diproses.",
+                "Server tidak mengembalikan respons yang dapat dibaca. Periksa terminal aplikasi dan koneksi lokal.",
             );
+        }
+        if (!response.ok || payload.status !== "ok") {
+            throw new Error(recommendationErrorMessage(response, payload));
         }
         renderRecommendation(payload.data);
     } catch (error) {
@@ -604,20 +682,33 @@ async function submitRecommendation(event) {
             error.message || "Terjadi kesalahan saat menyusun rekomendasi.",
             "error",
         );
+        elements.formStatus?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } finally {
         setLoading(false);
     }
 }
 
 async function initializeApplication() {
-    checkServiceHealth();
     elements.routeForm?.addEventListener("submit", submitRecommendation);
+    updateSubmitAvailability();
     try {
-        await initializeMapsInterface();
-    } catch (error) {
-        elements.routeFieldset.disabled = true;
+        await Promise.all([
+            checkServiceHealth(),
+            initializeMapsInterface(),
+        ]);
+        state.interfaceReady = true;
+        elements.routeFieldset.disabled = false;
+        updateSubmitAvailability();
         setFormStatus(
-            `${error.message} Periksa browser key, pembatasan referrer, dan aktivasi Maps JavaScript API serta Places API (New).`,
+            "Sistem siap. Pilih lokasi awal dan tujuan dari daftar saran Google; tombol pencarian akan aktif setelah keduanya tersimpan.",
+            "success",
+        );
+    } catch (error) {
+        state.interfaceReady = false;
+        elements.routeFieldset.disabled = true;
+        updateSubmitAvailability();
+        setFormStatus(
+            initializationErrorMessage(error),
             "error",
         );
     }

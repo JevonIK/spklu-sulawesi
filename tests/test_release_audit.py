@@ -21,8 +21,8 @@ def test_project_release_manifest_passes_all_checks(app):
 
     assert report["status"] == "passed"
     assert report["summary"] == {
-        "check_count": 23,
-        "passed_count": 23,
+        "check_count": 24,
+        "passed_count": 24,
         "failed_count": 0,
     }
     assert all(check["passed"] for check in report["checks"])

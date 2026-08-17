@@ -8,12 +8,12 @@ import re
 import sys
 from pathlib import Path
 
-from ..constants import CHARGING_TIME_INCLUDED, REQUIRED_CONNECTOR
-from .dataset import normalize_connector
+from ..constants import CHARGING_TIME_INCLUDED, RESEARCH_CONNECTOR
+from .dataset import CONNECTOR_ORDER, normalize_connector
 from .evaluation import ExperimentDefinitionError, load_experiment_definition
 
 
-RELEASE_MANIFEST_SCHEMA_VERSION = 1
+RELEASE_MANIFEST_SCHEMA_VERSION = 2
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 QUOTA_LIMIT_NAMES = frozenset(
     {
@@ -68,7 +68,10 @@ def validate_release_manifest(manifest):
 
     manifest = _mapping(manifest, "root")
     if manifest.get("schema_version") != RELEASE_MANIFEST_SCHEMA_VERSION:
-        raise ReleaseManifestError("schema_version manifest harus bernilai 1.")
+        raise ReleaseManifestError(
+            "schema_version manifest harus bernilai "
+            f"{RELEASE_MANIFEST_SCHEMA_VERSION}."
+        )
     _text(manifest, "application_version", "root")
 
     python_versions = manifest.get("supported_python_versions")
@@ -107,7 +110,20 @@ def validate_release_manifest(manifest):
         raise ReleaseManifestError("root.dependencies.sha256 tidak valid.")
 
     algorithm = _mapping(manifest.get("algorithm"), "root.algorithm")
-    _text(algorithm, "required_connector", "root.algorithm")
+    supported_connectors = algorithm.get("supported_connectors")
+    if (
+        not isinstance(supported_connectors, list)
+        or not supported_connectors
+        or any(
+            not isinstance(connector, str) or not connector.strip()
+            for connector in supported_connectors
+        )
+        or len(supported_connectors) != len(set(supported_connectors))
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.supported_connectors wajib berupa daftar teks unik."
+        )
+    _text(algorithm, "research_connector", "root.algorithm")
     if not isinstance(algorithm.get("charging_time_included"), bool):
         raise ReleaseManifestError(
             "root.algorithm.charging_time_included wajib berupa boolean."
@@ -238,9 +254,15 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
     algorithm = manifest["algorithm"]
     _add_check(
         checks,
-        "algorithm.required_connector",
-        algorithm["required_connector"],
-        REQUIRED_CONNECTOR,
+        "algorithm.supported_connectors",
+        algorithm["supported_connectors"],
+        list(CONNECTOR_ORDER),
+    )
+    _add_check(
+        checks,
+        "algorithm.research_connector",
+        algorithm["research_connector"],
+        RESEARCH_CONNECTOR,
     )
     _add_check(
         checks,
@@ -282,7 +304,7 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         _add_check(
             checks,
             f"{check_prefix}.connectors",
-            [algorithm["required_connector"]],
+            [algorithm["research_connector"]],
             connectors,
         )
         all_scenario_ids.extend(scenario["id"] for scenario in scenarios)

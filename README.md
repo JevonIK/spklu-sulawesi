@@ -45,6 +45,10 @@ pada ketiga runtime.
 Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
 tanpa jaringan eksternal, healthcheck terbatas, audit rilis, user non-root, dan
 uji tulis direktori persisten.
+Fase 13 menyederhanakan antarmuka untuk pengguna umum, menyediakan pilihan
+seluruh konektor pada dataset, memindahkan parameter penelitian lanjutan ke
+default backend, serta memperjelas kesiapan lokasi dan endpoint sebelum tombol
+rekomendasi dapat digunakan.
 
 ## Ruang lingkup sistem
 
@@ -196,7 +200,7 @@ Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.12.0 pada
+kandidat rilis 0.13.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

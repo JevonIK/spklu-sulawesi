@@ -2,7 +2,8 @@
 
 Dokumen ini menjadi checklist agar implementasi, eksperimen, dan naskah tugas
 akhir memakai ruang lingkup yang sama. Instruksi terbaru pemilik penelitian
-menjadi acuan: konektor yang didukung adalah CCS2, kapasitas kendaraan dinyatakan
+menjadi acuan: aplikasi umum mendukung seluruh konektor pada dataset, sedangkan
+eksperimen penelitian terdokumentasi memakai CCS2; kapasitas kendaraan dinyatakan
 dalam jangkauan maksimum (km), unit pada koordinat sama dipertahankan sebagai
 informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung.
 
@@ -12,7 +13,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 |---|---|
 | Dataset enam wilayah Sulawesi | `dataset_spklu_sulawesi.csv` dan validasi `app/services/dataset.py` |
 | Dua unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf |
-| Kompatibilitas CCS2 | normalisasi dataset, validasi input, dan filter kandidat |
+| Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline/sensitivitas memakai CCS2 |
 | Kandidat berbasis Ball Tree | `app/services/spatial.py` |
 | Rute dan jarak jalan | `app/services/google_routes.py` |
 | Graf berarah | `app/services/graph.py` |
@@ -48,8 +49,8 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 5. Ubah metrik `total waktu perjalanan dan pengisian` menjadi `total waktu
    berkendara`.
 6. Pada luaran yang diharapkan, hapus komponen `waktu pengisian`.
-7. Pastikan semua contoh konektor menyebut CCS2 sebagai konektor yang didukung,
-   bukan GB/T.
+7. Jelaskan bahwa sistem dapat memfilter AC Type 2, CCS2, CHAdeMO, dan GB/T,
+   sedangkan eksperimen baseline dan sensitivitas memakai CCS2.
 8. Gunakan satuan `km` untuk jangkauan maksimum kendaraan; GB/T adalah nama
    konektor dan bukan satuan atau parameter kapasitas.
 9. Hapus `jumlah kandidat SPKLU pada setiap segmen` dari daftar parameter

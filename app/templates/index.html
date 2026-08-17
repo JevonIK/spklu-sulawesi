@@ -53,6 +53,9 @@
                         id="originAutocomplete"
                         aria-labelledby="originLabel"
                     ></div>
+                    <small class="selection-status" id="originSelectionStatus">
+                        Belum dipilih dari daftar saran Google.
+                    </small>
 
                     <label id="destinationLabel">Lokasi tujuan</label>
                     <div
@@ -60,6 +63,9 @@
                         id="destinationAutocomplete"
                         aria-labelledby="destinationLabel"
                     ></div>
+                    <small class="selection-status" id="destinationSelectionStatus">
+                        Belum dipilih dari daftar saran Google.
+                    </small>
 
                     <div class="form-grid">
                         <div>
@@ -74,6 +80,7 @@
                                 value="80"
                                 required
                             >
+                            <small class="field-note">Persentase baterai sebelum berangkat.</small>
                         </div>
                         <div>
                             <label for="maxRange">Jangkauan maksimum (km)</label>
@@ -87,6 +94,7 @@
                                 value="300"
                                 required
                             >
+                            <small class="field-note">Jarak maksimum kendaraan saat baterai 100%.</small>
                         </div>
                         <div>
                             <label for="minimumSoc">SOC minimum (%)</label>
@@ -100,6 +108,7 @@
                                 value="{{ defaults.soc_min | int }}"
                                 required
                             >
+                            <small class="field-note">Cadangan baterai terendah yang ingin dipertahankan.</small>
                         </div>
                         <div>
                             <label for="targetSoc">Target SOC (%)</label>
@@ -113,64 +122,24 @@
                                 value="{{ defaults.soc_target | int }}"
                                 required
                             >
+                            <small class="field-note">Batas SOC keberangkatan setelah berhenti di SPKLU.</small>
                         </div>
                     </div>
 
                     <label for="connector">Jenis konektor kendaraan</label>
-                    <div class="fixed-input">
-                        <input id="connector" value="CCS2" readonly aria-describedby="connectorNote">
-                        <span aria-hidden="true">Tetap</span>
-                    </div>
+                    <select id="connector" name="connector" aria-describedby="connectorNote" required>
+                        {% for connector in connectors %}
+                        <option value="{{ connector.value }}" {% if connector.value == "CCS2" %}selected{% endif %}>
+                            {{ connector.label }} — {{ connector.location_count }} lokasi
+                        </option>
+                        {% endfor %}
+                    </select>
                     <small class="field-note" id="connectorNote">
-                        Penelitian ini khusus mengevaluasi konektor CCS2.
+                        Pilih konektor yang benar-benar kompatibel dengan kendaraan Anda.
+                        Jumlah lokasi mengikuti dataset saat ini.
                     </small>
 
-                    <details class="advanced-settings">
-                        <summary>Pengaturan penelitian</summary>
-                        <div class="form-grid">
-                            <div>
-                                <label for="safetyFactor">Safety factor</label>
-                                <input
-                                    id="safetyFactor"
-                                    name="safety_factor"
-                                    type="number"
-                                    min="0.01"
-                                    max="1"
-                                    step="0.01"
-                                    value="{{ defaults.safety_factor }}"
-                                    required
-                                >
-                            </div>
-                            <div>
-                                <label for="corridorRadius">Radius koridor (km)</label>
-                                <input
-                                    id="corridorRadius"
-                                    name="corridor_radius"
-                                    type="number"
-                                    min="0.1"
-                                    max="100"
-                                    step="0.1"
-                                    value="{{ defaults.corridor_radius_km }}"
-                                    required
-                                >
-                            </div>
-                            <div>
-                                <label for="socStep">Interval SOC (%)</label>
-                                <input
-                                    id="socStep"
-                                    name="soc_step"
-                                    type="number"
-                                    min="1"
-                                    max="25"
-                                    step="1"
-                                    value="{{ defaults.soc_step | int }}"
-                                    required
-                                >
-                            </div>
-                        </div>
-                    </details>
-
-                    <button id="submitButton" type="submit">
+                    <button id="submitButton" type="submit" disabled>
                         <span>Cari rekomendasi SPKLU</span>
                     </button>
                 </fieldset>

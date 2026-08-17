@@ -17,11 +17,13 @@ troubleshooting di bawah.
 1. Pilih lokasi awal dari hasil Place Autocomplete.
 2. Pilih lokasi tujuan yang berbeda.
 3. Masukkan SOC saat ini dan jangkauan maksimum kendaraan dalam kilometer.
-4. Pastikan kendaraan memakai konektor CCS2.
-5. Biarkan parameter penelitian pada nilai default untuk baseline, atau buka
-   **Pengaturan penelitian** untuk mengubah safety factor, radius koridor, dan
-   interval SOC.
-6. Pilih **Cari rekomendasi SPKLU** satu kali dan tunggu hasil.
+4. Pilih konektor yang sesuai dengan kendaraan: AC Type 2, CCS2, CHAdeMO, atau
+   GB/T. Angka pada pilihan menunjukkan jumlah lokasi pada dataset.
+5. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
+   batas SOC keberangkatan setelah berhenti di SPKLU.
+6. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
+   **Cari rekomendasi SPKLU** baru aktif setelah keduanya tersimpan.
+7. Pilih tombol tersebut satu kali dan tunggu hasil.
 
 Jangan menekan tombol berulang selama loading. Setiap rekomendasi merupakan
 pengujian live yang dapat memakai Compute Routes dan elemen Route Matrix.
@@ -42,25 +44,30 @@ Sistem tidak menghitung lama pengisian.
 
 Hasil **Rute aman belum ditemukan** bukan selalu error aplikasi. Status ini
 berarti graf tidak memiliki rangkaian leg yang memenuhi jangkauan, SOC minimum,
-konektor, dan parameter saat itu. Pengguna dapat mengevaluasi kendaraan dengan
-jangkauan berbeda atau parameter penelitian lain, tetapi tidak boleh mengabaikan
-batas aman kendaraan aktual.
+konektor, dan parameter backend saat itu. Pengguna dapat memeriksa kembali jenis
+konektor atau jangkauan kendaraan, tetapi tidak boleh mengabaikan batas aman
+kendaraan aktual.
 
-## Makna parameter penelitian
+## Makna pengaturan kendaraan
 
-- **Safety factor** menurunkan jangkauan nominal untuk membentuk margin aman.
-- **Radius koridor** menentukan lebar pencarian SPKLU di sekitar rute dasar.
-- **Interval SOC** menentukan granularitas state Dynamic Programming; interval
-  lebih kecil umumnya menambah state dan komputasi.
+- **SOC saat ini** adalah persentase baterai sebelum perjalanan dimulai.
+- **Jangkauan maksimum** adalah jarak nominal kendaraan saat baterai 100%.
 - **SOC minimum** adalah batas tiba terendah yang diizinkan model.
 - **Target SOC** adalah batas maksimum keberangkatan yang dievaluasi setelah
   berhenti di SPKLU, bukan estimasi waktu pengisian.
+- **Jenis konektor** harus sama dengan konektor yang didukung kendaraan.
+
+Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
+5 km menjadi default backend. Nilai ini tidak ditampilkan pada formulir umum.
+Peneliti tetap dapat mengubahnya melalui skenario eksperimen, bukan melalui
+interaksi pengguna harian.
 
 ## Troubleshooting
 
 | Gejala | Pemeriksaan |
 |---|---|
-| Form tetap nonaktif | periksa browser key, restriction referrer, Maps JavaScript API, dan Places API |
+| Form tetap nonaktif | periksa browser key, server key, restriction referrer, Maps JavaScript API, Places API, dan Routes API |
+| Tombol pencarian tetap nonaktif | pilih lokasi awal dan tujuan dari daftar saran Google; teks yang hanya diketik belum menyimpan koordinat |
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |
 | HTTP 503 | isi server key dan restart aplikasi |
 | HTTP 400 | perbaiki field yang disebut pada respons validasi |

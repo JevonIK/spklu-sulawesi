@@ -8,11 +8,28 @@ web_bp = Blueprint("web", __name__)
 
 @web_bp.get("/")
 def index():
+    catalog = current_app.extensions["station_catalog"]
+    connector_counts = catalog.summary()["connector_node_counts"]
+    connector_labels = {
+        "AC TYPE 2": "AC Type 2",
+        "CCS2": "CCS2",
+        "CHADEMO": "CHAdeMO",
+        "GB/T": "GB/T",
+    }
     return render_template(
         "index.html",
         app_name=current_app.config["APP_NAME"],
         app_version=current_app.config["APP_VERSION"],
         csp_nonce=g.csp_nonce,
+        connectors=[
+            {
+                "value": connector,
+                "label": connector_labels[connector],
+                "location_count": location_count,
+            }
+            for connector, location_count in connector_counts.items()
+            if location_count > 0
+        ],
         defaults={
             "soc_min": current_app.config["DEFAULT_SOC_MIN"],
             "soc_target": current_app.config["DEFAULT_SOC_TARGET"],

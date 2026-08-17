@@ -6,7 +6,7 @@ import math
 import uuid
 from dataclasses import dataclass
 
-from ..constants import REQUIRED_CONNECTOR
+from ..constants import DEFAULT_CONNECTOR
 from .dataset import normalize_connector
 from .energy import EnergyParameters
 from .graph import build_travel_graph
@@ -90,18 +90,12 @@ class RecommendationInput:
 
         try:
             connector = normalize_connector(
-                vehicle.get("connector", REQUIRED_CONNECTOR)
+                vehicle.get("connector", DEFAULT_CONNECTOR)
             )
         except ValueError as error:
             raise RecommendationValidationError(
                 "vehicle.connector", str(error)
             ) from error
-        if connector != REQUIRED_CONNECTOR:
-            raise RecommendationValidationError(
-                "vehicle.connector",
-                "Sistem penelitian ini hanya mendukung konektor CCS2.",
-            )
-
         maximum_range = _number(
             vehicle,
             "maximum_range_km",
@@ -334,7 +328,21 @@ class QuotaProtectedRecommendationService:
         )
 
     def parse_input(self, payload):
-        return self.service.parse_input(payload)
+        if not isinstance(payload, dict):
+            return self.service.parse_input(payload)
+
+        public_payload = dict(payload)
+        options = payload.get("options")
+        if isinstance(options, dict):
+            public_payload["options"] = {
+                key: options[key]
+                for key in (
+                    "minimum_soc_percent",
+                    "target_soc_percent",
+                )
+                if key in options
+            }
+        return self.service.parse_input(public_payload)
 
     @staticmethod
     def _quota_payload(status, budget):

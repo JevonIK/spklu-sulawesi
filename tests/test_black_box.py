@@ -1,3 +1,5 @@
+import pytest
+
 from app.services.dataset import StationNode, StationUnit
 from app.services.google_routes import ComputedRoute
 from app.services.recommendation import RecommendationService
@@ -40,7 +42,7 @@ class DeterministicRoutesClient:
         )
 
 
-def station_node():
+def station_node(connector="CCS2"):
     unit = StationUnit(
         source_row=1,
         province="Sulawesi Selatan",
@@ -50,7 +52,7 @@ def station_node():
         latitude=0,
         longitude=0.5,
         maps_url="https://maps.example/uji",
-        connectors=("CCS2",),
+        connectors=(connector,),
     )
     return StationNode(
         node_id="spklu-tengah",
@@ -66,14 +68,14 @@ def station_node():
     )
 
 
-def payload(maximum_range_km):
+def payload(maximum_range_km, connector="CCS2"):
     return {
         "origin": {"latitude": 0, "longitude": 0},
         "destination": {"latitude": 0, "longitude": 1},
         "vehicle": {
             "maximum_range_km": maximum_range_km,
             "current_soc_percent": 80,
-            "connector": "CCS2",
+            "connector": connector,
         },
         "options": {
             "minimum_soc_percent": 20,
@@ -85,9 +87,9 @@ def payload(maximum_range_km):
     }
 
 
-def install_real_pipeline(app):
+def install_real_pipeline(app, connector="CCS2"):
     app.extensions["recommendation_service"] = RecommendationService(
-        spatial_index=StationSpatialIndex((station_node(),)),
+        spatial_index=StationSpatialIndex((station_node(connector),)),
         routes_client=DeterministicRoutesClient(),
         defaults=DEFAULTS,
     )
@@ -123,3 +125,23 @@ def test_black_box_recommendation_reports_infeasible_route_without_500(
     assert result["optimization"]["reason"] == "graph_disconnected"
     assert result["optimization"]["itinerary"] is None
     assert result["recommended_route"] is None
+
+
+@pytest.mark.parametrize(
+    "connector",
+    ("AC TYPE 2", "CCS2", "CHADEMO", "GB/T"),
+)
+def test_black_box_recommendation_supports_dataset_connectors(
+    app, client, connector
+):
+    install_real_pipeline(app, connector)
+
+    response = client.post(
+        "/api/recommendations",
+        json=payload(100, connector),
+    )
+    result = response.get_json()["data"]
+
+    assert response.status_code == 200
+    assert result["request"]["connector"] == connector
+    assert result["optimization"]["feasible"] is True

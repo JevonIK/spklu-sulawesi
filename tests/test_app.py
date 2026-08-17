@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from app.services.recommendation import (
     QuotaProtectedRecommendationService,
@@ -14,7 +15,24 @@ def test_index_is_available(client):
     assert b"State of Charge" in response.data
     assert b'id="routeForm"' in response.data
     assert b'id="map"' in response.data
-    assert b"CCS2" in response.data
+    assert b'id="originSelectionStatus"' in response.data
+    assert b'id="destinationSelectionStatus"' in response.data
+    assert b'id="connector"' in response.data
+    assert b'value="AC TYPE 2"' in response.data
+    assert b'value="CCS2"' in response.data
+    assert b'value="CHADEMO"' in response.data
+    assert b'value="GB/T"' in response.data
+    assert b'id="safetyFactor"' not in response.data
+    assert b'id="corridorRadius"' not in response.data
+    assert b'id="socStep"' not in response.data
+
+
+def test_places_autocomplete_uses_sulawesi_bounds_not_invalid_large_radius():
+    source = Path("app/static/js/app.js").read_text(encoding="utf-8")
+
+    assert "autocomplete.locationRestriction = SULAWESI_BOUNDS" in source
+    assert "INDONESIA_BIAS_RADIUS_METERS" not in source
+    assert "1_000_000" not in source
 
 
 def test_index_exposes_only_browser_configuration():
@@ -44,7 +62,7 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
-    assert payload["version"] == "0.12.0"
+    assert payload["version"] == "0.13.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["sha256"] == (

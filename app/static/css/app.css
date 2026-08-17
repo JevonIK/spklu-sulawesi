@@ -217,6 +217,19 @@ fieldset {
     min-height: 45px;
 }
 
+.selection-status {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.4;
+}
+
+.selection-status.is-selected {
+    color: var(--teal-700);
+    font-weight: 760;
+}
+
 .autocomplete-host gmp-place-autocomplete {
     display: block;
     --gmp-mat-color-surface: #fbfcfc;
@@ -248,32 +261,6 @@ fieldset {
     gap: 0 12px;
 }
 
-.fixed-input {
-    position: relative;
-}
-
-.fixed-input input {
-    padding-right: 70px;
-    color: var(--navy-900);
-    font-weight: 800;
-    background: var(--mint-100);
-}
-
-.fixed-input span {
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    color: var(--teal-700);
-    background: rgba(255, 255, 255, 0.72);
-    font-size: 0.64rem;
-    font-weight: 850;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    transform: translateY(-50%);
-}
-
 .field-note {
     display: block;
     margin-top: 6px;
@@ -282,15 +269,6 @@ fieldset {
     line-height: 1.45;
 }
 
-.advanced-settings {
-    margin-top: 17px;
-    padding: 12px 14px 15px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: #fbfcfc;
-}
-
-.advanced-settings summary,
 .diagnostics summary {
     color: var(--navy-800);
     cursor: pointer;

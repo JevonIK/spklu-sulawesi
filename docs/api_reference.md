@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -60,15 +60,16 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
   },
   "options": {
     "minimum_soc_percent": 20,
-    "target_soc_percent": 80,
-    "safety_factor": 0.9,
-    "soc_step_percent": 5,
-    "corridor_radius_km": 10
+    "target_soc_percent": 80
   }
 }
 ```
 
-`options` boleh dihilangkan dan akan memakai default environment. Aturan input:
+`options` boleh dihilangkan dan akan memakai default environment. Endpoint web
+hanya menerima pilihan SOC minimum dan target dari pengguna. Safety factor,
+radius koridor, interval SOC, serta langkah sampling ditetapkan oleh konfigurasi
+backend. Variasi parameter tersebut tetap dapat digunakan oleh perangkat
+eksperimen CLI yang terdokumentasi. Aturan input:
 
 | Field | Aturan |
 |---|---|
@@ -77,10 +78,7 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
 | `current_soc_percent` | di atas SOC minimum dan maksimal 100% |
 | `minimum_soc_percent` | 0 sampai kurang dari 100% |
 | `target_soc_percent` | lebih besar dari SOC minimum dan maksimal 100% |
-| `safety_factor` | lebih besar dari 0 dan maksimal 1 |
-| `soc_step_percent` | lebih besar dari 0 dan tidak melampaui ruang SOC |
-| `corridor_radius_km` | lebih besar dari 0 dan maksimal 100 km |
-| `connector` | harus `CCS2` |
+| `connector` | `AC TYPE 2`, `CCS2`, `CHADEMO`, atau `GB/T` |
 
 Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
 `data.optimization.feasible`:

@@ -8,7 +8,7 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 
 | ID | Skenario | Hasil yang diharapkan | Otomatis |
 |---|---|---|---|
-| BB-01 | Halaman utama dibuka | HTTP 200, formulir, peta, dan CCS2 tampil | `test_app.py` |
+| BB-01 | Halaman utama dibuka | HTTP 200, formulir, peta, dan empat pilihan konektor tampil | `test_app.py` |
 | BB-02 | Health check | Dataset, indeks, optimizer, dan status key tersedia | `test_app.py` |
 | BB-03 | Input valid, perlu satu SPKLU | HTTP 200, itinerary feasible, SOC aman | `test_black_box.py` |
 | BB-04 | Input valid tetapi jangkauan tidak cukup | HTTP 200, `graph_disconnected`, tanpa itinerary | `test_black_box.py` |
@@ -23,6 +23,8 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 | BB-13 | Host produksi tidak dipercaya | HTTP 400 | `test_security.py` |
 | BB-14 | Halaman privasi dan ketentuan | HTTP 200 dan tertaut dari halaman utama | `test_security.py` |
 | BB-15 | Header keamanan | CSP nonce, anti-frame, nosniff, referrer dan permissions policy | `test_security.py` |
+| BB-16 | Setiap konektor dataset dipilih | Pipeline menerima AC Type 2, CCS2, CHAdeMO, dan GB/T | `test_black_box.py` |
+| BB-17 | Opsi penelitian dikirim ke endpoint publik | SOC minimum/target dipakai; parameter lanjutan tetap memakai default backend | `test_recommendation.py` |
 
 ## Smoke test browser
 

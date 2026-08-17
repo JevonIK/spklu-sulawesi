@@ -14,7 +14,8 @@ pengambilan data penelitian tambahan.
 - [ ] Definisi baseline dan sensitivitas tervalidasi serta ID skenario unik.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
-- [ ] Konektor sistem tetap CCS2; tipe konektor lain hanya informasi dataset.
+- [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario penelitian
+  tetap memakai CCS2.
 
 ## Verifikasi otomatis tanpa API live
 
@@ -34,8 +35,9 @@ python -m flask --app run.py release-audit
 - [ ] Health endpoint, validasi input, security headers, dan error handling lulus.
 - [ ] Referensi API dan panduan pengguna sesuai dengan versi kandidat rilis.
 
-Command `release-audit` mencakup identitas versi, dataset, CCS2, ketiadaan waktu
-pengisian, definisi skenario, ID unik, dan hard limit. Item yang bergantung pada
+Command `release-audit` mencakup identitas versi, dataset, konektor aplikasi,
+konektor eksperimen CCS2, ketiadaan waktu pengisian, definisi skenario, ID unik,
+dan hard limit. Item yang bergantung pada
 isi commit, GitHub, deployment, atau Google Cloud tetap diperiksa manual. Lihat
 [`release_audit.md`](release_audit.md) untuk batas pemeriksaannya.
 

@@ -7,7 +7,8 @@ Antarmuka fase 6B terdiri dari:
 - Place Autocomplete untuk lokasi awal dan tujuan;
 - peta Google dengan overview polyline rute;
 - marker lokasi awal, tujuan, dan SPKLU terpilih;
-- formulir parameter kendaraan dan parameter penelitian;
+- formulir parameter kendaraan dengan pilihan AC Type 2, CCS2, CHAdeMO, dan
+  GB/T;
 - ringkasan jarak, durasi berkendara, jumlah pemberhentian, dan SOC akhir;
 - itinerary per leg dengan SOC berangkat dan tiba; serta
 - statistik kandidat, graf, state DP, dan penggunaan API.
@@ -18,13 +19,16 @@ di luar ruang lingkup penelitian.
 ## Alur interaksi
 
 1. Halaman memeriksa health endpoint dan memuat Maps JavaScript API.
-2. Form tetap dinonaktifkan sampai library `maps`, `places`, dan `marker` siap.
+2. Form tetap dinonaktifkan sampai health endpoint, endpoint rekomendasi, serta
+   library `maps`, `places`, dan `marker` siap.
 3. Pengguna wajib memilih hasil dari Place Autocomplete agar koordinat valid.
-4. Autocomplete dibatasi ke Indonesia dan diberi bias ke wilayah Sulawesi.
-5. Input dikirim sebagai JSON ke `POST /api/recommendations`.
-6. Selama perhitungan, tombol dan peta menampilkan status loading.
-7. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC.
-8. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
+4. Tombol rekomendasi tetap nonaktif sampai origin dan destination tersimpan.
+5. Autocomplete dibatasi ke Indonesia dan ke bounding box wilayah Sulawesi.
+6. Input pengguna dikirim sebagai JSON ke `POST /api/recommendations`, sedangkan
+   safety factor, radius koridor, interval SOC, dan sampling berasal dari backend.
+7. Selama perhitungan, tombol dan peta menampilkan status loading.
+8. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC.
+9. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
 
 ## Keamanan key

@@ -161,20 +161,31 @@ def protected_service(tmp_path, service, **overrides):
         ledger,
     )
 
-def test_recommendation_input_uses_defaults_and_requires_ccs2():
+@pytest.mark.parametrize(
+    "connector",
+    ("AC TYPE 2", "CCS2", "CHADEMO", "GB/T"),
+)
+def test_recommendation_input_supports_all_dataset_connectors(connector):
     parsed = RecommendationInput.from_payload(
-        valid_payload(), defaults=DEFAULTS
+        valid_payload(connector=connector), defaults=DEFAULTS
     )
 
-    assert parsed.connector == "CCS2"
+    assert parsed.connector == connector
     assert parsed.parameters.minimum_soc_percent == 20
     assert parsed.parameters.target_soc_percent == 80
+    assert parsed.parameters.safety_factor == 1
+    assert parsed.parameters.soc_step_percent == 5
+    assert parsed.corridor_radius_km == 10
     assert parsed.route_sample_step_km == 5
 
-    with pytest.raises(RecommendationValidationError, match="hanya mendukung"):
-        RecommendationInput.from_payload(
-            valid_payload(connector="GB/T"), defaults=DEFAULTS
-        )
+
+def test_recommendation_input_defaults_to_ccs2_when_connector_is_omitted():
+    body = valid_payload()
+    body["vehicle"].pop("connector")
+
+    parsed = RecommendationInput.from_payload(body, defaults=DEFAULTS)
+
+    assert parsed.connector == "CCS2"
 
 
 @pytest.mark.parametrize(
@@ -283,6 +294,31 @@ def test_web_quota_guard_records_actual_usage_and_returns_status(tmp_path):
     raw = json.loads(ledger.path.read_text())
     run = next(iter(raw["days"].values()))["runs"][0]
     assert run["outcome"] == "completed"
+
+
+def test_web_service_keeps_public_soc_options_and_uses_backend_research_defaults(
+    tmp_path,
+):
+    service = BudgetTestRecommendationService()
+    protected, _ = protected_service(tmp_path, service)
+    payload = {
+        "options": {
+            "minimum_soc_percent": 15,
+            "target_soc_percent": 85,
+            "safety_factor": 0.5,
+            "soc_step_percent": 25,
+            "corridor_radius_km": 99,
+        }
+    }
+
+    parsed = protected.parse_input(payload)
+
+    assert parsed == {
+        "options": {
+            "minimum_soc_percent": 15,
+            "target_soc_percent": 85,
+        }
+    }
 
 
 def test_web_quota_guard_records_failed_attempts(tmp_path):
