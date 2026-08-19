@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "application_version": "0.14.0",
+  "dataset": {
+    "path": "dataset_spklu_sulawesi.csv",
+    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "source_rows": 150,
+    "logical_nodes": 149
+  },
+  "source_reports": {
+    "baseline": {
+      "path": "reports/generated/baseline-live-20260813-detailed.json",
+      "sha256": "40074a65d5e0d58ed6ae8f4e61f5d28ecb7958f8f67aaa8729c09de8b20a5f51",
+      "generated_at_utc": "2026-08-13T02:34:56.309842+00:00",
+      "scenario_count": 6
+    },
+    "sensitivity": {
+      "path": "reports/generated/sensitivitas-live-20260813-rerun1.json",
+      "sha256": "a46b02163bd443db9516d8da1cd42d49e4ed2e53b458a48d6fdf45f0d97a7d3c",
+      "generated_at_utc": "2026-08-13T03:28:22.546962+00:00",
+      "scenario_count": 7
+    }
+  },
+  "tracked_snapshots": {
+    "baseline_results.csv": {
+      "sha256": "190b110a667809a59150fd2ebbd99c0d28a0f35887deebd3db8d304fbc8207bf",
+      "rows": 6
+    },
+    "sensitivity_results.csv": {
+      "sha256": "21b8d4a86891108a20318de4040ac8beb1ec0119c7bf3b1a7918f262c6bf8f9c",
+      "rows": 7
+    },
+    "baseline_itinerary_legs.csv": {
+      "sha256": "758eb59ee2ffe1eaa437ad16656897983c37004f733c70eb65ad113d0523d415",
+      "rows": 6
+    }
+  },
+  "notes": [
+    "Snapshot diturunkan dari laporan live tervalidasi untuk analisis offline.",
+    "Snapshot tidak memuat polyline, API key, atau koordinat origin-destination hasil Google.",
+    "Notebook tidak menjalankan Google Maps API dan tidak mengestimasi waktu pengisian."
+  ]
+}

@@ -147,6 +147,7 @@ spklu-sulawesi/
 |   `-- config.py        # Konfigurasi environment
 |-- docs/                # Dokumentasi data dan penelitian
 |-- experiments/         # Skenario baseline dan sensitivitas
+|-- notebooks/           # Analisis reproduktif dan snapshot hasil jurnal
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
 |-- constraints.txt
@@ -193,6 +194,12 @@ infeasible, serta audit quota tersedia pada
 Hasil analisis sensitivitas live, pengaruh alpha/radius/interval SOC, dan audit
 pemakaian API tersedia pada
 [`docs/sensitivity_results.md`](docs/sensitivity_results.md).
+
+Notebook pendamping jurnal yang menjalankan analisis dataset, demonstrasi DP,
+baseline, sensitivitas, serta visualisasi secara offline tersedia pada
+[`notebooks/analisis_sistem_spklu_sulawesi.ipynb`](notebooks/analisis_sistem_spklu_sulawesi.ipynb).
+Snapshot metrik yang dilacak beserta provenance-nya berada di
+`notebooks/data/`; notebook tidak memanggil Google Maps API.
 
 Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia
 pada [`docs/google_maps_api_limits.md`](docs/google_maps_api_limits.md).

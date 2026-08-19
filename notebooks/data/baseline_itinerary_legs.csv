@@ -1,0 +1,7 @@
+scenario_id,region,sequence,source_name,target_name,road_distance_km,road_duration_minutes,estimated_detour_km,departure_soc_percent,arrival_soc_percent,consumption_soc_percent
+baseline-sulawesi-selatan,Sulawesi Selatan,1,Lokasi awal,SPKLU LAGOTA CAFE,155.819,201.48333333333332,0.14102734225943436,80.0,22.28925925925926,57.71074074074074
+baseline-sulawesi-selatan,Sulawesi Selatan,2,SPKLU LAGOTA CAFE,Lokasi tujuan,161.112,259.68333333333334,0.20074737073647952,80.0,20.32888888888889,59.67111111111111
+baseline-sulawesi-utara,Sulawesi Utara,1,Lokasi awal,SPKLU PLN ULP INOBONTO,93.464,130.75,0.06234074237470111,80.0,45.3837037037037,34.6162962962963
+baseline-sulawesi-utara,Sulawesi Utara,2,SPKLU PLN ULP INOBONTO,Lokasi tujuan,137.858,196.46666666666667,0.05034065704768409,75.0,23.941481481481475,51.058518518518525
+baseline-gorontalo,Gorontalo,1,Lokasi awal,SPKLU ULP LIMBOTO,145.143,204.46666666666667,1.2453202948890691,80.0,26.24333333333334,53.75666666666666
+baseline-gorontalo,Gorontalo,2,SPKLU ULP LIMBOTO,Lokasi tujuan,13.435,31.6,0.0,30.0,25.024074074074072,4.975925925925926
