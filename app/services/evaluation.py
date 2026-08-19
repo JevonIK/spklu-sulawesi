@@ -437,17 +437,12 @@ def run_experiment(
     batch_interval_seconds = float(batch_interval_seconds)
     if not math.isfinite(batch_interval_seconds) or batch_interval_seconds < 0:
         raise ValueError("Jeda batch tidak valid.")
-    if batch_size < len(scenarios) and batch_interval_seconds < 60:
-        raise ValueError(
-            "Eksperimen multi-batch memerlukan jeda minimal 60 detik."
-        )
-
     results = []
     batch_wait_seconds = 0.0
     for index, scenario in enumerate(scenarios, start=1):
         results.append(evaluate_scenario(service, scenario))
         needs_next_batch = index < len(scenarios) and index % batch_size == 0
-        if needs_next_batch:
+        if needs_next_batch and batch_interval_seconds > 0:
             if progress_callback:
                 progress_callback(
                     {

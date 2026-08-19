@@ -86,7 +86,7 @@ function initializationErrorMessage(error) {
 function recommendationErrorMessage(response, payload) {
     const serverMessage = payload?.error?.message;
     if (response.status === 429) {
-        return `${serverMessage || "Batas pemakaian sementara tercapai."} Tunggu sekurang-kurangnya 60 detik dan periksa sisa quota sebelum mencoba lagi.`;
+        return `${serverMessage || "Batas pemakaian atau request aktif tercapai."} Periksa sisa quota harian dan pastikan request sebelumnya sudah selesai sebelum mencoba lagi. Jangan melakukan retry berulang.`;
     }
     if (response.status === 502) {
         return `${serverMessage || "Layanan rute Google tidak dapat memproses permintaan."} Periksa Routes API, billing, restriction server key, jaringan, dan quota.`;

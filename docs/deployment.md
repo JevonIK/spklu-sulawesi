@@ -159,8 +159,9 @@ wajib sebagai pengaman biaya utama.
 7. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
 
 Eksperimen CLI dan endpoint web memiliki hard limit terpisah untuk panggilan
-Compute Routes dan elemen Route Matrix, pacing rolling window 60 detik, serta
-ledger harian dengan reservasi atomik. Kontrol ini tidak menggantikan quota
+Compute Routes dan elemen Route Matrix, pemeriksaan kapasitas menit aktif, serta
+ledger harian dengan reservasi atomik. Batas per menit disamakan dengan batas
+harian sehingga tidak memaksa jeda, tetapi kontrol ini tidak menggantikan quota
 Google dan limit trafik gateway.
 
 ## Kontrol keamanan aplikasi

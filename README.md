@@ -97,12 +97,12 @@ python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
   --max-compute-routes 60 \
-  --max-compute-routes-per-minute 30 \
+  --max-compute-routes-per-minute 100 \
   --max-compute-routes-per-scenario 10 \
   --max-matrix-elements 2000 \
-  --max-matrix-elements-per-minute 625 \
-  --batch-size 3 \
-  --batch-interval-seconds 61 \
+  --max-matrix-elements-per-minute 2000 \
+  --batch-size 100 \
+  --batch-interval-seconds 0 \
   --confirm-live-api
 ```
 

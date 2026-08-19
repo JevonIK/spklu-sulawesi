@@ -147,9 +147,9 @@ def protected_service(tmp_path, service, **overrides):
     ledger = GoogleRoutesQuotaLedger(tmp_path / "web-quota.json")
     options = {
         "maximum_compute_routes": 2,
-        "maximum_compute_routes_per_minute": 30,
+        "maximum_compute_routes_per_minute": 100,
         "maximum_matrix_elements": 625,
-        "maximum_matrix_elements_per_minute": 625,
+        "maximum_matrix_elements_per_minute": 2000,
     }
     options.update(overrides)
     return (
@@ -305,8 +305,8 @@ def test_web_quota_guard_records_actual_usage_and_returns_status(tmp_path):
     assert guard["daily_compute_routes_remaining"] == 98
     assert guard["daily_matrix_elements_used"] == 105
     assert guard["daily_matrix_elements_remaining"] == 1895
-    assert guard["compute_routes_remaining_this_minute"] == 28
-    assert guard["matrix_elements_remaining_this_minute"] == 520
+    assert guard["compute_routes_remaining_this_minute"] == 98
+    assert guard["matrix_elements_remaining_this_minute"] == 1895
     raw = json.loads(ledger.path.read_text())
     run = next(iter(raw["days"].values()))["runs"][0]
     assert run["outcome"] == "completed"
@@ -397,7 +397,9 @@ def test_web_quota_guard_rejects_parallel_reservation(tmp_path):
     )
 
 
-def test_web_quota_guard_rejects_sequential_request_inside_minute(tmp_path):
+def test_web_quota_guard_allows_sequential_request_inside_daily_capacity(
+    tmp_path,
+):
     protected, ledger = protected_service(
         tmp_path,
         BudgetTestRecommendationService(
@@ -406,8 +408,9 @@ def test_web_quota_guard_rejects_sequential_request_inside_minute(tmp_path):
         ),
     )
     protected.recommend({"request": 1})
+    protected.recommend({"request": 2})
 
-    with pytest.raises(RecommendationQuotaError):
-        protected.recommend({"request": 2})
-
-    assert ledger.status()["completed_or_failed_run_count"] == 1
+    status = ledger.status()
+    assert status["completed_or_failed_run_count"] == 2
+    assert status["actual_compute_routes"] == 4
+    assert status["actual_matrix_elements"] == 210

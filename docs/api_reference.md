@@ -99,7 +99,8 @@ Waktu yang dilaporkan adalah waktu berkendara, bukan waktu pengisian.
 `data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
 Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal
 quota Pacific Time, pemakaian harian, serta sisa harian dan rolling window
-60 detik menurut ledger lokal.
+60 detik menurut ledger lokal. Batas menit default sama dengan batas harian,
+sehingga statistik window tetap tersedia tanpa memaksa jeda tambahan.
 
 ## Respons error
 

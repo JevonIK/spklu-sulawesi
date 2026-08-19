@@ -77,7 +77,12 @@ def test_parallel_reservation_is_rejected(tmp_path):
 
 def test_per_minute_capacity_is_enforced_across_runs(tmp_path):
     clock = FixedNow()
-    quota = ledger(tmp_path, now_fn=clock)
+    quota = ledger(
+        tmp_path,
+        now_fn=clock,
+        compute_routes_per_minute_limit=30,
+        matrix_elements_per_minute_limit=625,
+    )
     reservation = quota.reserve(
         label="request-pertama",
         maximum_compute_routes=2,
@@ -252,10 +257,59 @@ def test_schema_one_ledger_is_upgraded_on_next_write(tmp_path):
 
     upgraded = json.loads(quota.path.read_text())
     assert reservation["label"] == "migrasi"
-    assert upgraded["schema_version"] == 2
+    assert upgraded["schema_version"] == 3
     assert upgraded["per_minute_limits"] == {
-        "compute_routes": 30,
-        "matrix_elements": 625,
+        "compute_routes": 100,
+        "matrix_elements": 2000,
+    }
+
+
+def test_schema_two_ledger_keeps_usage_when_rate_limits_change(tmp_path):
+    quota = ledger(tmp_path)
+    quota.path.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "timezone": "America/Los_Angeles",
+                "daily_limits": {
+                    "compute_routes": 100,
+                    "matrix_elements": 2000,
+                },
+                "per_minute_limits": {
+                    "compute_routes": 30,
+                    "matrix_elements": 625,
+                },
+                "days": {
+                    "2026-08-12": {
+                        "runs": [
+                            {
+                                "compute_routes_attempt_count": 9,
+                                "matrix_element_attempt_count": 150,
+                                "finished_at": "2026-08-12T18:00:00-07:00",
+                            }
+                        ],
+                        "reservations": {},
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = quota.status("2026-08-12")
+    quota.reserve(
+        label="migrasi-v2",
+        maximum_compute_routes=1,
+        maximum_matrix_elements=1,
+    )
+
+    upgraded = json.loads(quota.path.read_text())
+    assert status["actual_compute_routes"] == 9
+    assert status["actual_matrix_elements"] == 150
+    assert upgraded["schema_version"] == 3
+    assert upgraded["per_minute_limits"] == {
+        "compute_routes": 100,
+        "matrix_elements": 2000,
     }
 
 

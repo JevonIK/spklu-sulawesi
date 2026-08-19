@@ -277,14 +277,18 @@ def test_experiment_batches_scenarios_with_minimum_minute_pause():
     }
 
 
-def test_experiment_rejects_multibatch_pause_below_one_minute():
-    with pytest.raises(ValueError, match="minimal 60 detik"):
-        run_experiment(
-            FakeEvaluationService(),
-            definition(scenario("satu"), scenario("dua")),
-            batch_size=1,
-            batch_interval_seconds=59.99,
-        )
+def test_experiment_allows_multibatch_without_forced_pause():
+    waits = []
+    report = run_experiment(
+        FakeEvaluationService(),
+        definition(scenario("satu"), scenario("dua")),
+        batch_size=1,
+        batch_interval_seconds=0,
+        sleep_fn=waits.append,
+    )
+
+    assert waits == []
+    assert report["batching"]["batch_wait_seconds"] == 0
 
 
 def test_experiment_cli_requires_explicit_live_api_confirmation(
@@ -331,13 +335,13 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
         "compute_routes_limit": 60,
         "compute_routes_attempt_count": 0,
         "compute_routes_remaining": 60,
-        "compute_routes_per_minute_limit": 30,
+        "compute_routes_per_minute_limit": 100,
         "compute_routes_per_scenario_limit": 10,
         "compute_routes_attempts_by_scenario": {},
         "matrix_element_limit": 2000,
         "matrix_element_attempt_count": 0,
         "matrix_element_remaining": 2000,
-        "matrix_elements_per_minute_limit": 625,
+        "matrix_elements_per_minute_limit": 2000,
         "matrix_request_attempt_count": 0,
         "rate_limit_wait_seconds": 0.0,
     }
@@ -392,7 +396,10 @@ def test_experiment_cli_reports_scenario_errors_as_failed(app, tmp_path):
     assert (tmp_path / "cli-error.csv").exists()
 
 
-def test_experiment_cli_waits_for_shared_rolling_window(app, tmp_path):
+def test_experiment_cli_uses_remaining_capacity_without_forced_wait(
+    app,
+    tmp_path,
+):
     scenario_path = tmp_path / "scenarios.json"
     scenario_path.write_text(
         json.dumps(definition(), ensure_ascii=False),
@@ -425,10 +432,15 @@ def test_experiment_cli_waits_for_shared_rolling_window(app, tmp_path):
             str(tmp_path),
             "--label",
             "cli-setelah-web",
+            "--max-matrix-elements",
+            "1975",
             "--confirm-live-api",
         ]
     )
 
-    assert result.exit_code == 1
-    assert "Rolling window quota belum bersih" in result.output
-    assert not (tmp_path / "cli-setelah-web.json").exists()
+    assert result.exit_code == 0
+    assert (tmp_path / "cli-setelah-web.json").exists()
+    status = quota.status()
+    assert status["completed_or_failed_run_count"] == 2
+    assert status["actual_compute_routes"] == 1
+    assert status["actual_matrix_elements"] == 25

@@ -14,7 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
-LEDGER_SCHEMA_VERSION = 2
+LEDGER_SCHEMA_VERSION = 3
 
 
 class QuotaLedgerError(RuntimeError):
@@ -43,8 +43,8 @@ class GoogleRoutesQuotaLedger:
         timezone_name="America/Los_Angeles",
         daily_compute_routes_limit=100,
         daily_matrix_element_limit=2000,
-        compute_routes_per_minute_limit=30,
-        matrix_elements_per_minute_limit=625,
+        compute_routes_per_minute_limit=100,
+        matrix_elements_per_minute_limit=2000,
         now_fn=None,
     ):
         self.path = Path(path).expanduser().resolve()
@@ -90,7 +90,7 @@ class GoogleRoutesQuotaLedger:
         }
 
     def _validate_metadata(self, data):
-        if data.get("schema_version") == 1:
+        if data.get("schema_version") in {1, 2}:
             data["schema_version"] = LEDGER_SCHEMA_VERSION
             data["per_minute_limits"] = {
                 "compute_routes": self.compute_routes_per_minute_limit,

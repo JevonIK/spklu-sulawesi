@@ -101,8 +101,8 @@ def release_audit_command():
 )
 @click.option(
     "--max-compute-routes-per-minute",
-    type=click.IntRange(min=1, max=30),
-    default=30,
+    type=click.IntRange(min=1, max=100),
+    default=100,
     show_default=True,
     help="Batas Compute Routes dalam rolling window 60 detik.",
 )
@@ -122,22 +122,22 @@ def release_audit_command():
 )
 @click.option(
     "--max-matrix-elements-per-minute",
-    type=click.IntRange(min=1, max=625),
-    default=625,
+    type=click.IntRange(min=1, max=2000),
+    default=2000,
     show_default=True,
     help="Batas elemen Route Matrix dalam rolling window 60 detik.",
 )
 @click.option(
     "--batch-size",
     type=click.IntRange(min=1, max=100),
-    default=3,
+    default=100,
     show_default=True,
     help="Jumlah skenario sebelum jeda antarbatches.",
 )
 @click.option(
     "--batch-interval-seconds",
-    type=click.FloatRange(min=60, max=3600),
-    default=61,
+    type=click.FloatRange(min=0, max=3600),
+    default=0,
     show_default=True,
     help="Jeda antarbatches dalam detik.",
 )
@@ -203,7 +203,7 @@ def experiment_run_command(
             label=report_label,
             maximum_compute_routes=max_compute_routes,
             maximum_matrix_elements=max_matrix_elements,
-            require_clear_per_minute_window=True,
+            enforce_per_minute_capacity=True,
         )
         with routes_client.request_budget(
             maximum_compute_routes=max_compute_routes,

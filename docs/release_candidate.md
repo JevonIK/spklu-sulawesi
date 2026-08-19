@@ -14,8 +14,8 @@
 
 ## Bukti verifikasi lokal
 
-- 167 test lulus dengan kedua API key dikosongkan;
-- coverage total 91,43%, di atas ambang CI 90%;
+- 168 test lulus dengan kedua API key dikosongkan;
+- coverage total 91,29%, di atas ambang CI 90%;
 - `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
 - audit kandidat rilis offline lulus 24/24 check;
 - health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan
@@ -37,9 +37,9 @@ Tidak ada Maps, Places, Compute Routes, atau Route Matrix yang dipanggil.
 
 Quota guard endpoint juga telah diverifikasi dengan layanan palsu: reservasi
 harian atomik, pencatatan attempt sukses/gagal, hard cap 2 Compute Routes dan
-625 elemen Matrix per request, rolling window lintas-request, migrasi ledger
-schema v1 ke v2, serta respons HTTP 429 untuk request paralel atau kapasitas yang
-tidak mencukupi.
+625 elemen Matrix per request, batas menit 100 Compute Routes dan 2.000 elemen
+Matrix tanpa jeda buatan, migrasi ledger schema lama ke v3, serta respons HTTP 429
+untuk request paralel atau kapasitas yang tidak mencukupi.
 
 `release_manifest.json` mengunci versi, hash dependency, identitas dataset,
 empat konektor aplikasi, konektor eksperimen CCS2, 6 skenario baseline, 7

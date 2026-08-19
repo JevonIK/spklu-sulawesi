@@ -74,12 +74,12 @@ python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_baseline.json \
   --label baseline-enam-wilayah \
   --max-compute-routes 60 \
-  --max-compute-routes-per-minute 30 \
+  --max-compute-routes-per-minute 100 \
   --max-compute-routes-per-scenario 10 \
   --max-matrix-elements 2000 \
-  --max-matrix-elements-per-minute 625 \
-  --batch-size 3 \
-  --batch-interval-seconds 61 \
+  --max-matrix-elements-per-minute 2000 \
+  --batch-size 100 \
+  --batch-interval-seconds 0 \
   --confirm-live-api
 ```
 
@@ -90,12 +90,12 @@ python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_sensitivity.json \
   --label sensitivitas-live-YYYYMMDD \
   --max-compute-routes 14 \
-  --max-compute-routes-per-minute 10 \
+  --max-compute-routes-per-minute 100 \
   --max-compute-routes-per-scenario 2 \
   --max-matrix-elements 1200 \
-  --max-matrix-elements-per-minute 625 \
-  --batch-size 2 \
-  --batch-interval-seconds 61 \
+  --max-matrix-elements-per-minute 2000 \
+  --batch-size 100 \
+  --batch-interval-seconds 0 \
   --confirm-live-api
 ```
 
@@ -121,19 +121,22 @@ laporan eksperimen.
 
 Compute Routes dan Compute Route Matrix memakai dimensi quota berbeda. Karena
 itu, CLI menerapkan hard limit terpisah. Compute Routes dibatasi maksimal 60
-panggilan per eksperimen, 30 panggilan dalam rolling window 60 detik, dan 10
+panggilan per eksperimen, 100 panggilan dalam rolling window 60 detik, dan 10
 panggilan per skenario. Route Matrix dibatasi maksimal 2.000 elemen per
-eksperimen dan 625 elemen dalam rolling window 60 detik.
+eksperimen dan 2.000 elemen dalam rolling window 60 detik. Batas per menit
+disamakan dengan batas harian sehingga tidak menambah jeda selama sisa quota
+harian mencukupi.
 
 Penghitung bertambah tepat sebelum request dikirim, termasuk request yang
 kemudian timeout atau ditolak upstream. Request yang akan melampaui hard limit
-gagal secara lokal dan tidak dikirim ke Google. Jika hanya batas rolling window
-yang akan terlampaui, CLI menunggu sampai kapasitas window tersedia.
+gagal secara lokal dan tidak dikirim ke Google. Mekanisme pacing tetap tersedia
+untuk batas kustom yang lebih rendah, tetapi konfigurasi default tidak memaksa
+jeda antarskenario.
 
-Enam baseline dibagi menjadi dua batch berisi tiga skenario. Jeda 61 detik
-diberikan setelah batch pertama meskipun pemakaian aktual masih di bawah batas
-per menit. Opsi `--batch-size` dan `--batch-interval-seconds` dicatat di laporan;
-eksperimen multi-batch menolak jeda kurang dari 60 detik.
+Default ukuran batch adalah 100 dengan jeda 0 detik, sehingga enam baseline dan
+tujuh sensitivitas berjalan berurutan tanpa jeda buatan. Opsi `--batch-size` dan
+`--batch-interval-seconds` tetap dicatat di laporan dan dapat diberi jeda positif
+secara manual bila diperlukan.
 
 Laporan JSON memiliki objek `execution` berisi:
 
@@ -161,10 +164,11 @@ harian Google berlaku gabungan. CLI memakai ledger lokal untuk mencatat laporan
 lama, mereservasi hard limit sebelum eksperimen, dan mengganti reservasi dengan
 pemakaian aktual setelah proses selesai atau gagal. Eksperimen baru ditolak jika
 reservasi ditambah pemakaian hari itu dapat melewati 100 Compute Routes atau
-2.000 elemen Route Matrix. Proses live paralel juga ditolak agar pacing per menit
-tidak saling bertabrakan. Eksperimen CLI baru hanya boleh dimulai ketika rolling
-window ledger sudah bersih dari pemakaian web atau CLI selama 60 detik terakhir;
-setelah itu pacing internal CLI mengatur batch eksperimen.
+2.000 elemen Route Matrix. Proses live paralel tetap ditolak agar pencatatan dan
+reservasi tidak tumpang tindih. Eksperimen CLI dapat dimulai tanpa menunggu
+rolling window bersih jika hard cap yang diminta tidak melebihi sisa quota harian
+dan sisa kapasitas menit aktif. Jika sudah ada pemakaian hari itu, turunkan opsi
+`--max-compute-routes` dan `--max-matrix-elements` sesuai output `quota-status`.
 
 Periksa ledger sebelum meminta izin atau menjalankan eksperimen:
 
