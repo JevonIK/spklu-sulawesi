@@ -50,6 +50,33 @@ Dengan cara ini, dua unit `SPKLU PLN KANTOR ULP BOLMUT 1` dan `SPKLU PLN KANTOR
 ULP BOLMUT 2` tetap tercatat sebagai dua unit, tetapi hanya menjadi satu titik
 tujuan pada graf perjalanan.
 
+## Metadata jaringan dan akses
+
+CSV sumber tidak mempunyai kolom kebijakan akses. Aplikasi menurunkan metadata
+jaringan di memori dari penanda eksplisit pada `Lokasi SPKLU`:
+
+- nama yang memuat `HYUNDAI` diklasifikasikan sebagai `HYUNDAI`;
+- nama yang memuat `WULING` diklasifikasikan sebagai `WULING`;
+- nama yang memuat `TOYOTA` diklasifikasikan sebagai `TOYOTA`; dan
+- nama lainnya diklasifikasikan sebagai `PUBLIC`.
+
+Klasifikasi ini membedakan jaringan untuk kebutuhan sistem; klasifikasi bukan
+jaminan hukum atau operasional bahwa charger dapat digunakan. Bluecharge Wisma
+Kalla, misalnya, tetap diklasifikasikan sebagai `PUBLIC` karena nama lokasinya
+tidak menyatakan fasilitas dealer Toyota.
+
+Kecocokan diperiksa pada tingkat unit dengan aturan berikut:
+
+```text
+unit layak = konektor unit cocok
+             DAN
+             (jaringan PUBLIC ATAU jaringan dealer dipilih pengguna)
+```
+
+Pemeriksaan per unit mencegah penggabungan yang keliru pada node multi-unit,
+misalnya konektor dari unit publik dianggap tersedia melalui unit dealer yang
+berbeda.
+
 ## Audit reproduktif
 
 Jalankan perintah berikut dari root proyek setelah virtual environment aktif:

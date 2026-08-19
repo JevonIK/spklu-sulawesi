@@ -50,12 +50,18 @@ multi-konektor dari seluruh tipe pada dataset, memindahkan parameter penelitian
 lanjutan ke default backend, memperbaiki pengalaman Place Autocomplete, serta
 memperjelas kesiapan lokasi dan endpoint sebelum tombol rekomendasi dapat
 digunakan.
+Fase 14 memisahkan kompatibilitas konektor dari akses jaringan charger,
+menyertakan SPKLU publik secara default, menyediakan pilihan tambahan Hyundai,
+Wuling, dan Toyota/Lexus, serta menandai itinerary yang memakai charger dealer
+sebagai rute kondisional.
 
 ## Ruang lingkup sistem
 
 - Pencarian kandidat SPKLU di sepanjang koridor rute.
 - Penyaringan berdasarkan satu atau beberapa konektor kendaraan, detour, dan
   progres perjalanan.
+- Penyaringan jaringan publik/dealer pada tingkat unit tanpa mencampurkan
+  konektor antarunit dalam satu node lokasi.
 - Pembentukan graf berarah dengan edge yang memenuhi batas jangkauan.
 - Dynamic Programming dengan state SOC diskret.
 - Rekomendasi urutan SPKLU, jarak setiap leg, SOC tiba/berangkat, dan detour.
@@ -191,6 +197,10 @@ pemakaian API tersedia pada
 Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia
 pada [`docs/google_maps_api_limits.md`](docs/google_maps_api_limits.md).
 
+Pemisahan kompatibilitas konektor, jaringan dealer, dan status rute kondisional
+dijelaskan pada
+[`docs/charging_network_access.md`](docs/charging_network_access.md).
+
 Workflow CI tanpa secret dan cara mengaktifkan branch protection dijelaskan pada
 [`docs/continuous_integration.md`](docs/continuous_integration.md). Checklist
 rilis lengkap tersedia pada
@@ -202,7 +212,7 @@ Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.13.0 pada
+kandidat rilis 0.14.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

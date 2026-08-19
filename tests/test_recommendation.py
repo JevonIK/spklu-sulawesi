@@ -42,7 +42,7 @@ def valid_payload(**vehicle_overrides):
     }
 
 
-def station_node():
+def station_node(connector="CCS2", charging_network="PUBLIC"):
     unit = StationUnit(
         source_row=2,
         province="Sulawesi Selatan",
@@ -52,7 +52,8 @@ def station_node():
         latitude=0,
         longitude=0.5,
         maps_url="https://maps.app.goo.gl/uji",
-        connectors=("CCS2",),
+        connectors=(connector,),
+        charging_network=charging_network,
     )
     return StationNode(
         node_id="spklu-tengah",
@@ -200,6 +201,21 @@ def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
     assert parsed.to_dict()["connectors"] == ["CCS2", "GB/T"]
 
 
+def test_recommendation_input_accepts_multiple_additional_networks():
+    body = valid_payload()
+    body["options"] = {
+        "additional_charging_networks": ["TOYOTA", "WULING"]
+    }
+
+    parsed = RecommendationInput.from_payload(body, defaults=DEFAULTS)
+
+    assert parsed.additional_charging_networks == ("WULING", "TOYOTA")
+    assert parsed.to_dict()["additional_charging_networks"] == [
+        "WULING",
+        "TOYOTA",
+    ]
+
+
 @pytest.mark.parametrize(
     "mutator, expected_field",
     [
@@ -227,6 +243,12 @@ def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
         (
             lambda body: body["vehicle"].update({"connectors": []}),
             "vehicle.connectors",
+        ),
+        (
+            lambda body: body.update(
+                {"options": {"additional_charging_networks": ["UNKNOWN"]}}
+            ),
+            "options.additional_charging_networks",
         ),
     ],
 )
@@ -257,6 +279,7 @@ def test_full_recommendation_pipeline_selects_station_and_reports_api_usage():
     stops = result["optimization"]["itinerary"]["charging_stops"]
     assert [stop["node_id"] for stop in stops] == ["spklu-tengah"]
     assert result["candidate_summary"]["corridor_candidate_count"] == 1
+    assert result["candidate_summary"]["connector_candidate_count"] == 1
     assert result["graph"]["node_count"] == 3
     assert result["api_usage"] == {
         "compute_routes_requests": 2,
@@ -266,6 +289,90 @@ def test_full_recommendation_pipeline_selects_station_and_reports_api_usage():
     }
     assert len(routes_client.compute_route_calls) == 2
     assert routes_client.compute_route_calls[1][2] == ((0, 0.5),)
+    assert result["route_access"]["status"] == "public"
+    assert result["route_access"]["conditional"] is False
+
+
+def test_dealer_station_requires_network_selection_and_marks_conditional_route():
+    routes_client = PipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (station_node("GB/T", "WULING"),)
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+    without_network = valid_payload(connector="GB/T")
+
+    public_only_result = service.recommend(service.parse_input(without_network))
+
+    assert public_only_result["candidate_summary"]["connector_candidate_count"] == 1
+    assert public_only_result["candidate_summary"]["corridor_candidate_count"] == 0
+    assert public_only_result["optimization"]["feasible"] is False
+    assert public_only_result["route_access"]["status"] == "not_applicable"
+
+    with_network = valid_payload(connector="GB/T")
+    with_network["options"] = {
+        "additional_charging_networks": ["WULING"]
+    }
+    conditional_result = service.recommend(service.parse_input(with_network))
+
+    assert conditional_result["optimization"]["feasible"] is True
+    assert conditional_result["route_access"]["conditional"] is True
+    assert conditional_result["route_access"]["conditional_stop_count"] == 1
+    stop = conditional_result["optimization"]["itinerary"]["charging_stops"][0]
+    assert stop["station"]["route_charging_network"] == "WULING"
+    assert stop["station"]["route_access_type"] == "dealer_conditional"
+    assert stop["station"]["route_compatible_connectors"] == ["GB/T"]
+
+
+def test_ccs2_with_wuling_reports_zero_compatible_wuling_locations():
+    routes_client = PipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (
+                station_node("CCS2", "PUBLIC"),
+                StationNode(
+                    node_id="spklu-wuling",
+                    name="Wuling Uji",
+                    province="Sulawesi Selatan",
+                    city="Kota Uji",
+                    address="Jalan Dealer",
+                    latitude=0,
+                    longitude=0.6,
+                    maps_url="https://maps.app.goo.gl/wuling-uji",
+                    connectors=("GB/T",),
+                    units=(
+                        StationUnit(
+                            source_row=3,
+                            province="Sulawesi Selatan",
+                            city="Kota Uji",
+                            name="Wuling Uji",
+                            address="Jalan Dealer",
+                            latitude=0,
+                            longitude=0.6,
+                            maps_url="https://maps.app.goo.gl/wuling-uji",
+                            connectors=("GB/T",),
+                            charging_network="WULING",
+                        ),
+                    ),
+                ),
+            )
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+    body = valid_payload(connector="CCS2")
+    body["options"] = {"additional_charging_networks": ["WULING"]}
+
+    result = service.recommend(service.parse_input(body))
+
+    compatibility = result["candidate_summary"]["network_compatibility"][0]
+    assert compatibility["network"] == "WULING"
+    assert compatibility["compatible_location_count"] == 0
+    assert compatibility["available_connectors"] == ["GB/T"]
+    assert result["candidate_summary"]["corridor_candidate_count"] == 1
+    assert result["route_access"]["status"] == "public"
 
 
 def test_direct_route_reuses_base_route_without_second_compute_call():
@@ -324,6 +431,7 @@ def test_web_service_keeps_public_soc_options_and_uses_backend_research_defaults
             "safety_factor": 0.5,
             "soc_step_percent": 25,
             "corridor_radius_km": 99,
+            "additional_charging_networks": ["WULING"],
         }
     }
 
@@ -333,6 +441,7 @@ def test_web_service_keeps_public_soc_options_and_uses_backend_research_defaults
         "options": {
             "minimum_soc_percent": 15,
             "target_soc_percent": 85,
+            "additional_charging_networks": ["WULING"],
         }
     }
 

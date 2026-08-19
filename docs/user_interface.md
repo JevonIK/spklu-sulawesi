@@ -9,6 +9,8 @@ Antarmuka fase 6B terdiri dari:
 - marker lokasi awal, tujuan, dan SPKLU terpilih;
 - formulir parameter kendaraan dengan checkbox AC Type 2, CCS2, CHAdeMO, dan
   GB/T yang dapat dipilih lebih dari satu;
+- SPKLU publik yang selalu aktif serta checkbox jaringan tambahan Hyundai,
+  Wuling, dan Toyota/Lexus;
 - ringkasan jarak, durasi berkendara, jumlah pemberhentian, dan SOC akhir;
 - itinerary per leg dengan SOC berangkat dan tiba; serta
 - statistik kandidat, graf, state DP, dan penggunaan API.
@@ -28,9 +30,14 @@ di luar ruang lingkup penelitian.
 6. Input pengguna dikirim sebagai JSON ke `POST /api/recommendations`, sedangkan
    safety factor, radius koridor, interval SOC, dan sampling berasal dari backend.
 7. Selama perhitungan, tombol dan peta menampilkan status loading.
-8. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC; petunjuk awal
+8. Filter jaringan hanya diterapkan setelah filter konektor. Kombinasi jaringan
+   yang tidak mempunyai konektor cocok diberi penjelasan tanpa mengubah pilihan
+   konektor secara otomatis.
+9. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC; petunjuk awal
    di tengah peta disembunyikan segera setelah data rute tersedia.
-9. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
+10. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
+    peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
+11. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
 
 ## Keamanan key

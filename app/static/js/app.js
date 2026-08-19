@@ -25,6 +25,10 @@ const elements = {
     connectorInputs: Array.from(
         document.querySelectorAll('input[name="connectors"]'),
     ),
+    networkInputs: Array.from(
+        document.querySelectorAll('input[name="additional_charging_networks"]'),
+    ),
+    networkCompatibilityNote: document.getElementById("networkCompatibilityNote"),
     resultsPanel: document.getElementById("resultsPanel"),
     resultsTitle: document.getElementById("resultsTitle"),
     resultBadge: document.getElementById("resultBadge"),
@@ -315,6 +319,67 @@ function selectedConnectorValues() {
         .map((input) => input.value);
 }
 
+function selectedChargingNetworkValues() {
+    return elements.networkInputs
+        .filter((input) => input.checked)
+        .map((input) => input.value);
+}
+
+function networkConnectorCounts(input) {
+    try {
+        return JSON.parse(input.dataset.connectorCounts || "{}");
+    } catch (error) {
+        return {};
+    }
+}
+
+function updateNetworkCompatibilityNote() {
+    const note = elements.networkCompatibilityNote;
+    if (!note) return;
+
+    note.classList.remove("is-warning");
+    const selectedNetworks = elements.networkInputs.filter((input) => input.checked);
+    if (!selectedNetworks.length) {
+        note.textContent = "Saat ini sistem hanya menggunakan SPKLU publik.";
+        return;
+    }
+
+    const selectedConnectors = selectedConnectorValues();
+    if (!selectedConnectors.length) {
+        note.textContent = "Pilih konektor untuk memeriksa kecocokan jaringan dealer.";
+        return;
+    }
+
+    const incompatible = selectedNetworks.flatMap((input) => {
+        const counts = networkConnectorCounts(input);
+        const compatibleCount = selectedConnectors.reduce(
+            (total, connector) => total + Number(counts[connector] || 0),
+            0,
+        );
+        if (compatibleCount > 0) return [];
+        const availableConnectors = Object.entries(counts)
+            .filter(([, count]) => Number(count) > 0)
+            .map(([connector]) => connector);
+        return [{
+            label: input.dataset.label || input.value,
+            availableConnectors,
+        }];
+    });
+
+    if (incompatible.length) {
+        note.classList.add("is-warning");
+        note.textContent = incompatible.map((network) => {
+            const available = network.availableConnectors.length
+                ? network.availableConnectors.join(", ")
+                : "tidak tercatat";
+            return `${network.label} tidak memiliki lokasi yang cocok dengan ${selectedConnectors.join(", ")}. Konektor yang tersedia: ${available}.`;
+        }).join(" ");
+        return;
+    }
+
+    note.textContent = "Jaringan dealer yang dipilih akan disaring lagi berdasarkan konektor kendaraan.";
+}
+
 function requestConnectors(data) {
     if (Array.isArray(data.request.connectors)) return data.request.connectors;
     return data.request.connector ? [data.request.connector] : [];
@@ -367,6 +432,7 @@ function buildRequestPayload() {
         options: {
             minimum_soc_percent: numberValue(elements.minimumSoc),
             target_soc_percent: numberValue(elements.targetSoc),
+            additional_charging_networks: selectedChargingNetworkValues(),
         },
     };
 }
@@ -429,8 +495,17 @@ function stationInfoContent(stop) {
     content.append(address);
 
     const charging = document.createElement("span");
-    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${station.connectors.join(", ")}`;
-    content.append(charging);
+    const compatibleConnectors = station.route_compatible_connectors
+        || station.connectors;
+    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${compatibleConnectors.join(", ")}`;
+    const access = document.createElement("span");
+    access.className = station.route_access_type === "dealer_conditional"
+        ? "is-conditional"
+        : "";
+    access.textContent = station.route_access_type === "dealer_conditional"
+        ? `${station.route_charging_network_label} · akses perlu dikonfirmasi`
+        : "SPKLU publik";
+    content.append(charging, access);
     return content;
 }
 
@@ -542,6 +617,10 @@ function renderSummary(data) {
             summaryItem("Durasi berkendara", formatDuration(itinerary.total_driving_duration_minutes)),
             summaryItem("Pemberhentian SPKLU", String(itinerary.charging_stop_count)),
             summaryItem("SOC tiba tujuan", formatPercent(itinerary.final_soc_percent)),
+            summaryItem(
+                "Status akses",
+                data.route_access?.conditional ? "Rute kondisional" : "Rute publik",
+            ),
         );
     } else {
         elements.summaryGrid.append(
@@ -582,7 +661,15 @@ function renderItinerary(data) {
             const station = stop.station;
             const stopCard = document.createElement("div");
             stopCard.className = "stop-card";
-            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${requestConnectorLabel(data)}`;
+            if (station.route_access_type === "dealer_conditional") {
+                stopCard.classList.add("is-conditional");
+            }
+            const accessLabel = station.route_access_type === "dealer_conditional"
+                ? `${station.route_charging_network_label} · konfirmasi akses`
+                : "SPKLU publik";
+            const compatibleConnectors = station.route_compatible_connectors
+                || station.connectors;
+            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${compatibleConnectors.join(", ")} · ${accessLabel}`;
             copy.append(stopCard);
         }
 
@@ -605,6 +692,7 @@ function renderDiagnostics(data) {
     const usage = data.api_usage;
     const pairs = [
         ...diagnosticPair("Kandidat dalam koridor", data.candidate_summary.corridor_candidate_count),
+        ...diagnosticPair("Kandidat sebelum filter jaringan", data.candidate_summary.connector_candidate_count),
         ...diagnosticPair("Node graf", graph.node_count),
         ...diagnosticPair("Edge graf diterima", graph.edge_count),
         ...diagnosticPair("State DP diproses", stats.processed_states),
@@ -644,13 +732,21 @@ function renderDiagnostics(data) {
 
 function renderRecommendation(data) {
     const feasible = data.optimization.feasible;
+    const conditional = feasible && Boolean(data.route_access?.conditional);
     elements.resultsPanel.hidden = false;
     elements.resultBadge.classList.toggle("is-infeasible", !feasible);
-    elements.resultBadge.textContent = feasible ? "Rute feasible" : "Tidak feasible";
+    elements.resultBadge.classList.toggle("is-conditional", conditional);
+    elements.resultBadge.textContent = !feasible
+        ? "Tidak feasible"
+        : conditional
+            ? "Rute kondisional"
+            : "Rute publik";
     elements.resultsTitle.textContent = feasible
         ? "Rute perjalanan ditemukan"
         : "Rute aman belum ditemukan";
-    elements.resultMessage.textContent = data.optimization.message;
+    elements.resultMessage.textContent = conditional
+        ? `${data.optimization.message} ${data.route_access.notice}`
+        : data.optimization.message;
     elements.itinerarySection.hidden = !feasible;
 
     renderSummary(data);
@@ -660,7 +756,9 @@ function renderRecommendation(data) {
 
     setFormStatus(
         feasible
-            ? "Rekomendasi selesai. Rute dan rincian SOC telah diperbarui."
+            ? conditional
+                ? "Rekomendasi selesai. Rute menggunakan charger dealer yang perlu dikonfirmasi sebelum berangkat."
+                : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
             : "Perhitungan selesai, tetapi tidak ditemukan rangkaian SPKLU yang memenuhi batas SOC.",
         feasible ? "success" : "error",
     );
@@ -713,9 +811,16 @@ async function submitRecommendation(event) {
 async function initializeApplication() {
     elements.routeForm?.addEventListener("submit", submitRecommendation);
     elements.connectorInputs.forEach((input) => {
-        input.addEventListener("change", updateSubmitAvailability);
+        input.addEventListener("change", () => {
+            updateSubmitAvailability();
+            updateNetworkCompatibilityNote();
+        });
+    });
+    elements.networkInputs.forEach((input) => {
+        input.addEventListener("change", updateNetworkCompatibilityNote);
     });
     updateSubmitAvailability();
+    updateNetworkCompatibilityNote();
     try {
         await Promise.all([
             checkServiceHealth(),

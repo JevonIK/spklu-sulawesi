@@ -20,11 +20,13 @@ troubleshooting di bawah.
 4. Centang satu atau beberapa konektor yang benar-benar dapat digunakan
    kendaraan: AC Type 2, CCS2, CHAdeMO, atau GB/T. Angka pada pilihan
    menunjukkan jumlah lokasi pada dataset.
-5. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
+5. SPKLU publik selalu disertakan. Jika diperlukan, centang jaringan charger
+   Hyundai, Wuling, atau Toyota/Lexus sebagai lokasi tambahan.
+6. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
    batas SOC keberangkatan setelah berhenti di SPKLU.
-6. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
+7. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
    **Cari rekomendasi SPKLU** baru aktif setelah keduanya tersimpan.
-7. Pilih tombol tersebut satu kali dan tunggu hasil.
+8. Pilih tombol tersebut satu kali dan tunggu hasil.
 
 Jangan menekan tombol berulang selama loading. Setiap rekomendasi merupakan
 pengujian live yang dapat memakai Compute Routes dan elemen Route Matrix.
@@ -39,6 +41,11 @@ Hasil **Rute aman ditemukan** menampilkan:
 - urutan leg dan SPKLU;
 - SOC berangkat dan tiba pada setiap leg; serta
 - statistik kandidat, graf, DP, dan pemakaian API.
+
+Badge **Rute publik** berarti seluruh pemberhentian pengisian yang dipilih
+algoritma berasal dari SPKLU publik. Badge **Rute kondisional** berarti rute
+mengandalkan sedikitnya satu charger dealer. Untuk rute kondisional, pengguna
+wajib memastikan izin, jam operasional, dan ketersediaan kepada pengelola.
 
 Pengisian dari SOC tiba menuju SOC berangkat dimodelkan sebagai perubahan state.
 Sistem tidak menghitung lama pengisian.
@@ -58,6 +65,13 @@ kendaraan aktual.
   berhenti di SPKLU, bukan estimasi waktu pengisian.
 - **Jenis konektor** dapat dipilih lebih dari satu. Sistem mempertimbangkan
   SPKLU yang mendukung sedikitnya satu konektor pilihan.
+- **Jaringan charger tambahan** dapat dipilih lebih dari satu. Pilihan ini tidak
+  menggantikan filter konektor dan tidak menjamin izin menggunakan charger
+  dealer.
+
+Sebagai contoh, memilih CCS2 dan jaringan Wuling tidak memasukkan charger
+Wuling karena seluruh lokasi Wuling pada dataset memakai GB/T. SPKLU publik
+CCS2 tetap dapat dipertimbangkan. Sistem tidak menambahkan GB/T secara otomatis.
 
 Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
 5 km menjadi default backend. Nilai ini tidak ditampilkan pada formulir umum.
@@ -71,6 +85,7 @@ interaksi pengguna harian.
 | Form tetap nonaktif | periksa browser key, server key, restriction referrer, Maps JavaScript API, Places API, dan Routes API |
 | Tombol pencarian tetap nonaktif | pilih lokasi awal dan tujuan dari daftar saran Google; teks yang hanya diketik belum menyimpan koordinat |
 | Tombol nonaktif setelah lokasi dipilih | pastikan sedikitnya satu checkbox konektor masih dicentang |
+| Wuling tidak masuk ketika CCS2 dipilih | lokasi Wuling pada dataset memakai GB/T; pilih GB/T hanya jika kendaraan benar-benar kompatibel |
 | Saran lokasi gelap/tidak terbaca | muat ulang aset aplikasi terbaru; widget dipaksa memakai skema warna terang |
 | Rute terlihat tetapi petunjuk awal masih menutupi peta | muat ulang aset JavaScript terbaru; overlay semestinya hilang saat rute tersedia |
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |

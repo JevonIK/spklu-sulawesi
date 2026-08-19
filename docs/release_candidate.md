@@ -1,27 +1,29 @@
-# Kandidat rilis 0.13.0
+# Kandidat rilis 0.14.0
 
 ## Identitas
 
 | Komponen | Nilai |
 |---|---|
-| Versi aplikasi | 0.13.0 |
+| Versi aplikasi | 0.14.0 |
 | Dataset | 150 baris, 149 node logis |
 | SHA-256 dataset | `24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85` |
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
+| Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |
+| SPKLU publik | Selalu disertakan |
 | Konektor eksperimen | CCS2 |
 | Estimasi waktu pengisian | Tidak termasuk |
 | Python didukung | 3.11, 3.12, 3.13 |
 
 ## Bukti verifikasi lokal
 
-- 168 test lulus dengan kedua API key dikosongkan;
-- coverage total 91,29%, di atas ambang CI 90%;
+- 180 test lulus tanpa request Google Maps API;
+- coverage total 91,50%, di atas ambang CI 90%;
 - `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
 - audit kandidat rilis offline lulus 24/24 check;
 - health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan
 - source scan tidak menemukan API key Google tertanam.
 
-Smoke test produksi lokal juga memverifikasi:
+Smoke test produksi lokal terakhir pada versi 0.13.0 memverifikasi:
 
 - Gunicorn satu worker dapat boot dan melayani health HTTP 200;
 - hostname tidak tepercaya ditolak dengan HTTP 400;
@@ -34,6 +36,14 @@ Smoke test produksi lokal juga memverifikasi:
 
 Smoke test hanya mengakses halaman utama dan health endpoint dengan dummy key.
 Tidak ada Maps, Places, Compute Routes, atau Route Matrix yang dipanggil.
+Karena kode aplikasi berubah pada versi 0.14.0, job container GitHub harus
+dijalankan kembali setelah commit; bukti container 0.13.0 tidak dianggap sebagai
+verifikasi final image 0.14.0.
+
+Pengujian baru memverifikasi klasifikasi 117 node publik, 8 Hyundai, 17 Wuling,
+dan 7 Toyota/Lexus; filter jaringan per unit; kombinasi CCS2 + Wuling yang tidak
+memasukkan charger GB/T; serta status rute kondisional ketika itinerary memakai
+charger dealer.
 
 Quota guard endpoint juga telah diverifikasi dengan layanan palsu: reservasi
 harian atomik, pencatatan attempt sukses/gagal, hard cap 2 Compute Routes dan
@@ -47,9 +57,10 @@ skenario sensitivitas, dan enam hard limit.
 Command `release-audit` menjadi quality gate pada ketiga job Python di CI dan
 tidak menggunakan layanan Google Maps.
 
-Dependency lock yang sama berhasil dipasang pada image Python 3.11, 3.12, dan
-3.13. Ketiganya menjalankan NumPy 2.3.5 dan SciPy 1.16.3. Audit versi 0.13.0
-memiliki 24 check dan dijalankan kembali oleh matrix CI setelah push.
+Dependency lock yang sama sebelumnya berhasil dipasang pada image Python 3.11,
+3.12, dan 3.13. Ketiganya menjalankan NumPy 2.3.5 dan SciPy 1.16.3. Audit lokal
+versi 0.14.0 memiliki 24 check; matrix CI harus menjalankannya kembali setelah
+push.
 
 GitHub Actions harus tetap diperiksa setelah push karena keberhasilan simulasi
 lokal tidak menggantikan hasil runner GitHub untuk Python 3.11, Python 3.13,

@@ -33,6 +33,28 @@ CONNECTOR_ALIASES = {
     "CHADEMO": "CHADEMO",
     "GBT": "GB/T",
 }
+PUBLIC_CHARGING_NETWORK = "PUBLIC"
+DEALER_CHARGING_NETWORK_ORDER = ("HYUNDAI", "WULING", "TOYOTA")
+CHARGING_NETWORK_ORDER = (
+    PUBLIC_CHARGING_NETWORK,
+    *DEALER_CHARGING_NETWORK_ORDER,
+)
+CHARGING_NETWORK_LABELS = {
+    PUBLIC_CHARGING_NETWORK: "SPKLU publik",
+    "HYUNDAI": "Hyundai",
+    "WULING": "Wuling",
+    "TOYOTA": "Toyota/Lexus",
+}
+CHARGING_NETWORK_ALIASES = {
+    "PUBLIC": PUBLIC_CHARGING_NETWORK,
+    "PUBLIK": PUBLIC_CHARGING_NETWORK,
+    "SPKLUPUBLIC": PUBLIC_CHARGING_NETWORK,
+    "SPKLUPUBLIK": PUBLIC_CHARGING_NETWORK,
+    "HYUNDAI": "HYUNDAI",
+    "WULING": "WULING",
+    "TOYOTA": "TOYOTA",
+    "TOYOTALEXUS": "TOYOTA",
+}
 EXPECTED_PROVINCES = {
     "Gorontalo",
     "Sulawesi Barat",
@@ -70,6 +92,7 @@ class StationUnit:
     longitude: float
     maps_url: str
     connectors: tuple[str, ...]
+    charging_network: str = PUBLIC_CHARGING_NETWORK
 
     def to_dict(self):
         return {
@@ -78,6 +101,10 @@ class StationUnit:
             "address": self.address,
             "maps_url": self.maps_url,
             "connectors": list(self.connectors),
+            "charging_network": self.charging_network,
+            "charging_network_label": CHARGING_NETWORK_LABELS[
+                self.charging_network
+            ],
         }
 
 
@@ -100,6 +127,21 @@ class StationNode:
     def unit_count(self):
         return len(self.units)
 
+    @property
+    def charging_networks(self):
+        networks = {unit.charging_network for unit in self.units}
+        return tuple(
+            network for network in CHARGING_NETWORK_ORDER if network in networks
+        )
+
+    @property
+    def access_type(self):
+        if self.charging_networks == (PUBLIC_CHARGING_NETWORK,):
+            return "public"
+        if PUBLIC_CHARGING_NETWORK in self.charging_networks:
+            return "mixed"
+        return "dealer_conditional"
+
     def to_dict(self, include_units=True):
         payload = {
             "id": self.node_id,
@@ -112,6 +154,12 @@ class StationNode:
             "maps_url": self.maps_url,
             "connectors": list(self.connectors),
             "unit_count": self.unit_count,
+            "charging_networks": list(self.charging_networks),
+            "charging_network_labels": [
+                CHARGING_NETWORK_LABELS[network]
+                for network in self.charging_networks
+            ],
+            "access_type": self.access_type,
         }
         if include_units:
             payload["units"] = [unit.to_dict() for unit in self.units]
@@ -145,11 +193,26 @@ class StationCatalog:
         province_counts = Counter(node.province for node in self.nodes)
         connector_node_counts = Counter()
         connector_unit_counts = Counter()
+        network_node_counts = Counter()
+        network_unit_counts = Counter()
+        network_connector_node_counts = {
+            network: Counter() for network in CHARGING_NETWORK_ORDER
+        }
 
         for node in self.nodes:
             connector_node_counts.update(node.connectors)
+            network_node_counts.update(node.charging_networks)
+            for network in node.charging_networks:
+                for connector in CONNECTOR_ORDER:
+                    if any(
+                        unit.charging_network == network
+                        and connector in unit.connectors
+                        for unit in node.units
+                    ):
+                        network_connector_node_counts[network][connector] += 1
         for unit in self.units:
             connector_unit_counts.update(unit.connectors)
+            network_unit_counts.update((unit.charging_network,))
 
         return {
             "source_filename": self.source_path.name,
@@ -166,6 +229,21 @@ class StationCatalog:
                 connector: connector_unit_counts[connector]
                 for connector in CONNECTOR_ORDER
             },
+            "network_node_counts": {
+                network: network_node_counts[network]
+                for network in CHARGING_NETWORK_ORDER
+            },
+            "network_unit_counts": {
+                network: network_unit_counts[network]
+                for network in CHARGING_NETWORK_ORDER
+            },
+            "network_connector_node_counts": {
+                network: {
+                    connector: network_connector_node_counts[network][connector]
+                    for connector in CONNECTOR_ORDER
+                }
+                for network in CHARGING_NETWORK_ORDER
+            },
             "multi_unit_nodes": [
                 node.to_dict(include_units=True) for node in self.multi_unit_nodes
             ],
@@ -178,6 +256,10 @@ def _normalize_text(value):
 
 
 def _connector_key(value):
+    return re.sub(r"[^A-Z0-9]", "", _normalize_text(value).upper())
+
+
+def _charging_network_key(value):
     return re.sub(r"[^A-Z0-9]", "", _normalize_text(value).upper())
 
 
@@ -206,6 +288,79 @@ def parse_connectors(value):
 
     normalized = {normalize_connector(part) for part in parts}
     return tuple(connector for connector in CONNECTOR_ORDER if connector in normalized)
+
+
+def normalize_charging_network(value):
+    """Mengubah label jaringan charger menjadi kode kanonis."""
+
+    normalized = CHARGING_NETWORK_ALIASES.get(_charging_network_key(value))
+    if normalized is None:
+        raise ValueError(f"jaringan charger tidak dikenal: {value!r}")
+    return normalized
+
+
+def parse_additional_charging_networks(value):
+    """Memvalidasi jaringan dealer tambahan; SPKLU publik selalu aktif."""
+
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        parts = [part for part in re.split(r"[,;|]+", value) if part.strip()]
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        parts = list(value)
+    else:
+        raise ValueError("jaringan charger tambahan harus berupa daftar")
+
+    normalized = {normalize_charging_network(part) for part in parts}
+    if PUBLIC_CHARGING_NETWORK in normalized:
+        raise ValueError(
+            "SPKLU publik selalu disertakan dan tidak perlu dipilih"
+        )
+    return tuple(
+        network
+        for network in DEALER_CHARGING_NETWORK_ORDER
+        if network in normalized
+    )
+
+
+def infer_charging_network(name):
+    """Menurunkan jaringan dealer dari penanda eksplisit pada nama lokasi."""
+
+    normalized_name = _normalize_text(name).upper()
+    if "HYUNDAI" in normalized_name:
+        return "HYUNDAI"
+    if "WULING" in normalized_name:
+        return "WULING"
+    if "TOYOTA" in normalized_name:
+        return "TOYOTA"
+    return PUBLIC_CHARGING_NETWORK
+
+
+def matching_charging_networks(node, connectors, additional_networks=()):
+    """Jaringan unit yang cocok sekaligus secara akses dan konektor."""
+
+    normalized_connectors = frozenset(parse_connectors(connectors))
+    allowed_networks = {
+        PUBLIC_CHARGING_NETWORK,
+        *parse_additional_charging_networks(additional_networks),
+    }
+    matches = {
+        unit.charging_network
+        for unit in node.units
+        if unit.charging_network in allowed_networks
+        and not normalized_connectors.isdisjoint(unit.connectors)
+    }
+    return tuple(
+        network for network in CHARGING_NETWORK_ORDER if network in matches
+    )
+
+
+def node_is_eligible(node, connectors, additional_networks=()):
+    """True bila ada satu unit yang cocok pada kedua lapis penyaringan."""
+
+    return bool(
+        matching_charging_networks(node, connectors, additional_networks)
+    )
 
 
 def _is_valid_maps_url(value):
@@ -392,6 +547,7 @@ def load_station_catalog(dataset_path):
                 longitude=longitude,
                 maps_url=values["maps_url"],
                 connectors=connectors,
+                charging_network=infer_charging_network(values["name"]),
             )
         )
 

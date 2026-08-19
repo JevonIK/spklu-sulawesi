@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -60,16 +60,19 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
   },
   "options": {
     "minimum_soc_percent": 20,
-    "target_soc_percent": 80
+    "target_soc_percent": 80,
+    "additional_charging_networks": ["HYUNDAI", "TOYOTA"]
   }
 }
 ```
 
-`options` boleh dihilangkan dan akan memakai default environment. Endpoint web
-hanya menerima pilihan SOC minimum dan target dari pengguna. Safety factor,
-radius koridor, interval SOC, serta langkah sampling ditetapkan oleh konfigurasi
-backend. Variasi parameter tersebut tetap dapat digunakan oleh perangkat
-eksperimen CLI yang terdokumentasi. Aturan input:
+`options` boleh dihilangkan dan akan memakai default environment. SPKLU publik
+selalu disertakan, sedangkan `additional_charging_networks` menerima nol atau
+lebih nilai `HYUNDAI`, `WULING`, dan `TOYOTA`. Endpoint web menerima pilihan SOC,
+konektor, dan jaringan tambahan dari pengguna. Safety factor, radius koridor,
+interval SOC, serta langkah sampling ditetapkan oleh konfigurasi backend.
+Variasi parameter tersebut tetap dapat digunakan oleh perangkat eksperimen CLI
+yang terdokumentasi. Aturan input:
 
 | Field | Aturan |
 |---|---|
@@ -79,11 +82,14 @@ eksperimen CLI yang terdokumentasi. Aturan input:
 | `minimum_soc_percent` | 0 sampai kurang dari 100% |
 | `target_soc_percent` | lebih besar dari SOC minimum dan maksimal 100% |
 | `connectors` | daftar berisi sedikitnya satu dari `AC TYPE 2`, `CCS2`, `CHADEMO`, atau `GB/T` |
+| `additional_charging_networks` | daftar unik dari `HYUNDAI`, `WULING`, atau `TOYOTA`; boleh kosong |
 
 Node SPKLU dianggap kompatibel jika mendukung sedikitnya satu konektor yang
-dipilih. Field tunggal `vehicle.connector` tetap diterima untuk kompatibilitas
-dengan skenario eksperimen dan klien versi lama. Respons ternormalisasi memuat
-`connectors` serta `connector` sebagai konektor utama kompatibilitas lama.
+dipilih pada unit yang juga memenuhi aturan akses jaringan. Memilih suatu
+jaringan tidak membuat konektor yang tidak kompatibel menjadi valid. Field
+tunggal `vehicle.connector` tetap diterima untuk kompatibilitas dengan skenario
+eksperimen dan klien versi lama. Respons ternormalisasi memuat `connectors` serta
+`connector` sebagai konektor utama kompatibilitas lama.
 
 Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
 `data.optimization.feasible`:
@@ -93,8 +99,12 @@ Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
   `itinerary` dan `recommended_route` dapat bernilai `null`.
 
 Objek `data` mencakup request ternormalisasi, parameter energi, rute dasar,
-jumlah kandidat, statistik graf, hasil DP, rute rekomendasi, dan pemakaian API.
-Waktu yang dilaporkan adalah waktu berkendara, bukan waktu pengisian.
+jumlah kandidat sebelum/sesudah filter jaringan, statistik graf, hasil DP, rute
+rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
+`public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
+status kondisional berarti sedikitnya satu charger dealer dipakai dan aksesnya
+perlu dikonfirmasi. Waktu yang dilaporkan adalah waktu berkendara, bukan waktu
+pengisian.
 
 `data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
 Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal

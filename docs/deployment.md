@@ -53,10 +53,10 @@ python -m flask --app run.py release-audit
 ```
 
 ```bash
-docker build -t spklu-sulawesi:0.13.0 .
+docker build -t spklu-sulawesi:0.14.0 .
 docker run --rm -p 8080:8080 \
   --env-file .env.production \
-  spklu-sulawesi:0.13.0
+  spklu-sulawesi:0.14.0
 ```
 
 Base Python dapat diuji secara eksplisit dengan
@@ -65,7 +65,7 @@ memakai default Python 3.12. Seluruh instalasi memakai `constraints.txt` yang
 hash-nya dikunci oleh manifest rilis.
 
 Build kandidat rilis dapat memakai suffix sementara, misalnya
-`spklu-sulawesi:0.13.0-rc1`. Jangan push image ke registry sebelum CI hijau,
+`spklu-sulawesi:0.14.0-rc1`. Jangan push image ke registry sebelum CI hijau,
 secret produksi siap, dan target registry disetujui.
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file

@@ -5,7 +5,10 @@ import pytest
 from app.config import BASE_DIR
 from app.services.dataset import (
     DatasetValidationError,
+    infer_charging_network,
     load_station_catalog,
+    node_is_eligible,
+    parse_additional_charging_networks,
     parse_connectors,
 )
 
@@ -39,6 +42,33 @@ def test_connector_parser_accepts_checkbox_style_list():
     )
 
 
+def test_additional_network_parser_accepts_multiple_dealer_networks():
+    assert parse_additional_charging_networks(
+        ["Wuling", "Toyota/Lexus", "WULING"]
+    ) == ("WULING", "TOYOTA")
+
+
+def test_public_network_cannot_be_selected_as_additional_network():
+    with pytest.raises(ValueError, match="selalu disertakan"):
+        parse_additional_charging_networks(["PUBLIC"])
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("(HYUNDAI) Manado", "HYUNDAI"),
+        ("(WULING) Kumala Manado", "WULING"),
+        ("Kalla Toyota Kendari", "TOYOTA"),
+        ("(BLUECHARGE) WISMA KALLA MAKASSAR", "PUBLIC"),
+        ("SPKLU PLN ULP Uji", "PUBLIC"),
+    ],
+)
+def test_charging_network_is_inferred_from_explicit_station_name(
+    name, expected
+):
+    assert infer_charging_network(name) == expected
+
+
 def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
     catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
 
@@ -56,6 +86,25 @@ def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
         "SPKLU PLN KANTOR ULP BOLMUT 2",
     }
     assert bolmut.connectors == ("AC TYPE 2",)
+
+    summary = catalog.summary()
+    assert summary["network_node_counts"] == {
+        "PUBLIC": 117,
+        "HYUNDAI": 8,
+        "WULING": 17,
+        "TOYOTA": 7,
+    }
+
+
+def test_dealer_network_and_connector_must_both_match_same_unit():
+    catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
+    wuling = next(
+        node for node in catalog.nodes if "WULING" in node.charging_networks
+    )
+
+    assert node_is_eligible(wuling, ("CCS2",), ("WULING",)) is False
+    assert node_is_eligible(wuling, ("GB/T",), ()) is False
+    assert node_is_eligible(wuling, ("GB/T",), ("WULING",)) is True
 
 
 def test_unknown_connector_is_rejected(tmp_path):

@@ -151,6 +151,47 @@
                         Jumlah lokasi mengikuti dataset saat ini.
                     </small>
 
+                    <fieldset class="network-fieldset" aria-describedby="networkNote networkCompatibilityNote">
+                        <legend>Jaringan charger yang disertakan</legend>
+                        <div class="network-options">
+                            <label class="network-option is-always-active">
+                                <input
+                                    type="checkbox"
+                                    value="PUBLIC"
+                                    checked
+                                    disabled
+                                >
+                                <span>
+                                    <strong>SPKLU publik</strong>
+                                    <small>{{ public_location_count }} lokasi · selalu disertakan</small>
+                                </span>
+                            </label>
+                            {% for network in charging_networks %}
+                            <label class="network-option" for="network-{{ loop.index }}">
+                                <input
+                                    id="network-{{ loop.index }}"
+                                    name="additional_charging_networks"
+                                    type="checkbox"
+                                    value="{{ network.value }}"
+                                    data-label="{{ network.label }}"
+                                    data-connector-counts='{{ network.connector_counts | tojson }}'
+                                >
+                                <span>
+                                    <strong>{{ network.label }}</strong>
+                                    <small>{{ network.location_count }} lokasi dealer</small>
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                    <small class="field-note" id="networkNote">
+                        Jaringan dealer bersifat tambahan. Ketersediaan dan izin penggunaan
+                        perlu dikonfirmasi sendiri kepada pengelola sebelum berangkat.
+                    </small>
+                    <p class="network-compatibility-note" id="networkCompatibilityNote" aria-live="polite">
+                        Saat ini sistem hanya menggunakan SPKLU publik.
+                    </p>
+
                     <button id="submitButton" type="submit" disabled>
                         <span>Cari rekomendasi SPKLU</span>
                     </button>

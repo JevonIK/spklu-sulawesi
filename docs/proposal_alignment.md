@@ -14,6 +14,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Dataset enam wilayah Sulawesi | `dataset_spklu_sulawesi.csv` dan validasi `app/services/dataset.py` |
 | Dua unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf |
 | Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline/sensitivitas memakai CCS2 |
+| Akses jaringan dealer | metadata jaringan per unit, pilihan jaringan tambahan, dan status rute kondisional |
 | Kandidat berbasis Ball Tree | `app/services/spatial.py` |
 | Rute dan jarak jalan | `app/services/google_routes.py` |
 | Graf berarah | `app/services/graph.py` |
@@ -58,6 +59,10 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
    perubahan radius koridor. Radius search penelitian mengembalikan seluruh
    titik dalam radius dan rumusan masalah secara eksplisit tidak memakai
    fixed-K.
+10. Jelaskan bahwa konektor dan akses jaringan merupakan dua filter berbeda.
+    SPKLU publik selalu disertakan, sedangkan charger Hyundai, Wuling, dan
+    Toyota/Lexus bersifat opsional serta menghasilkan rute kondisional jika
+    benar-benar dipakai itinerary.
 
 Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
 tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan
@@ -75,3 +80,5 @@ menghitungnya.
   dan graf memang tidak mempunyai rangkaian edge aman.
 - Hasil live harus menyertakan tanggal dan parameter karena data jalan, layanan
   Google, dan dataset SPKLU dapat berubah.
+- Status rute kondisional bukan bukti izin penggunaan charger dealer; pengguna
+  tetap harus melakukan konfirmasi operasional sebelum perjalanan.

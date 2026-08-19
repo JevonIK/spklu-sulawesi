@@ -5,7 +5,7 @@ Proyek memakai dua lapis spesifikasi dependency:
 - `requirements.txt` dan `requirements-dev.txt` menyatakan rentang kompatibilitas
   dependency langsung; dan
 - `constraints.txt` mengunci versi dependency langsung serta transitif yang
-  digunakan kandidat rilis 0.13.0.
+  digunakan kandidat rilis 0.14.0.
 
 Gunakan keduanya saat membuat environment pengembangan:
 
@@ -37,7 +37,7 @@ Metadata kompatibilitas dapat diperiksa pada halaman resmi PyPI untuk
 
 Instalasi container telah diverifikasi pada Python 3.11, 3.12, dan 3.13 dengan
 NumPy 2.3.5 serta SciPy 1.16.3. Audit rilis sebelumnya di ketiga image lulus;
-versi 0.13.0 memperluas audit menjadi 24 check.
+versi 0.14.0 mempertahankan audit sebanyak 24 check.
 
 ## Memperbarui dependency
 

@@ -266,24 +266,28 @@ fieldset {
     gap: 0 12px;
 }
 
-.connector-fieldset {
+.connector-fieldset,
+.network-fieldset {
     margin-top: 15px !important;
 }
 
-.connector-fieldset legend {
+.connector-fieldset legend,
+.network-fieldset legend {
     margin-bottom: 7px;
     color: var(--navy-800);
     font-size: 0.77rem;
     font-weight: 760;
 }
 
-.connector-options {
+.connector-options,
+.network-options {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
-.route-form .connector-option {
+.route-form .connector-option,
+.route-form .network-option {
     display: flex;
     align-items: center;
     gap: 9px;
@@ -299,13 +303,15 @@ fieldset {
     transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
 
-.route-form .connector-option:has(input:checked) {
+.route-form .connector-option:has(input:checked),
+.route-form .network-option:has(input:checked) {
     border-color: var(--teal-500);
     background: var(--mint-100);
     box-shadow: 0 0 0 2px rgba(10, 155, 143, 0.08);
 }
 
-.route-form .connector-option input {
+.route-form .connector-option input,
+.route-form .network-option input {
     flex: 0 0 auto;
     width: 17px;
     min-height: 17px;
@@ -316,21 +322,49 @@ fieldset {
 
 .connector-option span,
 .connector-option strong,
-.connector-option small {
+.connector-option small,
+.network-option span,
+.network-option strong,
+.network-option small {
     display: block;
     min-width: 0;
 }
 
-.connector-option strong {
+.connector-option strong,
+.network-option strong {
     color: var(--navy-900);
     font-size: 0.76rem;
 }
 
-.connector-option small {
+.connector-option small,
+.network-option small {
     margin-top: 2px;
     color: var(--muted);
     font-size: 0.65rem;
     font-weight: 600;
+}
+
+.route-form .network-option.is-always-active {
+    cursor: default;
+}
+
+.route-form .network-option.is-always-active input {
+    opacity: 1;
+}
+
+.network-compatibility-note {
+    margin: 8px 0 0;
+    padding: 9px 11px;
+    border-radius: 9px;
+    color: var(--teal-700);
+    background: #edf8e8;
+    font-size: 0.68rem;
+    line-height: 1.45;
+}
+
+.network-compatibility-note.is-warning {
+    color: #754b0b;
+    background: #fff4d9;
 }
 
 .field-note {
@@ -430,6 +464,11 @@ fieldset {
 .result-badge.is-infeasible {
     color: #7e302b;
     background: #ffe4e1;
+}
+
+.result-badge.is-conditional {
+    color: #754b0b;
+    background: #fff0c6;
 }
 
 .result-message {
@@ -544,6 +583,12 @@ fieldset {
     background: #edf8e8;
     font-size: 0.69rem;
     line-height: 1.45;
+}
+
+.stop-card.is-conditional {
+    border-left-color: #e1ad43;
+    color: #654209;
+    background: #fff4d9;
 }
 
 .diagnostics {
@@ -809,6 +854,11 @@ fieldset {
     display: block;
 }
 
+.station-info span.is-conditional {
+    color: #754b0b;
+    font-weight: 750;
+}
+
 .station-info strong {
     margin-bottom: 5px;
     color: var(--navy-900);
@@ -902,6 +952,7 @@ fieldset {
 
     .form-grid,
     .connector-options,
+    .network-options,
     .summary-grid,
     .method-strip {
         grid-template-columns: 1fr;

@@ -2,6 +2,12 @@
 
 from flask import Blueprint, current_app, g, render_template
 
+from ..services.dataset import (
+    CHARGING_NETWORK_LABELS,
+    DEALER_CHARGING_NETWORK_ORDER,
+    PUBLIC_CHARGING_NETWORK,
+)
+
 
 web_bp = Blueprint("web", __name__)
 
@@ -9,7 +15,8 @@ web_bp = Blueprint("web", __name__)
 @web_bp.get("/")
 def index():
     catalog = current_app.extensions["station_catalog"]
-    connector_counts = catalog.summary()["connector_node_counts"]
+    catalog_summary = catalog.summary()
+    connector_counts = catalog_summary["connector_node_counts"]
     connector_labels = {
         "AC TYPE 2": "AC Type 2",
         "CCS2": "CCS2",
@@ -29,6 +36,23 @@ def index():
             }
             for connector, location_count in connector_counts.items()
             if location_count > 0
+        ],
+        public_location_count=catalog_summary["network_node_counts"][
+            PUBLIC_CHARGING_NETWORK
+        ],
+        charging_networks=[
+            {
+                "value": network,
+                "label": CHARGING_NETWORK_LABELS[network],
+                "location_count": catalog_summary["network_node_counts"][
+                    network
+                ],
+                "connector_counts": catalog_summary[
+                    "network_connector_node_counts"
+                ][network],
+            }
+            for network in DEALER_CHARGING_NETWORK_ORDER
+            if catalog_summary["network_node_counts"][network] > 0
         ],
         defaults={
             "soc_min": current_app.config["DEFAULT_SOC_MIN"],

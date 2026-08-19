@@ -18,7 +18,12 @@ def test_index_is_available(client):
     assert b'id="originSelectionStatus"' in response.data
     assert b'id="destinationSelectionStatus"' in response.data
     assert b'name="connectors"' in response.data
-    assert response.data.count(b'type="checkbox"') == 4
+    assert response.data.count(b'type="checkbox"') == 8
+    assert b'name="additional_charging_networks"' in response.data
+    assert b'value="HYUNDAI"' in response.data
+    assert b'value="WULING"' in response.data
+    assert b'value="TOYOTA"' in response.data
+    assert b"SPKLU publik" in response.data
     assert b'value="AC TYPE 2"' in response.data
     assert b'value="CCS2"' in response.data
     assert b'value="CHADEMO"' in response.data
@@ -84,7 +89,7 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
-    assert payload["version"] == "0.13.0"
+    assert payload["version"] == "0.14.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["sha256"] == (
@@ -127,6 +132,18 @@ def test_station_summary_endpoint(client):
     assert payload["status"] == "ok"
     assert payload["data"]["multi_unit_node_count"] == 1
     assert payload["data"]["connector_unit_counts"]["GB/T"] == 17
+    assert payload["data"]["network_node_counts"] == {
+        "PUBLIC": 117,
+        "HYUNDAI": 8,
+        "WULING": 17,
+        "TOYOTA": 7,
+    }
+    assert payload["data"]["network_connector_node_counts"]["WULING"] == {
+        "AC TYPE 2": 0,
+        "CCS2": 0,
+        "CHADEMO": 0,
+        "GB/T": 17,
+    }
 
 
 def test_dataset_summary_cli(app):

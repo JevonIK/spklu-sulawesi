@@ -7,7 +7,15 @@ import uuid
 from dataclasses import dataclass
 
 from ..constants import DEFAULT_CONNECTOR
-from .dataset import parse_connectors
+from .dataset import (
+    CHARGING_NETWORK_LABELS,
+    CONNECTOR_ORDER,
+    PUBLIC_CHARGING_NETWORK,
+    matching_charging_networks,
+    node_is_eligible,
+    parse_additional_charging_networks,
+    parse_connectors,
+)
 from .energy import EnergyParameters
 from .graph import build_travel_graph
 from .optimizer import optimize_itinerary
@@ -17,6 +25,7 @@ from .spatial import (
     find_corridor_candidates,
     normalize_coordinate,
 )
+
 
 class RecommendationValidationError(ValueError):
     """Kesalahan input pengguna yang dapat dikembalikan sebagai HTTP 400."""
@@ -70,6 +79,7 @@ class RecommendationInput:
     current_soc_percent: float
     parameters: EnergyParameters
     connectors: tuple[str, ...]
+    additional_charging_networks: tuple[str, ...]
     corridor_radius_km: float
     route_sample_step_km: float
 
@@ -102,6 +112,14 @@ class RecommendationInput:
         except ValueError as error:
             raise RecommendationValidationError(
                 connector_field, str(error)
+            ) from error
+        try:
+            additional_charging_networks = parse_additional_charging_networks(
+                options.get("additional_charging_networks", ())
+            )
+        except ValueError as error:
+            raise RecommendationValidationError(
+                "options.additional_charging_networks", str(error)
             ) from error
         maximum_range = _number(
             vehicle,
@@ -181,6 +199,7 @@ class RecommendationInput:
             current_soc_percent=current_soc,
             parameters=parameters,
             connectors=connectors,
+            additional_charging_networks=additional_charging_networks,
             corridor_radius_km=corridor_radius,
             route_sample_step_km=route_sample_step,
         )
@@ -199,6 +218,9 @@ class RecommendationInput:
             # `connector` dipertahankan untuk kompatibilitas klien lama.
             "connector": self.connector,
             "connectors": list(self.connectors),
+            "additional_charging_networks": list(
+                self.additional_charging_networks
+            ),
             "corridor_radius_km": self.corridor_radius_km,
             "route_sample_step_km": self.route_sample_step_km,
         }
@@ -224,6 +246,130 @@ class RecommendationService:
             defaults=self.defaults,
         )
 
+    def _network_compatibility(self, recommendation_input):
+        connector_set = frozenset(recommendation_input.connectors)
+        summaries = []
+        for network in recommendation_input.additional_charging_networks:
+            network_nodes = [
+                node
+                for node in self.spatial_index.nodes
+                if network in node.charging_networks
+            ]
+            compatible_nodes = [
+                node
+                for node in network_nodes
+                if any(
+                    unit.charging_network == network
+                    and not connector_set.isdisjoint(unit.connectors)
+                    for unit in node.units
+                )
+            ]
+            available_connectors = {
+                connector
+                for node in network_nodes
+                for unit in node.units
+                if unit.charging_network == network
+                for connector in unit.connectors
+            }
+            summaries.append(
+                {
+                    "network": network,
+                    "label": CHARGING_NETWORK_LABELS[network],
+                    "total_location_count": len(network_nodes),
+                    "compatible_location_count": len(compatible_nodes),
+                    "available_connectors": [
+                        connector
+                        for connector in CONNECTOR_ORDER
+                        if connector in available_connectors
+                    ],
+                }
+            )
+        return summaries
+
+    @staticmethod
+    def _annotate_route_access(
+        optimization_payload,
+        graph,
+        recommendation_input,
+    ):
+        if not optimization_payload.get("feasible"):
+            return {
+                "status": "not_applicable",
+                "conditional": False,
+                "conditional_stop_count": 0,
+                "conditional_stops": [],
+                "notice": "Status akses tidak berlaku karena rute belum feasible.",
+            }
+
+        itinerary = optimization_payload.get("itinerary")
+        charging_stops = itinerary.get("charging_stops", []) if itinerary else []
+        conditional_stops = []
+        for stop in charging_stops:
+            station_node = graph.node(stop["node_id"]).station
+            eligible_networks = matching_charging_networks(
+                station_node,
+                recommendation_input.connectors,
+                recommendation_input.additional_charging_networks,
+            )
+            route_network = (
+                PUBLIC_CHARGING_NETWORK
+                if PUBLIC_CHARGING_NETWORK in eligible_networks
+                else eligible_networks[0]
+            )
+            compatible_connectors = {
+                connector
+                for unit in station_node.units
+                if unit.charging_network == route_network
+                for connector in unit.connectors
+                if connector in recommendation_input.connectors
+            }
+            is_conditional = route_network != PUBLIC_CHARGING_NETWORK
+            station_payload = stop["station"]
+            station_payload["eligible_charging_networks"] = list(
+                eligible_networks
+            )
+            station_payload["route_charging_network"] = route_network
+            station_payload["route_charging_network_label"] = (
+                CHARGING_NETWORK_LABELS[route_network]
+            )
+            station_payload["route_compatible_connectors"] = [
+                connector
+                for connector in CONNECTOR_ORDER
+                if connector in compatible_connectors
+            ]
+            station_payload["route_access_type"] = (
+                "dealer_conditional" if is_conditional else "public"
+            )
+            if is_conditional:
+                conditional_stops.append(
+                    {
+                        "node_id": stop["node_id"],
+                        "name": station_node.name,
+                        "network": route_network,
+                        "network_label": CHARGING_NETWORK_LABELS[
+                            route_network
+                        ],
+                    }
+                )
+
+        conditional = bool(conditional_stops)
+        return {
+            "status": "conditional" if conditional else "public",
+            "conditional": conditional,
+            "conditional_stop_count": len(conditional_stops),
+            "conditional_stops": conditional_stops,
+            "notice": (
+                "Rute ini menggunakan charger dealer. Ketersediaan dan izin "
+                "penggunaan belum dijamin; konfirmasi kepada pengelola sebelum "
+                "berangkat."
+                if conditional
+                else (
+                    "Seluruh pemberhentian pengisian pada rute menggunakan "
+                    "SPKLU publik."
+                )
+            ),
+        }
+
     def recommend(self, recommendation_input):
         if not isinstance(recommendation_input, RecommendationInput):
             raise TypeError("Pipeline memerlukan RecommendationInput.")
@@ -233,12 +379,21 @@ class RecommendationService:
             recommendation_input.destination,
         )
         route_geometry = RouteGeometry(base_route.coordinates)
-        candidates = find_corridor_candidates(
+        connector_candidates = find_corridor_candidates(
             self.spatial_index,
             route_geometry,
             recommendation_input.corridor_radius_km,
             connector=recommendation_input.connectors,
             sample_step_km=recommendation_input.route_sample_step_km,
+        )
+        candidates = tuple(
+            candidate
+            for candidate in connector_candidates
+            if node_is_eligible(
+                candidate.node,
+                recommendation_input.connectors,
+                recommendation_input.additional_charging_networks,
+            )
         )
 
         parameters = recommendation_input.parameters
@@ -279,21 +434,36 @@ class RecommendationService:
             else:
                 recommended_route = base_route
 
+        optimization_payload = optimization.to_dict()
+        route_access = self._annotate_route_access(
+            optimization_payload,
+            graph,
+            recommendation_input,
+        )
+
         return {
             "request": recommendation_input.to_dict(),
             "parameters": parameters.to_dict(),
             "base_route": base_route.to_dict(),
             "candidate_summary": {
                 "corridor_candidate_count": len(candidates),
+                "connector_candidate_count": len(connector_candidates),
                 "compatible_connector": recommendation_input.connector,
                 "compatible_connectors": list(recommendation_input.connectors),
+                "additional_charging_networks": list(
+                    recommendation_input.additional_charging_networks
+                ),
+                "network_compatibility": self._network_compatibility(
+                    recommendation_input
+                ),
             },
             "graph": {
                 "stats": graph.stats.to_dict(),
                 "node_count": len(graph.nodes),
                 "edge_count": len(graph.edges),
             },
-            "optimization": optimization.to_dict(),
+            "optimization": optimization_payload,
+            "route_access": route_access,
             "recommended_route": (
                 recommended_route.to_dict() if recommended_route else None
             ),
@@ -355,6 +525,7 @@ class QuotaProtectedRecommendationService:
                 for key in (
                     "minimum_soc_percent",
                     "target_soc_percent",
+                    "additional_charging_networks",
                 )
                 if key in options
             }
