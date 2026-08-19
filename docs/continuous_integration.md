@@ -20,7 +20,9 @@ Setelah ketiga job Python lulus, job **Container smoke test**:
 1. membangun image kandidat dengan Python 3.12 dan dependency lock;
 2. menjalankan container dengan `--network none` serta dummy key;
 3. menunggu Docker healthcheck dengan batas maksimum 60 detik;
-4. memvalidasi health JSON dan menjalankan audit rilis di dalam container;
+4. memvalidasi status, versi, jumlah node, dan checksum dataset pada health JSON
+   terhadap `release_manifest.json`, lalu menjalankan audit rilis di dalam
+   container;
 5. memastikan proses bukan root; dan
 6. menguji akses tulis lalu membersihkan berkas serta container sementara.
 

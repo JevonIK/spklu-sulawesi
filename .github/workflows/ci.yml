@@ -122,8 +122,33 @@ jobs:
           docker exec "${CONTAINER_NAME}" python -c \
             "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3).read().decode())" \
             > container-health.json
-          python -c \
-            "import json; data=json.load(open('container-health.json')); assert data['status']=='ok'; assert data['version']=='0.13.0'; assert data['data']['dataset']['logical_nodes']==149"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          health = json.loads(
+              Path("container-health.json").read_text(encoding="utf-8")
+          )
+          manifest = json.loads(
+              Path("release_manifest.json").read_text(encoding="utf-8")
+          )
+          health_dataset = health["data"]["dataset"]
+          manifest_dataset = manifest["dataset"]
+
+          assert health["status"] == "ok", health["status"]
+          assert health["version"] == manifest["application_version"], (
+              health["version"],
+              manifest["application_version"],
+          )
+          assert health_dataset["logical_nodes"] == manifest_dataset["logical_nodes"], (
+              health_dataset["logical_nodes"],
+              manifest_dataset["logical_nodes"],
+          )
+          assert health_dataset["sha256"] == manifest_dataset["sha256"], (
+              health_dataset["sha256"],
+              manifest_dataset["sha256"],
+          )
+          PY
 
       - name: Jalankan audit rilis dalam container
         run: |
