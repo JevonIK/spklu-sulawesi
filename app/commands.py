@@ -1,6 +1,9 @@
 """Perintah CLI untuk audit data dan eksperimen penelitian."""
 
+import hashlib
 import json
+import platform
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -16,7 +19,18 @@ from .services.evaluation import (
     write_experiment_report,
 )
 from .services.quota_ledger import GoogleRoutesQuotaLedger, QuotaLedgerError
-from .services.release_audit import ReleaseManifestError, run_release_audit
+from .services.release_audit import (
+    ReleaseManifestError,
+    SOURCE_SCOPE,
+    compute_source_tree_sha256,
+    run_release_audit,
+)
+from .services.graph import GEODESIC_LOWER_BOUND_MARGIN_RATIO
+from .services.google_routes import (
+    POLYLINE_QUALITY,
+    ROUTING_PREFERENCE,
+    TRAVEL_MODE,
+)
 
 
 def _quota_ledger():
@@ -36,6 +50,81 @@ def _quota_ledger():
             "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT"
         ],
     )
+
+
+def _sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _experiment_provenance(scenarios, service):
+    """Merekam identitas run tanpa API key atau path home pengguna."""
+
+    catalog = current_app.extensions["station_catalog"]
+    release_manifest_path = Path(
+        current_app.config["RELEASE_MANIFEST_PATH"]
+    ).resolve()
+    project_root = release_manifest_path.parent
+    release_manifest = json.loads(
+        release_manifest_path.read_text(encoding="utf-8")
+    )
+    constraints_path = project_root / release_manifest["dependencies"][
+        "constraints_path"
+    ]
+    research_manifest_path = project_root / release_manifest[
+        "research_manifest"
+    ]["path"]
+    dataset_metadata_path = project_root / release_manifest["dataset"][
+        "metadata_path"
+    ]
+    return {
+        "schema_version": 1,
+        "application_version": current_app.config["APP_VERSION"],
+        "source_revision": current_app.config.get("SOURCE_REVISION"),
+        "source_tree": {
+            "scope": SOURCE_SCOPE,
+            "sha256": compute_source_tree_sha256(project_root),
+        },
+        "dataset": {
+            "path": catalog.source_path.name,
+            "sha256": catalog.source_sha256,
+            "source_rows": catalog.source_row_count,
+            "logical_nodes": catalog.logical_node_count,
+            "metadata_path": dataset_metadata_path.name,
+            "metadata_sha256": _sha256(dataset_metadata_path),
+        },
+        "scenario_definition": {
+            "path": Path(scenarios).name,
+            "sha256": _sha256(scenarios),
+        },
+        "dependencies": {
+            "constraints_path": constraints_path.name,
+            "constraints_sha256": _sha256(constraints_path),
+        },
+        "release_manifest": {
+            "path": release_manifest_path.name,
+            "sha256": _sha256(release_manifest_path),
+        },
+        "research_manifest": {
+            "path": research_manifest_path.name,
+            "sha256": _sha256(research_manifest_path),
+        },
+        "algorithm": {
+            "defaults": dict(getattr(service, "defaults", {})),
+            "travel_mode": TRAVEL_MODE,
+            "routing_preference": ROUTING_PREFERENCE,
+            "polyline_quality": POLYLINE_QUALITY,
+            "geodesic_lower_bound_margin_ratio": (
+                GEODESIC_LOWER_BOUND_MARGIN_RATIO
+            ),
+            "charging_time_included": False,
+        },
+        "environment": {
+            "python": platform.python_version(),
+            "python_implementation": platform.python_implementation(),
+            "platform": sys.platform,
+            "machine": platform.machine(),
+        },
+    }
 
 
 @click.command("dataset-summary")
@@ -233,6 +322,7 @@ def experiment_run_command(
                     ),
                     err=True,
                 ),
+                provenance=_experiment_provenance(scenarios, service),
             )
         report["execution"] = {
             "app_version": current_app.config["APP_VERSION"],

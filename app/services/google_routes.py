@@ -22,13 +22,17 @@ COMPUTE_ROUTE_MATRIX_URL = (
 )
 ROUTE_FIELD_MASK = (
     "routes.distanceMeters,routes.duration,"
-    "routes.polyline.encodedPolyline"
+    "routes.polyline.encodedPolyline,"
+    "routes.legs.distanceMeters,routes.legs.duration"
 )
 MATRIX_FIELD_MASK = (
     "originIndex,destinationIndex,status,condition,distanceMeters,duration"
 )
 MAX_MATRIX_DESTINATIONS = 625
 MAX_INTERMEDIATE_WAYPOINTS = 25
+TRAVEL_MODE = "DRIVE"
+ROUTING_PREFERENCE = "TRAFFIC_UNAWARE"
+POLYLINE_QUALITY = "HIGH_QUALITY"
 
 
 class GoogleRoutesError(RuntimeError):
@@ -211,6 +215,26 @@ class ApiQuotaBudget:
         self.matrix_element_attempt_count += element_count
         self._matrix_element_events.append((timestamp, element_count))
 
+    def ensure_matrix_capacity(self, element_count):
+        """Memastikan seluruh batch muat sebelum request pertama dikirim."""
+
+        if isinstance(element_count, bool) or not isinstance(element_count, int):
+            raise ValueError("Jumlah elemen Route Matrix harus berupa integer.")
+        if element_count < 0:
+            raise ValueError("Jumlah elemen Route Matrix tidak boleh negatif.")
+        if (
+            self.matrix_element_attempt_count + element_count
+            > self.maximum_matrix_elements
+        ):
+            raise ApiQuotaBudgetExceeded(
+                "matrix_elements_budget_exceeded",
+                (
+                    "Seluruh batch Route Matrix tidak muat dalam sisa budget; "
+                    "tidak ada request yang dikirim."
+                ),
+                self.maximum_matrix_elements,
+            )
+
     def snapshot(self):
         return {
             "compute_routes_limit": self.maximum_compute_routes,
@@ -244,6 +268,26 @@ class ApiQuotaBudget:
 
 
 @dataclass(frozen=True)
+class ComputedRouteLeg:
+    """Jarak dan durasi satu leg dari rute final Google."""
+
+    distance_km: float
+    duration_minutes: float
+
+    def __post_init__(self):
+        if not math.isfinite(self.distance_km) or self.distance_km < 0:
+            raise ValueError("Jarak leg rute harus berupa angka nonnegatif.")
+        if not math.isfinite(self.duration_minutes) or self.duration_minutes < 0:
+            raise ValueError("Durasi leg rute harus berupa angka nonnegatif.")
+
+    def to_dict(self):
+        return {
+            "distance_km": self.distance_km,
+            "duration_minutes": self.duration_minutes,
+        }
+
+
+@dataclass(frozen=True)
 class ComputedRoute:
     """Rute jalan yang dikembalikan oleh Compute Routes."""
 
@@ -251,6 +295,7 @@ class ComputedRoute:
     duration_minutes: float
     encoded_polyline: str
     coordinates: tuple[tuple[float, float], ...]
+    legs: tuple[ComputedRouteLeg, ...] = ()
 
     def __post_init__(self):
         if not math.isfinite(self.distance_km) or self.distance_km <= 0:
@@ -271,6 +316,7 @@ class ComputedRoute:
                 {"latitude": latitude, "longitude": longitude}
                 for latitude, longitude in self.coordinates
             ],
+            "legs": [leg.to_dict() for leg in self.legs],
         }
 
 
@@ -479,10 +525,10 @@ class GoogleRoutesClient:
         payload = {
             "origin": _waypoint(origin),
             "destination": _waypoint(destination),
-            "travelMode": "DRIVE",
-            "routingPreference": "TRAFFIC_UNAWARE",
+            "travelMode": TRAVEL_MODE,
+            "routingPreference": ROUTING_PREFERENCE,
             "computeAlternativeRoutes": False,
-            "polylineQuality": "OVERVIEW",
+            "polylineQuality": POLYLINE_QUALITY,
             "polylineEncoding": "ENCODED_POLYLINE",
             "languageCode": "id-ID",
             "units": "METRIC",
@@ -512,6 +558,19 @@ class GoogleRoutesClient:
             duration_minutes = _duration_minutes(route["duration"])
             encoded_polyline = route["polyline"]["encodedPolyline"]
             coordinates = decode_google_polyline(encoded_polyline)
+            raw_legs = route["legs"]
+            if (
+                not isinstance(raw_legs, list)
+                or len(raw_legs) != len(intermediate_coordinates) + 1
+            ):
+                raise ValueError("Jumlah leg rute tidak sesuai waypoint.")
+            legs = tuple(
+                ComputedRouteLeg(
+                    distance_km=float(leg["distanceMeters"]) / 1000,
+                    duration_minutes=_duration_minutes(leg["duration"]),
+                )
+                for leg in raw_legs
+            )
         except (KeyError, TypeError, ValueError) as error:
             if isinstance(error, GoogleRoutesError):
                 raise
@@ -525,6 +584,7 @@ class GoogleRoutesClient:
             duration_minutes=duration_minutes,
             encoded_polyline=encoded_polyline,
             coordinates=coordinates,
+            legs=legs,
         )
 
     def _fetch_origin_group(self, origin, requests_for_origin):
@@ -534,8 +594,8 @@ class GoogleRoutesClient:
                 {"waypoint": _waypoint(request.destination)}
                 for request in requests_for_origin
             ],
-            "travelMode": "DRIVE",
-            "routingPreference": "TRAFFIC_UNAWARE",
+            "travelMode": TRAVEL_MODE,
+            "routingPreference": ROUTING_PREFERENCE,
             "languageCode": "id-ID",
             "units": "METRIC",
         }
@@ -551,21 +611,51 @@ class GoogleRoutesClient:
             )
 
         results = []
+        seen_destination_indices = set()
         for element in response_payload:
             if not isinstance(element, dict):
-                continue
-            if element.get("originIndex", 0) != 0:
-                continue
-            destination_index = element.get("destinationIndex", 0)
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan elemen matriks yang tidak valid.",
+                )
+            if element.get("originIndex") != 0:
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan indeks origin yang tidak valid.",
+                )
+            destination_index = element.get("destinationIndex")
             if not isinstance(destination_index, int) or not (
                 0 <= destination_index < len(requests_for_origin)
             ):
-                continue
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan indeks tujuan yang tidak valid.",
+                )
+            if destination_index in seen_destination_indices:
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan elemen matriks duplikat.",
+                )
+            seen_destination_indices.add(destination_index)
             status = element.get("status", {})
-            if status and status.get("code", 0) != 0:
+            if not isinstance(status, dict):
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan status matriks yang tidak valid.",
+                )
+            condition = element.get("condition")
+            if condition == "ROUTE_NOT_FOUND":
                 continue
-            if element.get("condition") != "ROUTE_EXISTS":
-                continue
+            if condition != "ROUTE_EXISTS":
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan kondisi matriks yang tidak dikenal.",
+                )
+            if status.get("code", 0) != 0:
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan status yang bertentangan dengan rute.",
+                )
             try:
                 distance_km = float(element["distanceMeters"]) / 1000
                 duration_minutes = _duration_minutes(element["duration"])
@@ -576,9 +666,18 @@ class GoogleRoutesClient:
                     distance_km=distance_km,
                     duration_minutes=duration_minutes,
                 )
-            except (KeyError, TypeError, ValueError, GoogleRoutesError):
-                continue
+            except (KeyError, TypeError, ValueError, GoogleRoutesError) as error:
+                raise GoogleRoutesError(
+                    "invalid_response",
+                    "Google Routes API mengembalikan data matriks yang tidak lengkap.",
+                ) from error
             results.append(result)
+        expected_destination_indices = set(range(len(requests_for_origin)))
+        if seen_destination_indices != expected_destination_indices:
+            raise GoogleRoutesError(
+                "invalid_response",
+                "Google Routes API mengembalikan matriks yang tidak lengkap.",
+            )
         return tuple(results)
 
     def fetch(self, requests_to_fetch):
@@ -591,16 +690,27 @@ class GoogleRoutesClient:
             normalize_coordinate(request.origin)
             normalize_coordinate(request.destination)
 
+        if self._active_request_budget is not None:
+            self._active_request_budget.ensure_matrix_capacity(
+                len(requests_to_fetch)
+            )
+
         grouped = defaultdict(list)
         for request in requests_to_fetch:
             grouped[normalize_coordinate(request.origin)].append(request)
 
         results = []
         external_request_count = 0
+        maximum_destinations = MAX_MATRIX_DESTINATIONS
+        if self._active_request_budget is not None:
+            maximum_destinations = min(
+                maximum_destinations,
+                self._active_request_budget.maximum_matrix_elements_per_minute,
+            )
         for origin, origin_requests in grouped.items():
-            for start in range(0, len(origin_requests), MAX_MATRIX_DESTINATIONS):
+            for start in range(0, len(origin_requests), maximum_destinations):
                 batch = tuple(
-                    origin_requests[start : start + MAX_MATRIX_DESTINATIONS]
+                    origin_requests[start : start + maximum_destinations]
                 )
                 results.extend(self._fetch_origin_group(origin, batch))
                 external_request_count += 1

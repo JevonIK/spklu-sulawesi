@@ -44,7 +44,7 @@ memasukkan hash constraint ke manifest, dan memverifikasi instalasi container
 pada ketiga runtime.
 Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
 tanpa jaringan eksternal, healthcheck terbatas, audit rilis, user non-root, dan
-uji tulis direktori persisten.
+uji akses tulis yang dibatasi ke direktori runtime.
 Fase 13 menyederhanakan antarmuka untuk pengguna umum, menyediakan pilihan
 multi-konektor dari seluruh tipe pada dataset, memindahkan parameter penelitian
 lanjutan ke default backend, memperbaiki pengalaman Place Autocomplete, serta
@@ -54,6 +54,13 @@ Fase 14 memisahkan kompatibilitas konektor dari akses jaringan charger,
 menyertakan SPKLU publik secara default, menyediakan pilihan tambahan Hyundai,
 Wuling, dan Toyota/Lexus, serta menandai itinerary yang memakai charger dealer
 sebagai rute kondisional.
+Fase 15 menyiapkan kandidat 0.15.0 untuk pelaporan ilmiah: definisi skenario
+schema 2 dan laporan baru schema 3, provenance artefak historis, identitas source
+dan dependency yang dapat diaudit, geometri rute `HIGH_QUALITY` dengan
+`TRAFFIC_UNAWARE`, margin konservatif 1% pada prapemangkasan geodesik, validasi
+ulang SOC dari setiap leg rute final, serta bukti CI yang dapat diunduh. Container
+CI juga dijalankan dengan root filesystem read-only dan source aplikasi yang
+tidak dapat ditulis oleh user runtime.
 
 ## Ruang lingkup sistem
 
@@ -81,6 +88,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt -c constraints.txt
 cp .env.example .env
+chmod 600 .env
 python run.py
 ```
 
@@ -97,6 +105,12 @@ python -m flask --app run.py dataset-summary
 
 Eksperimen live memakai kuota Google Routes API dan harus dikonfirmasi secara
 eksplisit:
+
+Kebijakan aktif membatasi Compute Routes 100 request per hari dan per menit,
+serta Route Matrix 2.000 elemen per hari dan per menit. Satu rekomendasi web
+dibatasi maksimal 2 Compute Routes dan 625 elemen Matrix. Angka CLI di bawah
+adalah hard cap eksperimen yang lebih kecil, bukan izin otomatis untuk memakai
+seluruh sisa quota.
 
 ```bash
 python -m flask --app run.py experiment-run \
@@ -150,8 +164,10 @@ spklu-sulawesi/
 |-- notebooks/           # Analisis reproduktif dan snapshot hasil jurnal
 |-- tests/               # Pengujian otomatis
 |-- dataset_spklu_sulawesi.csv
+|-- dataset_metadata.json
 |-- constraints.txt
 |-- release_manifest.json
+|-- research_manifest.json
 |-- run.py
 |-- requirements.txt
 `-- requirements-dev.txt
@@ -159,9 +175,10 @@ spklu-sulawesi/
 
 ## Keamanan konfigurasi
 
-Salin `.env.example` menjadi `.env` untuk konfigurasi lokal. Berkas `.env` sudah
-dikecualikan melalui `.gitignore` dan tidak boleh dimasukkan ke GitHub. Gunakan
-key terpisah untuk browser dan server serta batasi key ke API yang diperlukan.
+Salin `.env.example` menjadi `.env` untuk konfigurasi lokal, lalu jalankan
+`chmod 600 .env` sebelum mengisinya dengan key. Berkas `.env` sudah dikecualikan
+melalui `.gitignore` dan tidak boleh dimasukkan ke GitHub. Gunakan key terpisah
+untuk browser dan server serta batasi key ke API yang diperlukan.
 
 Aturan kolom, normalisasi konektor, dan konsolidasi unit dijelaskan pada
 [`docs/data_dictionary.md`](docs/data_dictionary.md).
@@ -199,7 +216,24 @@ Notebook pendamping jurnal yang menjalankan analisis dataset, demonstrasi DP,
 baseline, sensitivitas, serta visualisasi secara offline tersedia pada
 [`notebooks/analisis_sistem_spklu_sulawesi.ipynb`](notebooks/analisis_sistem_spklu_sulawesi.ipynb).
 Snapshot metrik yang dilacak beserta provenance-nya berada di
-`notebooks/data/`; notebook tidak memanggil Google Maps API.
+`notebooks/data/`; notebook tidak memanggil Google Maps API. Baseline tersebut
+dihasilkan aplikasi 0.9.2 dan sensitivitas oleh aplikasi 0.10.0 dengan schema
+laporan 2 serta definisi skenario schema 1 tertanam. Kandidat 0.15.0 menganalisis
+snapshot itu secara offline dan tidak boleh disebut sebagai versi yang
+menghasilkan request live historis.
+
+Definisi skenario saat ini memakai schema 2 dan setiap laporan baru memakai
+schema 3. Laporan schema 3 merekam provenance versi aplikasi, source tree,
+dataset, skenario, dependency, manifest, parameter algoritma, dan lingkungan
+eksekusi. Ketentuan ini berlaku untuk run baru; metadata yang tidak direkam oleh
+laporan lama tidak diisi melalui tebakan.
+
+Asal penyedia, tanggal snapshot, metode pengumpulan, lisensi, dan hak
+redistribusi dataset belum dikonfirmasi. `dataset_metadata.json` mencatat status
+tersebut sebagai `incomplete`/`unknown`, bukan sebagai lisensi terbuka. Pemilik
+penelitian perlu melengkapi bukti sumber dan izin sebelum dataset dipublikasikan
+atau didistribusikan. Rincian dan checklist tindak lanjut tersedia pada
+[`docs/data_provenance.md`](docs/data_provenance.md).
 
 Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia
 pada [`docs/google_maps_api_limits.md`](docs/google_maps_api_limits.md).
@@ -219,7 +253,7 @@ Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.14.0 pada
+kandidat rilis 0.15.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

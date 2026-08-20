@@ -1,5 +1,10 @@
 # Hasil analisis sensitivitas live
 
+> **Batas provenance:** dokumen ini merangkum laporan live historis schema 2
+> dengan definisi skenario schema 1 tertanam, dibuat aplikasi 0.10.0. Kandidat
+> analisis 0.15.0 hanya membaca snapshot secara offline dan bukan versi yang
+> menghasilkan request live tersebut.
+
 ## Identitas eksperimen
 
 Analisis sensitivitas dijalankan pada 13 Agustus 2026 menggunakan aplikasi
@@ -11,6 +16,12 @@ CCS2.
 
 Semua skenario selesai, feasible, dan tidak memiliki pelanggaran SOC. Nilai
 waktu hanya menunjukkan waktu berkendara; waktu pengisian tidak dihitung.
+
+Laporan historis tidak merekam `route_sample_step_km`. Nilai 5 km pada definisi
+skenario schema 2 saat ini berlaku untuk run baru dan tidak boleh dianggap
+sebagai metadata yang terbukti untuk run ini.
+Laporan juga tidak merekam checksum dataset, sehingga kesamaan byte dengan file
+kandidat saat ini tidak dapat dibuktikan dari jumlah skenario atau hasilnya.
 
 ## Hasil per skenario
 
@@ -99,6 +110,11 @@ Pacific Time mencatat 39/100 Compute Routes dan 1.012/2.000 elemen Matrix. Sisa
 yang tercatat adalah 61 Compute Routes dan 988 elemen Matrix, tanpa reservasi
 aktif.
 
+Batas 10 Compute Routes dan 625 elemen Matrix per menit pada bagian ini adalah
+konfigurasi historis saat eksperimen dijalankan. Kebijakan kandidat 0.15.0 saat
+ini memakai batas menit 100 Compute Routes dan 2.000 elemen Matrix, sama dengan
+batas hariannya; perubahan tersebut tidak merevisi ledger atau hasil historis.
+
 ## Integritas artefak lokal
 
 Laporan mentah berhasil berada pada folder yang diabaikan Git:
@@ -129,3 +145,8 @@ tanpa `rerun1`. Jangan mengubah artefak mentah setelah hash dicatat.
   replikasi berikutnya.
 - Feasible berarti layak menurut model dan parameter penelitian, bukan jaminan
   kondisi perjalanan aktual.
+- Klaim nol pelanggaran SOC berasal dari simulasi itinerary pada 0.10.0.
+  Rekonsiliasi SOC berdasarkan setiap leg Compute Routes final pada 0.15.0 belum
+  dijalankan terhadap run historis ini.
+- Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash
+  artefak tidak membuktikan izin redistribusi dataset.

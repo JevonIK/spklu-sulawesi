@@ -6,8 +6,10 @@ import pytest
 from app.services.release_audit import (
     ReleaseManifestError,
     audit_release,
+    compute_source_tree_sha256,
     load_release_manifest,
     run_release_audit,
+    validate_research_manifest,
 )
 
 
@@ -20,11 +22,11 @@ def test_project_release_manifest_passes_all_checks(app):
     )
 
     assert report["status"] == "passed"
-    assert report["summary"] == {
-        "check_count": 24,
-        "passed_count": 24,
-        "failed_count": 0,
-    }
+    assert report["summary"]["check_count"] >= 50
+    assert report["summary"]["passed_count"] == report["summary"][
+        "check_count"
+    ]
+    assert report["summary"]["failed_count"] == 0
     assert all(check["passed"] for check in report["checks"])
 
 
@@ -72,6 +74,72 @@ def test_release_audit_detects_constraints_hash_mismatch(app):
     ]
 
 
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "requirements.txt",
+        ".dockerignore",
+        ".env.example",
+        ".github/workflows/ci.yml",
+    ],
+)
+def test_source_hash_detects_release_and_deployment_input_changes(
+    tmp_path,
+    relative_path,
+):
+    required_files = [
+        "Dockerfile",
+        ".dockerignore",
+        ".env.example",
+        ".github/workflows/ci.yml",
+        "gunicorn.conf.py",
+        "requirements.txt",
+        "run.py",
+        "wsgi.py",
+    ]
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "__init__.py").write_text(
+        "APP_VERSION = 'test'\n",
+        encoding="utf-8",
+    )
+    for required_path in required_files:
+        path = tmp_path / required_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"fixture: {required_path}\n", encoding="utf-8")
+
+    original_hash = compute_source_tree_sha256(tmp_path)
+    changed_path = tmp_path / relative_path
+    changed_path.write_text(
+        changed_path.read_text(encoding="utf-8") + "perubahan\n",
+        encoding="utf-8",
+    )
+
+    assert compute_source_tree_sha256(tmp_path) != original_hash
+
+
+def test_source_hash_rejects_missing_required_release_input(tmp_path):
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "__init__.py").write_text("", encoding="utf-8")
+
+    with pytest.raises(
+        ReleaseManifestError,
+        match="Berkas wajib source scope tidak ditemukan",
+    ):
+        compute_source_tree_sha256(tmp_path)
+
+
+def test_docker_context_keeps_v2_integrity_inputs():
+    patterns = {
+        line.strip()
+        for line in Path(".dockerignore").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+
+    assert ".env*" in patterns
+    assert "!.env.example" in patterns
+    assert ".github" not in patterns
+
+
 def test_release_manifest_rejects_unknown_schema(tmp_path):
     manifest_path = tmp_path / "release_manifest.json"
     manifest_path.write_text(
@@ -81,6 +149,14 @@ def test_release_manifest_rejects_unknown_schema(tmp_path):
 
     with pytest.raises(ReleaseManifestError, match="schema_version"):
         load_release_manifest(manifest_path)
+
+
+def test_research_manifest_rejects_invalid_artifact_hash():
+    manifest = json.loads(Path("research_manifest.json").read_text())
+    manifest["tracked_artifacts"][0]["sha256"] = "tidak-valid"
+
+    with pytest.raises(ReleaseManifestError, match="sha256"):
+        validate_research_manifest(manifest)
 
 
 def test_release_audit_cli_outputs_json(app):

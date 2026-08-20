@@ -7,6 +7,11 @@ request browser.
 
 ## Batas aktif
 
+Tabel berikut adalah konfigurasi kandidat 0.15.0. Ia tidak mengubah batas yang
+tercatat pada eksperimen historis 0.9.2/0.10.0 dan tidak membuktikan bahwa
+override Google Cloud sudah aktif; operator harus memeriksa Console sebelum
+setiap tindakan live.
+
 | Layanan | Batas harian | Batas per menit | Satuan |
 |---|---:|---:|---|
 | Compute Routes | 100 | 100 | request |
@@ -117,4 +122,6 @@ mengetik, serta Get Place ketika origin/destination dipilih. Sebelum smoke test:
 
 Ledger lokal tidak mencatat browser API. Jika aplikasi dipublikasikan, quota
 Cloud, restriction API key, restriction referrer, serta rate limiting pada
-gateway harus tetap aktif.
+gateway wajib aktif. Untuk demo atau pengambilan data terbatas, tambahkan
+autentikasi atau allowlist pengguna/IP agar satu pihak tidak dapat menghabiskan
+seluruh jatah harian secara berurutan.

@@ -58,10 +58,30 @@ sehingga eksperimen tidak mencampur satuan waktu dan jarak secara tersembunyi.
 
 Estimasi waktu pengisian, kapasitas baterai, dan daya charger tidak digunakan.
 
-## Verifikasi akhir
+## Verifikasi optimizer
 
 Setelah predecessor direkonstruksi, seluruh leg disimulasikan ulang memakai SOC
 kontinu. Hasil ditolak jika simulasi menemukan SOC di bawah batas minimum. Laporan
 mencakup konsumsi tiap leg, SOC tiba/berangkat, jumlah pengisian, jarak, waktu
 berkendara bila tersedia, detour, final SOC, serta SOC minimum yang teramati.
 
+## Rekonsiliasi rute final
+
+Jarak edge yang dipakai DP berasal dari Route Matrix. Jika itinerary memakai
+SPKLU, sistem kemudian meminta Compute Routes dengan SPKLU terpilih sebagai
+intermediate waypoint; rute langsung memakai kembali rute dasar. Jarak setiap
+leg rute yang ditampilkan dapat berbeda dari nilai matriks, sehingga versi
+0.15.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
+pengguna.
+
+Jumlah leg harus sama dengan itinerary. Setiap leg diperbarui dengan jarak,
+durasi, konsumsi, SOC berangkat, dan SOC tiba versi rute final; nilai matriks
+tetap dipertahankan sebagai pembanding. Bila satu SOC tiba berada di bawah batas
+minimum, sistem menghasilkan error aman `final_route_soc_violation` dan tidak
+menyajikan rekomendasi itu sebagai feasible. Objek
+`optimization.final_route_validation` mencatat status, jumlah leg, selisih jarak
+matriks terhadap rute final, dan SOC minimum yang teramati.
+
+Validasi ini menjamin konsistensi terhadap model SOC linier dan respons Routes
+yang diterima saat request. Ia bukan validasi baterai dunia nyata dan tidak
+memasukkan cuaca, elevasi, lalu lintas, degradasi, atau gaya mengemudi.

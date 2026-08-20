@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -106,6 +106,12 @@ status kondisional berarti sedikitnya satu charger dealer dipakai dan aksesnya
 perlu dikonfirmasi. Waktu yang dilaporkan adalah waktu berkendara, bukan waktu
 pengisian.
 
+Compute Routes memakai `HIGH_QUALITY` dan `TRAFFIC_UNAWARE`; durasi tidak
+memasukkan lalu lintas real-time/prediktif. Untuk setiap rute feasible,
+`data.optimization.final_route_validation.status` bernilai `passed` setelah SOC
+setiap leg rute final divalidasi ulang. Objek tersebut juga memuat jumlah leg,
+jarak matriks, jarak rute final, selisih keduanya, dan SOC minimum teramati.
+
 `data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
 Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal
 quota Pacific Time, pemakaian harian, serta sisa harian dan rolling window
@@ -135,6 +141,8 @@ Semua error memakai envelope berikut tanpa stack trace atau isi respons Google:
 | 413 | `payload_too_large` | body melewati 64 KiB secara default |
 | 429 | `local_quota_exceeded` atau kode budget | quota lokal habis, request paralel, atau hard cap tercapai |
 | 502 | kode aman Google Routes | upstream menolak, timeout, atau respons tidak valid |
+| 502 | `final_route_leg_mismatch` | jumlah leg rute final tidak sesuai itinerary |
+| 502 | `final_route_soc_violation` | rute final melanggar SOC minimum dan tidak ditampilkan |
 | 503 | `configuration_error` | server key belum tersedia |
 | 500 | `internal_error` | kesalahan internal yang sudah disanitasi |
 

@@ -2,7 +2,11 @@
 
 Aplikasi produksi dijalankan melalui Gunicorn, bukan development server Flask.
 Artefak deployment terdiri atas `wsgi.py`, `gunicorn.conf.py`, `Dockerfile`, dan
-`.dockerignore`. Container berjalan sebagai user non-root.
+`.dockerignore`. Container berjalan sebagai user non-root. Source dan dataset di
+image dimiliki root serta hanya dapat dibaca oleh user runtime; direktori
+ledger/laporan dipisahkan sebagai satu-satunya target tulis aplikasi.
+Konteks image menyertakan `.env.example` dan workflow CI sebagai input integritas
+rilis, tetapi tidak menyertakan `.env` yang memuat secret lokal.
 
 ## Konfigurasi wajib
 
@@ -11,13 +15,13 @@ berikut belum aman atau belum lengkap:
 
 | Variable | Ketentuan |
 |---|---|
-| `SECRET_KEY` | acak, minimal 32 karakter, dan bukan nilai development |
+| `SECRET_KEY` | acak, minimal 32 karakter non-spasi, dan bukan nilai development |
 | `FLASK_DEBUG` | `false` |
 | `GOOGLE_MAPS_BROWSER_API_KEY` | key khusus browser |
 | `GOOGLE_MAPS_SERVER_API_KEY` | key khusus backend Routes API |
 | `GOOGLE_MAPS_MAP_ID` | Map ID milik proyek, bukan `DEMO_MAP_ID` |
-| `TRUSTED_HOSTS` | hostname publik, plus `127.0.0.1` untuk Docker healthcheck |
-| `PUBLIC_CONTACT_EMAIL` | email pengelola untuk halaman privasi/ketentuan |
+| `TRUSTED_HOSTS` | hostname/IPv4 tanpa scheme, path, wildcard, atau port; sertakan `127.0.0.1` untuk Docker healthcheck |
+| `PUBLIC_CONTACT_EMAIL` | alamat email lengkap dengan domain untuk halaman privasi/ketentuan |
 
 Contoh membuat secret tanpa menampilkannya dalam riwayat source code:
 
@@ -27,6 +31,15 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 Simpan secret melalui fasilitas secret/environment variable platform hosting.
 Jangan memasukkannya ke Docker image, source code, tangkapan layar, atau GitHub.
+Untuk pengembangan lokal, batasi permission berkas sebelum mengisinya dengan key:
+
+```bash
+chmod 600 .env
+```
+
+Periksa kembali dengan `ls -l .env`; hanya pemilik berkas yang boleh memiliki
+izin baca/tulis. Permission lokal ini tidak menggantikan secret manager pada
+produksi.
 
 ## Menjalankan Gunicorn secara lokal
 
@@ -53,10 +66,15 @@ python -m flask --app run.py release-audit
 ```
 
 ```bash
-docker build -t spklu-sulawesi:0.14.0 .
+docker build -t spklu-sulawesi:0.15.0 .
 docker run --rm -p 8080:8080 \
+  --read-only \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+  --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m \
   --env-file .env.production \
-  spklu-sulawesi:0.14.0
+  spklu-sulawesi:0.15.0
 ```
 
 Base Python dapat diuji secara eksplisit dengan
@@ -65,8 +83,14 @@ memakai default Python 3.12. Seluruh instalasi memakai `constraints.txt` yang
 hash-nya dikunci oleh manifest rilis.
 
 Build kandidat rilis dapat memakai suffix sementara, misalnya
-`spklu-sulawesi:0.14.0-rc1`. Jangan push image ke registry sebelum CI hijau,
+`spklu-sulawesi:0.15.0-rc1`. Jangan push image ke registry sebelum CI hijau,
 secret produksi siap, dan target registry disetujui.
+
+Contoh di atas memakai tmpfs untuk smoke test sehingga ledger hilang ketika
+container berhenti. Untuk layanan atau eksperimen yang harus mempertahankan
+quota, ganti tmpfs `/app/reports/generated` dengan volume persisten. Verifikasi
+volume dapat ditulis UID runtime `spklu`, tetapi jangan mengubah ownership atau
+permission source `/app/app`. Root filesystem tetap read-only.
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
 produksi tidak dilacak Git. Healthcheck container mengakses
@@ -156,7 +180,12 @@ wajib sebagai pengaman biaya utama.
    telah ditetapkan berdasarkan anggaran dan hasil evaluasi.
 5. Endpoint `/api/health` dipantau tanpa memanggil layanan Google eksternal.
 6. Dataset yang ter-deploy sama dengan versi yang dilaporkan dalam penelitian.
-7. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
+7. Provenance sumber, tanggal snapshot, lisensi, dan hak redistribusi dataset
+   telah dikonfirmasi, atau dataset tidak didistribusikan dan keterbatasannya
+   dinyatakan sesuai [`data_provenance.md`](data_provenance.md).
+8. Artefak CI untuk revision image yang sama telah diperiksa: coverage/audit pada
+   tiga Python serta health/audit container.
+9. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
 
 Eksperimen CLI dan endpoint web memiliki hard limit terpisah untuk panggilan
 Compute Routes dan elemen Route Matrix, pemeriksaan kapasitas menit aktif, serta
@@ -172,6 +201,14 @@ HSTS, anti-clickjacking, MIME sniffing protection, permissions policy, dan
 respons error API yang tidak membocorkan exception internal. Endpoint API juga
 mengirim `Cache-Control: no-store`.
 
-Rate limiting sebaiknya dilakukan pada gateway/reverse proxy dan quota Google.
-Limiter memori di dalam Flask tidak dipakai karena hitungannya akan berbeda pada
-setiap worker Gunicorn dan tidak memberi perlindungan biaya yang dapat diandalkan.
+Sebelum endpoint rekomendasi dapat diakses publik, rate limit pada
+gateway/reverse proxy wajib aktif. Untuk demo atau pengambilan data terbatas,
+gunakan autentikasi atau allowlist pengguna/IP selain quota Google. Ledger global
+hanya mencegah request Routes berjalan paralel; ia tidak mencegah satu klien
+menghabiskan jatah harian secara berurutan. Limiter memori di dalam Flask tidak
+dipakai karena hitungannya akan berbeda pada setiap worker Gunicorn dan tidak
+memberi perlindungan biaya yang dapat diandalkan.
+
+Mode read-only dan source ownership memperkecil dampak modifikasi runtime, tetapi
+tidak menggantikan patch image, pemindaian dependency, pengelolaan secret, atau
+kontrol akses platform hosting.

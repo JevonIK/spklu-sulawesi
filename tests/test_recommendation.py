@@ -4,8 +4,12 @@ from contextlib import contextmanager
 import pytest
 
 from app.services.dataset import StationNode, StationUnit
-from app.services.google_routes import ApiQuotaBudget, ApiQuotaBudgetExceeded
-from app.services.google_routes import ComputedRoute
+from app.services.google_routes import (
+    ApiQuotaBudget,
+    ApiQuotaBudgetExceeded,
+    GoogleRoutesError,
+)
+from app.services.google_routes import ComputedRoute, ComputedRouteLeg
 from app.services.quota_ledger import GoogleRoutesQuotaLedger
 from app.services.recommendation import (
     QuotaProtectedRecommendationService,
@@ -13,6 +17,7 @@ from app.services.recommendation import (
     RecommendationQuotaError,
     RecommendationService,
     RecommendationValidationError,
+    validate_sulawesi_coordinate_scope,
 )
 from app.services.road_metrics import RoadMetricBatch, RoadMetricResult
 from app.services.spatial import StationSpatialIndex
@@ -76,11 +81,19 @@ class PipelineRoutesClient:
 
     def compute_route(self, origin, destination, *, intermediates=()):
         self.compute_route_calls.append((origin, destination, intermediates))
+        if intermediates:
+            legs = (
+                ComputedRouteLeg(56, 60),
+                ComputedRouteLeg(56, 60),
+            )
+        else:
+            legs = (ComputedRouteLeg(112, 120),)
         return ComputedRoute(
             distance_km=112,
             duration_minutes=120,
             encoded_polyline="encoded-for-test",
             coordinates=((0, 0), (0, 0.5), (0, 1)),
+            legs=legs,
         )
 
     def fetch(self, requests):
@@ -216,6 +229,15 @@ def test_recommendation_input_accepts_multiple_additional_networks():
     ]
 
 
+def test_recommendation_input_accepts_explicit_route_sampling_step():
+    body = valid_payload()
+    body["options"] = {"route_sample_step_km": 2.5}
+
+    parsed = RecommendationInput.from_payload(body, defaults=DEFAULTS)
+
+    assert parsed.route_sample_step_km == pytest.approx(2.5)
+
+
 @pytest.mark.parametrize(
     "mutator, expected_field",
     [
@@ -250,6 +272,12 @@ def test_recommendation_input_accepts_multiple_additional_networks():
             ),
             "options.additional_charging_networks",
         ),
+        (
+            lambda body: body.update(
+                {"options": {"route_sample_step_km": 0.01}}
+            ),
+            "options.route_sample_step_km",
+        ),
     ],
 )
 def test_invalid_recommendation_input_has_field_context(
@@ -262,6 +290,14 @@ def test_invalid_recommendation_input_has_field_context(
         RecommendationInput.from_payload(body, defaults=DEFAULTS)
 
     assert captured.value.field == expected_field
+
+
+def test_public_coordinate_scope_rejects_location_outside_sulawesi():
+    with pytest.raises(RecommendationValidationError) as captured:
+        validate_sulawesi_coordinate_scope((40.7, -74), "origin")
+
+    assert captured.value.field == "origin"
+    assert "Sulawesi" in str(captured.value)
 
 
 def test_full_recommendation_pipeline_selects_station_and_reports_api_usage():
@@ -291,6 +327,8 @@ def test_full_recommendation_pipeline_selects_station_and_reports_api_usage():
     assert routes_client.compute_route_calls[1][2] == ((0, 0.5),)
     assert result["route_access"]["status"] == "public"
     assert result["route_access"]["conditional"] is False
+    assert result["optimization"]["final_route_validation"]["status"] == "passed"
+    assert result["optimization"]["itinerary"]["total_road_distance_km"] == 112
 
 
 def test_dealer_station_requires_network_selection_and_marks_conditional_route():
@@ -393,6 +431,73 @@ def test_direct_route_reuses_base_route_without_second_compute_call():
     assert result["recommended_route"] == result["base_route"]
 
 
+def test_final_route_leg_that_violates_soc_is_not_returned_as_feasible():
+    class UnsafeFinalRouteClient(PipelineRoutesClient):
+        def compute_route(self, origin, destination, *, intermediates=()):
+            route = super().compute_route(
+                origin,
+                destination,
+                intermediates=intermediates,
+            )
+            if not intermediates:
+                return route
+            return ComputedRoute(
+                distance_km=140,
+                duration_minutes=140,
+                encoded_polyline=route.encoded_polyline,
+                coordinates=route.coordinates,
+                legs=(
+                    ComputedRouteLeg(70, 70),
+                    ComputedRouteLeg(70, 70),
+                ),
+            )
+
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex((station_node(),)),
+        routes_client=UnsafeFinalRouteClient(),
+        defaults=DEFAULTS,
+    )
+
+    with pytest.raises(GoogleRoutesError) as captured:
+        service.recommend(service.parse_input(valid_payload()))
+
+    assert captured.value.code == "final_route_soc_violation"
+
+
+def test_final_route_stop_without_real_charge_is_rejected_fail_safe():
+    class NoChargeFinalRouteClient(PipelineRoutesClient):
+        def compute_route(self, origin, destination, *, intermediates=()):
+            route = super().compute_route(
+                origin,
+                destination,
+                intermediates=intermediates,
+            )
+            if not intermediates:
+                return route
+            return ComputedRoute(
+                distance_km=57,
+                duration_minutes=57,
+                encoded_polyline=route.encoded_polyline,
+                coordinates=route.coordinates,
+                legs=(
+                    ComputedRouteLeg(1, 1),
+                    ComputedRouteLeg(56, 56),
+                ),
+            )
+
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex((station_node(),)),
+        routes_client=NoChargeFinalRouteClient(),
+        defaults=DEFAULTS,
+    )
+    payload = valid_payload(current_soc_percent=85)
+
+    with pytest.raises(GoogleRoutesError) as captured:
+        service.recommend(service.parse_input(payload))
+
+    assert captured.value.code == "final_route_charge_not_required"
+
+
 def test_web_quota_guard_records_actual_usage_and_returns_status(tmp_path):
     protected, ledger = protected_service(
         tmp_path,
@@ -419,7 +524,7 @@ def test_web_quota_guard_records_actual_usage_and_returns_status(tmp_path):
     assert run["outcome"] == "completed"
 
 
-def test_web_service_keeps_public_soc_options_and_uses_backend_research_defaults(
+def test_web_service_rejects_research_options_instead_of_silently_ignoring_them(
     tmp_path,
 ):
     service = BudgetTestRecommendationService()
@@ -435,15 +540,54 @@ def test_web_service_keeps_public_soc_options_and_uses_backend_research_defaults
         }
     }
 
-    parsed = protected.parse_input(payload)
+    with pytest.raises(RecommendationValidationError) as captured:
+        protected.parse_input(payload)
 
-    assert parsed == {
-        "options": {
-            "minimum_soc_percent": 15,
-            "target_soc_percent": 85,
-            "additional_charging_networks": ["WULING"],
-        }
-    }
+    assert captured.value.field == "options.corridor_radius_km"
+    assert "endpoint publik" in str(captured.value)
+
+
+@pytest.mark.parametrize(
+    "payload, expected_field",
+    [
+        ({"unexpected": True}, "unexpected"),
+        (
+            {
+                "origin": {
+                    "latitude": 0,
+                    "longitude": 120,
+                    "label": "tidak diterima",
+                }
+            },
+            "origin.label",
+        ),
+        (
+            {
+                "vehicle": {
+                    "maximum_range_km": 300,
+                    "current_soc_percent": 80,
+                    "connector": "CCS2",
+                    "connectors": ["CCS2"],
+                }
+            },
+            "vehicle.connectors",
+        ),
+    ],
+)
+def test_web_service_rejects_ambiguous_or_unknown_fields(
+    tmp_path,
+    payload,
+    expected_field,
+):
+    protected, _ = protected_service(
+        tmp_path,
+        BudgetTestRecommendationService(),
+    )
+
+    with pytest.raises(RecommendationValidationError) as captured:
+        protected.parse_input(payload)
+
+    assert captured.value.field == expected_field
 
 
 def test_web_quota_guard_records_failed_attempts(tmp_path):

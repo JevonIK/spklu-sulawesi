@@ -2,8 +2,9 @@
 
 Dokumen ini menjelaskan pemisahan antara kompatibilitas konektor dan akses
 jaringan pada Sistem Rekomendasi SPKLU Sulawesi. Dataset mentah tidak diubah;
-klasifikasi jaringan diturunkan di memori agar asal-usul data tetap dapat
-direproduksi.
+klasifikasi jaringan diturunkan di memori agar transformasi komputasinya dapat
+direproduksi. Hal ini tidak membuktikan provenance atau lisensi dataset; status
+tersebut dijelaskan pada [`data_provenance.md`](data_provenance.md).
 
 ## Dasar keputusan
 

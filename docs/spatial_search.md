@@ -19,7 +19,8 @@ sedikitnya satu dari konektor pilihan.
 
 ## Penghimpunan kandidat koridor
 
-Polyline rute disampling dengan jarak antartitik maksimum yang dapat dikonfigurasi.
+Polyline rute dasar berasal dari Compute Routes dengan kualitas `HIGH_QUALITY`,
+lalu disampling dengan jarak antartitik maksimum yang dapat dikonfigurasi.
 Ball Tree dipanggil pada setiap titik sampel, kemudian ID node dideduplikasi. Radius
 penghimpunan diberi toleransi setengah jarak sampling agar kandidat dekat segmen
 tidak terlewat.
@@ -51,3 +52,8 @@ dalam `usable_range_km`. Kandidat kemudian harus memenuhi tiga syarat:
 
 Jarak pada tahap ini masih berupa jarak geodesik untuk pemangkasan awal. Jarak
 jalan dan kelayakan edge akan divalidasi pada fase pembentukan graf.
+
+Kualitas polyline yang lebih tinggi mengurangi kehilangan bentuk jalan pada
+filter koridor, tetapi bukan bukti bahwa geometri, koordinat SPKLU, atau kondisi
+jalan selalu akurat. Run baru merekam langkah sampling pada skenario schema 2;
+laporan historis 0.9.2/0.10.0 tidak merekam nilai tersebut.

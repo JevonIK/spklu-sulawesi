@@ -11,17 +11,25 @@ perjalanan kembali ke arah titik awal.
 
 ## Pemangkasan sebelum validasi jalan
 
-Setiap pasangan node maju diperiksa menggunakan jarak Haversine. Pasangan langsung
-dihapus jika jarak geodesiknya melebihi usable range sumber:
+Setiap pasangan node maju diperiksa menggunakan jarak Haversine. Untuk mengurangi
+risiko membuang edge layak akibat perbedaan model bumi dan presisi koordinat,
+sistem memakai lower bound dengan margin 1%:
+
+```text
+lower_bound = jarak_geodesik × (1 - 0,01)
+```
+
+Pasangan langsung dihapus hanya jika `lower_bound` tersebut melebihi usable
+range sumber (ditambah toleransi numerik kecil):
 
 - edge dari origin memakai initial usable range;
 - edge dari SPKLU memakai post-charge usable range maksimum.
 
-Karena jarak jalan tidak mungkin secara material lebih pendek daripada jarak
-geodesik, tahap ini aman digunakan untuk mengurangi pasangan yang perlu dikirim ke
-provider jarak jalan. Provider menerima seluruh pasangan yang tersisa melalui
-antarmuka batch agar implementasi Google Maps nantinya dapat mengatur batching dan
-mencatat jumlah permintaan eksternal.
+Margin ini adalah toleransi prapemangkasan geometri, bukan safety factor energi.
+Ia membuat filter sedikit lebih permisif agar pasangan dekat ambang tetap
+divalidasi oleh Route Matrix. Provider menerima seluruh pasangan yang tersisa
+melalui antarmuka batch untuk mengatur batching dan mencatat jumlah permintaan
+eksternal.
 
 ## Validasi edge
 
@@ -32,9 +40,14 @@ diterima apabila:
 2. jarak jalan tidak melebihi usable range sumber;
 3. estimasi detour tidak melampaui batas opsional.
 
-Estimasi detour edge sementara dihitung sebagai selisih nonnegatif antara jarak
-jalan dan kenaikan progres pada polyline utama. Perhitungan ini akan memakai data
-rute Google Maps pada fase integrasi.
+Sebagai pemeriksaan integritas respons, jarak jalan yang lebih pendek daripada
+lower bound geodesik di luar toleransi absolut ditolak sebagai data tidak masuk
+akal. Keputusan kelayakan energi tetap memakai jarak jalan yang dikembalikan
+provider, bukan jarak Haversine.
+
+Estimasi detour edge dihitung sebagai selisih nonnegatif antara jarak jalan dan
+kenaikan progres pada polyline utama. Setelah itinerary terpilih, total detour
+rute akhir dihitung kembali dari Compute Routes final terhadap rute dasar.
 
 ## Statistik evaluasi
 
@@ -43,4 +56,3 @@ yang dipangkas secara geodesik, pasangan yang dikirim ke provider, hasil yang ti
 tersedia, edge yang gagal karena jarak jalan atau detour, edge yang diterima, dan
 jumlah permintaan eksternal. Statistik ini disiapkan untuk evaluasi kebutuhan API
 dan efisiensi komputasi.
-

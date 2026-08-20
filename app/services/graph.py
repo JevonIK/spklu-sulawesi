@@ -16,6 +16,13 @@ from .spatial import (
 )
 
 
+# Haversine memakai bola rata-rata, sedangkan Routes memakai model jalan di atas
+# ellipsoid. Margin 1% mencegah straight-line spherical distance diperlakukan
+# keliru sebagai lower bound eksak di dekat ambang jangkauan.
+GEODESIC_LOWER_BOUND_MARGIN_RATIO = 0.01
+ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM = 0.05
+
+
 ORIGIN_NODE_ID = "origin"
 DESTINATION_NODE_ID = "destination"
 
@@ -290,7 +297,13 @@ def build_travel_graph(
             geodesic_distance = haversine_distance_km(
                 source.coordinate, target.coordinate
             )
-            if geodesic_distance > usable_range_limit + DISTANCE_TOLERANCE_KM:
+            conservative_lower_bound = geodesic_distance * (
+                1 - GEODESIC_LOWER_BOUND_MARGIN_RATIO
+            )
+            if (
+                conservative_lower_bound
+                > usable_range_limit + DISTANCE_TOLERANCE_KM
+            ):
                 geodesic_pruned_pairs += 1
                 continue
 
@@ -341,9 +354,12 @@ def build_travel_graph(
             unavailable_road_pairs += 1
             continue
 
+        conservative_lower_bound = pending.request.geodesic_distance_km * (
+            1 - GEODESIC_LOWER_BOUND_MARGIN_RATIO
+        )
         if (
-            result.distance_km + 0.05
-            < pending.request.geodesic_distance_km
+            result.distance_km + ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM
+            < conservative_lower_bound
         ):
             raise ValueError(
                 f"Jarak jalan {pending.request.request_id} lebih pendek "

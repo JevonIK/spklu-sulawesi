@@ -5,7 +5,7 @@
 Antarmuka fase 6B terdiri dari:
 
 - Place Autocomplete untuk lokasi awal dan tujuan;
-- peta Google dengan overview polyline rute;
+- peta Google dengan encoded polyline rute kualitas `HIGH_QUALITY`;
 - marker lokasi awal, tujuan, dan SPKLU terpilih;
 - formulir parameter kendaraan dengan checkbox AC Type 2, CCS2, CHAdeMO, dan
   GB/T yang dapat dipilih lebih dari satu;
@@ -34,7 +34,9 @@ di luar ruang lingkup penelitian.
    yang tidak mempunyai konektor cocok diberi penjelasan tanpa mengubah pilihan
    konektor secara otomatis.
 9. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC; petunjuk awal
-   di tengah peta disembunyikan segera setelah data rute tersedia.
+   di tengah peta disembunyikan segera setelah data rute tersedia. Jika rute
+   feasible, SOC setiap leg rute yang ditampilkan harus lolos validasi ulang
+   sebelum hasil ditampilkan.
 10. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
     peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
 11. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan

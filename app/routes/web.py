@@ -1,5 +1,7 @@
 """Route untuk halaman antarmuka aplikasi."""
 
+from itertools import combinations
+
 from flask import Blueprint, current_app, g, render_template
 
 from ..services.dataset import (
@@ -12,10 +14,38 @@ from ..services.dataset import (
 web_bp = Blueprint("web", __name__)
 
 
+def _connector_availability(catalog):
+    """Jumlah node unik per konektor untuk setiap pilihan jaringan dealer."""
+
+    availability = {}
+    dealer_networks = tuple(DEALER_CHARGING_NETWORK_ORDER)
+    selections = [
+        selected
+        for size in range(len(dealer_networks) + 1)
+        for selected in combinations(dealer_networks, size)
+    ]
+    for connector in catalog.summary()["connector_node_counts"]:
+        availability[connector] = {}
+        for selected in selections:
+            allowed = {PUBLIC_CHARGING_NETWORK, *selected}
+            key = ",".join(selected) or "PUBLIC_ONLY"
+            availability[connector][key] = sum(
+                1
+                for node in catalog.nodes
+                if any(
+                    unit.charging_network in allowed
+                    and connector in unit.connectors
+                    for unit in node.units
+                )
+            )
+    return availability
+
+
 @web_bp.get("/")
 def index():
     catalog = current_app.extensions["station_catalog"]
     catalog_summary = catalog.summary()
+    connector_availability = _connector_availability(catalog)
     connector_counts = catalog_summary["connector_node_counts"]
     connector_labels = {
         "AC TYPE 2": "AC Type 2",
@@ -32,7 +62,9 @@ def index():
             {
                 "value": connector,
                 "label": connector_labels[connector],
-                "location_count": location_count,
+                "location_count": connector_availability[connector][
+                    "PUBLIC_ONLY"
+                ],
             }
             for connector, location_count in connector_counts.items()
             if location_count > 0
@@ -71,6 +103,7 @@ def index():
             "mapsConfigured": bool(
                 current_app.config["GOOGLE_MAPS_BROWSER_API_KEY"]
             ),
+            "connectorAvailability": connector_availability,
         },
     )
 

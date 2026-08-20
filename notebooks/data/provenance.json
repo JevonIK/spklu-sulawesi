@@ -1,23 +1,41 @@
 {
-  "schema_version": 1,
-  "application_version": "0.14.0",
+  "schema_version": 2,
+  "analysis": {
+    "application_version": "0.15.0",
+    "mode": "offline",
+    "notebook_path": "notebooks/analisis_sistem_spklu_sulawesi.ipynb"
+  },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
     "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "metadata_path": "dataset_metadata.json",
+    "metadata_sha256": "3305e40d74b8fea45c9f8e56ed53b01dfc58faf5c9e3da5dfe49bb628ff985d2",
     "source_rows": 150,
-    "logical_nodes": 149
+    "logical_nodes": 149,
+    "provenance_status": "incomplete",
+    "license_status": "unknown"
   },
   "source_reports": {
     "baseline": {
       "path": "reports/generated/baseline-live-20260813-detailed.json",
       "sha256": "40074a65d5e0d58ed6ae8f4e61f5d28ecb7958f8f67aaa8729c09de8b20a5f51",
       "generated_at_utc": "2026-08-13T02:34:56.309842+00:00",
+      "source_application_version": "0.9.2",
+      "report_schema_version": 2,
+      "embedded_definition_canonical_sha256": "aecafae0d513a567d4854d85f7a44ecba11a11b750f9cdaf05e386dd238549ff",
+      "dataset_sha256": null,
+      "route_sample_step_km": null,
       "scenario_count": 6
     },
     "sensitivity": {
       "path": "reports/generated/sensitivitas-live-20260813-rerun1.json",
       "sha256": "a46b02163bd443db9516d8da1cd42d49e4ed2e53b458a48d6fdf45f0d97a7d3c",
       "generated_at_utc": "2026-08-13T03:28:22.546962+00:00",
+      "source_application_version": "0.10.0",
+      "report_schema_version": 2,
+      "embedded_definition_canonical_sha256": "575ffb28db1564b9e136087bd8ffe396877886e0ede8652489cd12c09e7ba6de",
+      "dataset_sha256": null,
+      "route_sample_step_km": null,
       "scenario_count": 7
     }
   },
@@ -37,6 +55,8 @@
   },
   "notes": [
     "Snapshot diturunkan dari laporan live tervalidasi untuk analisis offline.",
+    "Baseline berasal dari aplikasi 0.9.2 dan sensitivitas dari aplikasi 0.10.0; versi analisis tidak boleh dianggap sebagai versi penghasil hasil live.",
+    "Versi lama tidak merekam hash dataset maupun langkah sampling rute di dalam laporan; keterbatasan ini tidak boleh diisi dengan tebakan.",
     "Snapshot tidak memuat polyline, API key, atau koordinat origin-destination hasil Google.",
     "Notebook tidak menjalankan Google Maps API dan tidak mengestimasi waktu pengisian."
   ]

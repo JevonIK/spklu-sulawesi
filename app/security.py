@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import ipaddress
+import math
+import re
 import secrets
 
 from flask import g, jsonify, request
@@ -11,6 +14,14 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 DEVELOPMENT_SECRET = "development-only-change-me"
 VALID_ENVIRONMENTS = frozenset({"development", "testing", "production"})
+HOST_LABEL_PATTERN = re.compile(
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?",
+    flags=re.IGNORECASE,
+)
+EMAIL_LOCAL_PATTERN = re.compile(
+    r"[a-z0-9!#$%&'*+/=?^_`{|}~.-]+",
+    flags=re.IGNORECASE,
+)
 
 
 class ProductionConfigurationError(RuntimeError):
@@ -73,31 +84,232 @@ def _validate_common_config(app):
             "Batas elemen Matrix per request tidak boleh melebihi batas "
             "harian."
         )
+    if (
+        app.config["GOOGLE_WEB_MAX_COMPUTE_ROUTES_PER_REQUEST"]
+        > app.config["GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT"]
+    ):
+        raise ProductionConfigurationError(
+            "Batas Compute Routes per request tidak boleh melebihi batas "
+            "per menit."
+        )
+    if (
+        app.config["GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST"]
+        > app.config["GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT"]
+    ):
+        raise ProductionConfigurationError(
+            "Batas elemen Matrix per request tidak boleh melebihi batas "
+            "per menit."
+        )
+
+    numeric_config = {
+        "DEFAULT_SOC_MIN": app.config.get("DEFAULT_SOC_MIN"),
+        "DEFAULT_SOC_TARGET": app.config.get("DEFAULT_SOC_TARGET"),
+        "DEFAULT_SAFETY_FACTOR": app.config.get("DEFAULT_SAFETY_FACTOR"),
+        "DEFAULT_CORRIDOR_RADIUS_KM": app.config.get(
+            "DEFAULT_CORRIDOR_RADIUS_KM"
+        ),
+        "DEFAULT_ROUTE_SAMPLE_STEP_KM": app.config.get(
+            "DEFAULT_ROUTE_SAMPLE_STEP_KM"
+        ),
+        "DEFAULT_SOC_STEP": app.config.get("DEFAULT_SOC_STEP"),
+        "GOOGLE_ROUTES_TIMEOUT_SECONDS": app.config.get(
+            "GOOGLE_ROUTES_TIMEOUT_SECONDS"
+        ),
+    }
+    for name, value in numeric_config.items():
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            raise ProductionConfigurationError(
+                f"{name} harus berupa angka finite."
+            )
+
+    minimum_soc = float(numeric_config["DEFAULT_SOC_MIN"])
+    target_soc = float(numeric_config["DEFAULT_SOC_TARGET"])
+    if not 0 <= minimum_soc < 100:
+        raise ProductionConfigurationError(
+            "DEFAULT_SOC_MIN harus berada pada rentang 0 sampai kurang dari 100."
+        )
+    if not minimum_soc < target_soc <= 100:
+        raise ProductionConfigurationError(
+            "DEFAULT_SOC_TARGET harus lebih besar dari DEFAULT_SOC_MIN dan "
+            "maksimal 100."
+        )
+    if not 0 < float(numeric_config["DEFAULT_SAFETY_FACTOR"]) <= 1:
+        raise ProductionConfigurationError(
+            "DEFAULT_SAFETY_FACTOR harus berada pada rentang >0 sampai 1."
+        )
+    if not 0 < float(numeric_config["DEFAULT_CORRIDOR_RADIUS_KM"]) <= 100:
+        raise ProductionConfigurationError(
+            "DEFAULT_CORRIDOR_RADIUS_KM harus berada pada rentang >0 sampai 100."
+        )
+    if not 0.1 <= float(
+        numeric_config["DEFAULT_ROUTE_SAMPLE_STEP_KM"]
+    ) <= 100:
+        raise ProductionConfigurationError(
+            "DEFAULT_ROUTE_SAMPLE_STEP_KM harus berada pada rentang 0,1 "
+            "sampai 100."
+        )
+    if not 0 < float(numeric_config["DEFAULT_SOC_STEP"]) <= 100 - minimum_soc:
+        raise ProductionConfigurationError(
+            "DEFAULT_SOC_STEP harus lebih besar dari nol dan tidak melebihi "
+            "rentang SOC yang tersedia."
+        )
+    if not 0 < float(numeric_config["GOOGLE_ROUTES_TIMEOUT_SECONDS"]) <= 120:
+        raise ProductionConfigurationError(
+            "GOOGLE_ROUTES_TIMEOUT_SECONDS harus berada pada rentang >0 "
+            "sampai 120."
+        )
+
+
+def _normalized_required_text(app, name, error_message, errors):
+    value = app.config.get(name)
+    if not isinstance(value, str) or not value.strip():
+        errors.append(error_message)
+        return None
+    normalized = value.strip()
+    app.config[name] = normalized
+    return normalized
+
+
+def _normalize_trusted_host(value):
+    """Menormalisasi hostname/IP tanpa menerima URL, path, wildcard, atau port."""
+
+    if not isinstance(value, str) or not value.strip():
+        return None
+    host = value.strip().lower()
+    suffix_match = host.startswith(".")
+    if suffix_match:
+        host = host[1:]
+    if not host or any(character in host for character in "/:@"):
+        return None
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        try:
+            ascii_host = host.encode("idna").decode("ascii")
+        except UnicodeError:
+            return None
+        if len(ascii_host) > 253:
+            return None
+        labels = ascii_host.split(".")
+        if (
+            any(not HOST_LABEL_PATTERN.fullmatch(label) for label in labels)
+            or all(label.isdigit() for label in labels)
+        ):
+            return None
+        if suffix_match and len(labels) < 2:
+            return None
+        normalized = ascii_host
+    else:
+        if suffix_match or address.version != 4:
+            return None
+        normalized = str(address)
+    return f".{normalized}" if suffix_match else normalized
+
+
+def _normalize_contact_email(value):
+    """Validasi konservatif untuk alamat kontak publik produksi."""
+
+    if not isinstance(value, str):
+        return None
+    email = value.strip()
+    if not email or len(email) > 254 or email.count("@") != 1:
+        return None
+    local_part, domain = email.rsplit("@", 1)
+    if (
+        not local_part
+        or len(local_part) > 64
+        or local_part.startswith(".")
+        or local_part.endswith(".")
+        or ".." in local_part
+        or not EMAIL_LOCAL_PATTERN.fullmatch(local_part)
+    ):
+        return None
+    normalized_domain = _normalize_trusted_host(domain)
+    if (
+        normalized_domain is None
+        or normalized_domain.startswith(".")
+        or "." not in normalized_domain
+    ):
+        return None
+    top_level_domain = normalized_domain.rsplit(".", 1)[1]
+    if not (
+        top_level_domain.isalpha()
+        or top_level_domain.startswith("xn--")
+    ):
+        return None
+    try:
+        ipaddress.ip_address(normalized_domain)
+    except ValueError:
+        pass
+    else:
+        return None
+    return f"{local_part}@{normalized_domain}"
 
 
 def _validate_production_config(app):
     errors = []
-    secret_key = app.config.get("SECRET_KEY")
-    if (
-        not isinstance(secret_key, str)
-        or len(secret_key) < 32
+    secret_key = _normalized_required_text(
+        app,
+        "SECRET_KEY",
+        "SECRET_KEY produksi wajib acak dan minimal 32 karakter",
+        errors,
+    )
+    if secret_key is not None and (
+        len(secret_key) < 32
+        or any(character.isspace() for character in secret_key)
         or secret_key == DEVELOPMENT_SECRET
     ):
         errors.append("SECRET_KEY produksi wajib acak dan minimal 32 karakter")
     if app.config.get("DEBUG"):
         errors.append("FLASK_DEBUG wajib false pada produksi")
-    if not app.config.get("GOOGLE_MAPS_BROWSER_API_KEY"):
-        errors.append("GOOGLE_MAPS_BROWSER_API_KEY wajib diisi")
-    if not app.config.get("GOOGLE_MAPS_SERVER_API_KEY"):
-        errors.append("GOOGLE_MAPS_SERVER_API_KEY wajib diisi")
-    if app.config.get("GOOGLE_MAPS_MAP_ID") in {None, "", "DEMO_MAP_ID"}:
+    browser_key = _normalized_required_text(
+        app,
+        "GOOGLE_MAPS_BROWSER_API_KEY",
+        "GOOGLE_MAPS_BROWSER_API_KEY wajib diisi",
+        errors,
+    )
+    server_key = _normalized_required_text(
+        app,
+        "GOOGLE_MAPS_SERVER_API_KEY",
+        "GOOGLE_MAPS_SERVER_API_KEY wajib diisi",
+        errors,
+    )
+    if browser_key is not None and browser_key == server_key:
+        errors.append("browser key dan server key wajib berbeda")
+    map_id = _normalized_required_text(
+        app,
+        "GOOGLE_MAPS_MAP_ID",
+        "GOOGLE_MAPS_MAP_ID produksi wajib memakai Map ID sendiri",
+        errors,
+    )
+    if map_id == "DEMO_MAP_ID":
         errors.append("GOOGLE_MAPS_MAP_ID produksi wajib memakai Map ID sendiri")
     trusted_hosts = app.config.get("TRUSTED_HOSTS")
     if not isinstance(trusted_hosts, (list, tuple)) or not trusted_hosts:
         errors.append("TRUSTED_HOSTS produksi wajib diisi")
-    contact_email = app.config.get("PUBLIC_CONTACT_EMAIL")
-    if not isinstance(contact_email, str) or "@" not in contact_email:
+    else:
+        normalized_hosts = [
+            _normalize_trusted_host(host) for host in trusted_hosts
+        ]
+        if any(host is None for host in normalized_hosts):
+            errors.append(
+                "TRUSTED_HOSTS hanya boleh memuat hostname atau IPv4 yang valid"
+            )
+        else:
+            app.config["TRUSTED_HOSTS"] = list(
+                dict.fromkeys(normalized_hosts)
+            )
+    contact_email = _normalize_contact_email(
+        app.config.get("PUBLIC_CONTACT_EMAIL")
+    )
+    if contact_email is None:
         errors.append("PUBLIC_CONTACT_EMAIL produksi wajib berupa email")
+    else:
+        app.config["PUBLIC_CONTACT_EMAIL"] = contact_email
     if errors:
         raise ProductionConfigurationError(
             "Konfigurasi produksi belum valid: " + "; ".join(errors) + "."

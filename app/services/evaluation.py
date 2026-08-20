@@ -3,18 +3,29 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
+import os
 import re
+import tempfile
 import time
 import tracemalloc
 from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .dataset import (
+    EXPECTED_PROVINCES,
+    normalize_connector,
+    parse_additional_charging_networks,
+)
+from .energy import EnergyParameters
+from .spatial import normalize_coordinate
 
-REPORT_SCHEMA_VERSION = 2
-SCENARIO_SCHEMA_VERSION = 1
+
+REPORT_SCHEMA_VERSION = 3
+SCENARIO_SCHEMA_VERSION = 2
 _SAFE_LABEL = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 CSV_COLUMNS = (
@@ -29,6 +40,8 @@ CSV_COLUMNS = (
     "safety_factor",
     "soc_step_percent",
     "corridor_radius_km",
+    "route_sample_step_km",
+    "additional_charging_networks",
     "status",
     "route_feasible",
     "reason",
@@ -40,6 +53,8 @@ CSV_COLUMNS = (
     "base_route_duration_minutes",
     "recommended_route_distance_km",
     "recommended_route_duration_minutes",
+    "final_route_validation_status",
+    "final_route_distance_delta_km",
     "total_road_distance_km",
     "total_driving_duration_minutes",
     "total_detour_km",
@@ -80,6 +95,13 @@ def _require_text(mapping, key, field):
 
 def _validate_coordinate(scenario, key, field):
     coordinate = _require_mapping(scenario.get(key), f"{field}.{key}")
+    _reject_unknown_fields(
+        coordinate,
+        {"label", "latitude", "longitude"},
+        f"{field}.{key}",
+    )
+    _require_text(coordinate, "label", f"{field}.{key}")
+    values = []
     for axis in ("latitude", "longitude"):
         value = coordinate.get(axis)
         if isinstance(value, bool):
@@ -96,6 +118,173 @@ def _validate_coordinate(scenario, key, field):
             raise ExperimentDefinitionError(
                 f"{field}.{key}.{axis} wajib berupa angka finite."
             )
+        values.append(numeric_value)
+    try:
+        coordinate_value = normalize_coordinate(values)
+    except ValueError as error:
+        raise ExperimentDefinitionError(
+            f"{field}.{key} tidak valid: {error}"
+        ) from error
+    if not (-7 <= coordinate_value[0] <= 3 and 118 <= coordinate_value[1] <= 126.5):
+        raise ExperimentDefinitionError(
+            f"{field}.{key} harus berada dalam cakupan Sulawesi."
+        )
+    return coordinate_value
+
+
+def _reject_unknown_fields(mapping, allowed, field):
+    unknown = sorted(set(mapping) - set(allowed))
+    if unknown:
+        raise ExperimentDefinitionError(
+            f"{field} memiliki field tidak dikenal: {', '.join(unknown)}."
+        )
+
+
+def _finite_number(mapping, key, field):
+    value = mapping.get(key)
+    if value is None or isinstance(value, bool):
+        raise ExperimentDefinitionError(f"{field}.{key} wajib berupa angka.")
+    try:
+        value = float(value)
+    except (TypeError, ValueError) as error:
+        raise ExperimentDefinitionError(
+            f"{field}.{key} wajib berupa angka."
+        ) from error
+    if not math.isfinite(value):
+        raise ExperimentDefinitionError(
+            f"{field}.{key} wajib berupa angka finite."
+        )
+    return value
+
+
+def _validate_vehicle_and_options(scenario, field):
+    vehicle_field = f"{field}.vehicle"
+    vehicle = _require_mapping(scenario.get("vehicle"), vehicle_field)
+    _reject_unknown_fields(
+        vehicle,
+        {"maximum_range_km", "current_soc_percent", "connector"},
+        vehicle_field,
+    )
+    maximum_range = _finite_number(
+        vehicle,
+        "maximum_range_km",
+        vehicle_field,
+    )
+    current_soc = _finite_number(
+        vehicle,
+        "current_soc_percent",
+        vehicle_field,
+    )
+    if not 0 < maximum_range <= 2000:
+        raise ExperimentDefinitionError(
+            f"{vehicle_field}.maximum_range_km harus berada pada rentang >0 sampai 2000."
+        )
+    try:
+        normalize_connector(_require_text(vehicle, "connector", vehicle_field))
+    except ValueError as error:
+        raise ExperimentDefinitionError(f"{vehicle_field}.connector {error}.") from error
+
+    options_field = f"{field}.options"
+    options = _require_mapping(scenario.get("options"), options_field)
+    expected_options = {
+        "minimum_soc_percent",
+        "target_soc_percent",
+        "safety_factor",
+        "soc_step_percent",
+        "corridor_radius_km",
+        "route_sample_step_km",
+        "additional_charging_networks",
+    }
+    _reject_unknown_fields(options, expected_options, options_field)
+    missing_options = sorted(expected_options - set(options))
+    if missing_options:
+        raise ExperimentDefinitionError(
+            f"{options_field} belum memuat: {', '.join(missing_options)}."
+        )
+    minimum_soc = _finite_number(options, "minimum_soc_percent", options_field)
+    target_soc = _finite_number(options, "target_soc_percent", options_field)
+    safety_factor = _finite_number(options, "safety_factor", options_field)
+    soc_step = _finite_number(options, "soc_step_percent", options_field)
+    corridor_radius = _finite_number(options, "corridor_radius_km", options_field)
+    route_sample_step = _finite_number(
+        options,
+        "route_sample_step_km",
+        options_field,
+    )
+    try:
+        parameters = EnergyParameters(
+            maximum_range_km=maximum_range,
+            minimum_soc_percent=minimum_soc,
+            target_soc_percent=target_soc,
+            safety_factor=safety_factor,
+            soc_step_percent=soc_step,
+        )
+        current_soc = parameters.validate_current_soc(current_soc)
+        parse_additional_charging_networks(
+            options["additional_charging_networks"]
+        )
+    except ValueError as error:
+        raise ExperimentDefinitionError(
+            f"{field} memiliki parameter kendaraan/energi tidak valid: {error}"
+        ) from error
+    if current_soc <= minimum_soc:
+        raise ExperimentDefinitionError(
+            f"{vehicle_field}.current_soc_percent harus lebih besar dari SOC minimum."
+        )
+    if not 0 < corridor_radius <= 100:
+        raise ExperimentDefinitionError(
+            f"{options_field}.corridor_radius_km harus berada pada rentang >0 sampai 100."
+        )
+    if not 0.1 <= route_sample_step <= 100:
+        raise ExperimentDefinitionError(
+            f"{options_field}.route_sample_step_km harus berada pada rentang 0,1 sampai 100."
+        )
+
+
+def _validate_sensitivity_oat(definition):
+    if not definition["experiment_id"].startswith("sensitivitas-"):
+        return
+    scenarios = definition["scenarios"]
+    baseline = next(
+        (item for item in scenarios if item["id"] == "sensitivitas-baseline"),
+        None,
+    )
+    if baseline is None:
+        raise ExperimentDefinitionError(
+            "Eksperimen sensitivitas wajib memuat sensitivitas-baseline."
+        )
+    factors = ("safety_factor", "corridor_radius_km", "soc_step_percent")
+    fixed_options = {
+        key: value
+        for key, value in baseline["options"].items()
+        if key not in factors
+    }
+    for scenario in scenarios:
+        if scenario is baseline:
+            continue
+        if scenario["origin"] != baseline["origin"] or scenario[
+            "destination"
+        ] != baseline["destination"] or scenario["vehicle"] != baseline["vehicle"]:
+            raise ExperimentDefinitionError(
+                f"{scenario['id']} mengubah variabel di luar faktor sensitivitas."
+            )
+        if {
+            key: value
+            for key, value in scenario["options"].items()
+            if key not in factors
+        } != fixed_options:
+            raise ExperimentDefinitionError(
+                f"{scenario['id']} mengubah parameter tetap sensitivitas."
+            )
+        changed_factors = [
+            key
+            for key in factors
+            if scenario["options"][key] != baseline["options"][key]
+        ]
+        if len(changed_factors) != 1:
+            raise ExperimentDefinitionError(
+                f"{scenario['id']} harus mengubah tepat satu faktor sensitivitas."
+            )
 
 
 def validate_experiment_definition(definition):
@@ -104,8 +293,13 @@ def validate_experiment_definition(definition):
     definition = _require_mapping(definition, "root")
     if definition.get("schema_version") != SCENARIO_SCHEMA_VERSION:
         raise ExperimentDefinitionError(
-            "schema_version skenario harus bernilai 1."
+            f"schema_version skenario harus bernilai {SCENARIO_SCHEMA_VERSION}."
         )
+    _reject_unknown_fields(
+        definition,
+        {"schema_version", "experiment_id", "description", "scenarios"},
+        "root",
+    )
     _require_text(definition, "experiment_id", "root")
     _require_text(definition, "description", "root")
 
@@ -119,6 +313,11 @@ def validate_experiment_definition(definition):
     for index, scenario in enumerate(scenarios):
         field = f"root.scenarios[{index}]"
         scenario = _require_mapping(scenario, field)
+        _reject_unknown_fields(
+            scenario,
+            {"id", "name", "region", "origin", "destination", "vehicle", "options"},
+            field,
+        )
         scenario_id = _require_text(scenario, "id", field)
         if scenario_id in known_ids:
             raise ExperimentDefinitionError(
@@ -126,13 +325,18 @@ def validate_experiment_definition(definition):
             )
         known_ids.add(scenario_id)
         _require_text(scenario, "name", field)
-        _require_text(scenario, "region", field)
-        _validate_coordinate(scenario, "origin", field)
-        _validate_coordinate(scenario, "destination", field)
-        _require_mapping(scenario.get("vehicle"), f"{field}.vehicle")
-        if "options" in scenario:
-            _require_mapping(scenario["options"], f"{field}.options")
+        region = _require_text(scenario, "region", field)
+        if region not in EXPECTED_PROVINCES:
+            raise ExperimentDefinitionError(f"{field}.region tidak dikenal.")
+        origin = _validate_coordinate(scenario, "origin", field)
+        destination = _validate_coordinate(scenario, "destination", field)
+        if origin == destination:
+            raise ExperimentDefinitionError(
+                f"{field}.destination harus berbeda dari origin."
+            )
+        _validate_vehicle_and_options(scenario, field)
 
+    _validate_sensitivity_oat(definition)
     return definition
 
 
@@ -183,6 +387,10 @@ def _result_template(scenario):
         "safety_factor": options.get("safety_factor"),
         "soc_step_percent": options.get("soc_step_percent"),
         "corridor_radius_km": options.get("corridor_radius_km"),
+        "route_sample_step_km": options.get("route_sample_step_km"),
+        "additional_charging_networks": " | ".join(
+            options.get("additional_charging_networks", [])
+        ),
         "status": "error",
         "route_feasible": None,
         "reason": None,
@@ -194,6 +402,8 @@ def _result_template(scenario):
         "base_route_duration_minutes": None,
         "recommended_route_distance_km": None,
         "recommended_route_duration_minutes": None,
+        "final_route_validation_status": None,
+        "final_route_distance_delta_km": None,
         "total_road_distance_km": None,
         "total_driving_duration_minutes": None,
         "total_detour_km": None,
@@ -240,6 +450,7 @@ def _completed_result(scenario, pipeline_result):
     graph = pipeline_result["graph"]
     base_route = pipeline_result["base_route"]
     recommended_route = pipeline_result.get("recommended_route")
+    final_route_validation = optimization.get("final_route_validation") or {}
     charging_stops = itinerary.get("charging_stops", []) if itinerary else []
     itinerary_legs = itinerary.get("legs", []) if itinerary else []
 
@@ -270,6 +481,12 @@ def _completed_result(scenario, pipeline_result):
                 recommended_route["duration_minutes"]
                 if recommended_route
                 else None
+            ),
+            "final_route_validation_status": final_route_validation.get(
+                "status"
+            ),
+            "final_route_distance_delta_km": final_route_validation.get(
+                "distance_delta_km"
             ),
             "total_road_distance_km": (
                 itinerary["total_road_distance_km"] if itinerary else None
@@ -423,6 +640,7 @@ def run_experiment(
     batch_interval_seconds=0,
     sleep_fn=time.sleep,
     progress_callback=None,
+    provenance=None,
 ):
     """Menjalankan semua skenario secara berurutan agar metrik dapat diaudit."""
 
@@ -459,10 +677,14 @@ def run_experiment(
         "experiment": {
             "id": definition["experiment_id"],
             "description": definition["description"],
-            "source_path": str(Path(source_path).resolve())
-            if source_path
-            else None,
+            "source_path": Path(source_path).name if source_path else None,
+            "source_sha256": (
+                hashlib.sha256(Path(source_path).read_bytes()).hexdigest()
+                if source_path
+                else None
+            ),
         },
+        "provenance": dict(provenance) if provenance is not None else None,
         "definition": definition,
         "batching": {
             "batch_size": batch_size,
@@ -497,13 +719,46 @@ def write_experiment_report(report, output_dir, label, *, overwrite=False):
             "jika memang ingin menggantinya."
         )
     json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with json_path.open("w", encoding="utf-8") as json_file:
-        json.dump(report, json_file, ensure_ascii=False, indent=2)
-        json_file.write("\n")
-    with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        for result in report["results"]:
-            writer.writerow({column: result.get(column) for column in CSV_COLUMNS})
+    temporary_paths = []
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=json_path.parent,
+            prefix=f".{json_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as json_file:
+            temporary_json_path = Path(json_file.name)
+            temporary_paths.append(temporary_json_path)
+            json.dump(report, json_file, ensure_ascii=False, indent=2)
+            json_file.write("\n")
+            json_file.flush()
+            os.fsync(json_file.fileno())
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            dir=csv_path.parent,
+            prefix=f".{csv_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as csv_file:
+            temporary_csv_path = Path(csv_file.name)
+            temporary_paths.append(temporary_csv_path)
+            writer = csv.DictWriter(csv_file, fieldnames=CSV_COLUMNS)
+            writer.writeheader()
+            for result in report["results"]:
+                writer.writerow(
+                    {column: result.get(column) for column in CSV_COLUMNS}
+                )
+            csv_file.flush()
+            os.fsync(csv_file.fileno())
+        os.replace(temporary_json_path, json_path)
+        temporary_paths.remove(temporary_json_path)
+        os.replace(temporary_csv_path, csv_path)
+        temporary_paths.remove(temporary_csv_path)
+    finally:
+        for temporary_path in temporary_paths:
+            temporary_path.unlink(missing_ok=True)
     return json_path, csv_path

@@ -207,6 +207,45 @@ def test_provider_result_shorter_than_geodesic_is_rejected():
         build_simple_graph(provider)
 
 
+def test_haversine_margin_accepts_plausible_wgs84_road_distance():
+    provider = RecordingRoadMetricProvider(
+        overrides={"origin->destination": 110.9}
+    )
+
+    graph = build_travel_graph(
+        origin=(0, 0),
+        destination=(1, 0),
+        route=((0, 0), (1, 0)),
+        candidates=(),
+        connector="CCS2",
+        initial_usable_range_km=111,
+        post_charge_usable_range_km=111,
+        road_metric_provider=provider,
+    )
+
+    assert len(provider.requests) == 1
+    assert graph.stats.accepted_edges == 1
+    assert graph.edges[0].road_distance_km == pytest.approx(110.9)
+
+
+def test_haversine_margin_still_rejects_implausibly_short_road_distance():
+    provider = RecordingRoadMetricProvider(
+        overrides={"origin->destination": 100}
+    )
+
+    with pytest.raises(ValueError, match="lebih pendek daripada jarak geodesik"):
+        build_travel_graph(
+            origin=(0, 0),
+            destination=(1, 0),
+            route=((0, 0), (1, 0)),
+            candidates=(),
+            connector="CCS2",
+            initial_usable_range_km=111,
+            post_charge_usable_range_km=111,
+            road_metric_provider=provider,
+        )
+
+
 def test_graph_does_not_call_provider_when_every_pair_is_pruned():
     class FailingProvider:
         def fetch(self, requests):

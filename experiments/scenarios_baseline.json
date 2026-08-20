@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "experiment_id": "baseline-enam-wilayah",
   "description": "Evaluasi baseline satu koridor pada masing-masing dari enam wilayah penelitian di Sulawesi.",
   "scenarios": [
@@ -27,7 +27,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     },
     {
@@ -54,7 +56,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     },
     {
@@ -81,7 +85,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     },
     {
@@ -108,7 +114,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     },
     {
@@ -135,7 +143,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     },
     {
@@ -162,7 +172,9 @@
         "target_soc_percent": 80,
         "safety_factor": 0.9,
         "soc_step_percent": 5,
-        "corridor_radius_km": 10
+        "corridor_radius_km": 10,
+        "route_sample_step_km": 5,
+        "additional_charging_networks": []
       }
     }
   ]

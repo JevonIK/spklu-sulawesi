@@ -21,7 +21,9 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Model jangkauan dan SOC | `app/services/energy.py` |
 | Dynamic Programming state `(node, SOC)` | `app/services/optimizer.py` |
 | Rekomendasi multi-stop | `app/services/recommendation.py` |
+| Validasi SOC rute final | rekonsiliasi setiap leg Compute Routes final pada `app/services/recommendation.py` |
 | Evaluasi enam wilayah dan sensitivitas | `experiments/`, `app/services/evaluation.py`, `docs/baseline_results.md`, dan `docs/sensitivity_results.md` |
+| Provenance data/hasil | `dataset_metadata.json`, manifest penelitian, dan `notebooks/data/provenance.json` |
 | Pengujian otomatis | `tests/` |
 
 ## Metrik proposal
@@ -63,6 +65,17 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
     SPKLU publik selalu disertakan, sedangkan charger Hyundai, Wuling, dan
     Toyota/Lexus bersifat opsional serta menghasilkan rute kondisional jika
     benar-benar dipakai itinerary.
+11. Nyatakan konfigurasi Routes secara tepat: `HIGH_QUALITY` dan
+    `TRAFFIC_UNAWARE`; waktu berkendara tidak memuat lalu lintas real-time.
+12. Jelaskan margin 1% sebagai toleransi lower bound geodesik untuk
+    prapemangkasan, terpisah dari safety factor energi.
+13. Bedakan validasi SOC hasil DP/Route Matrix dari rekonsiliasi SOC pada setiap
+    leg Compute Routes final.
+14. Atribusikan baseline kepada aplikasi 0.9.2 dan sensitivitas kepada 0.10.0;
+    0.15.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
+15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
+    hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
+    lengkap, terkini, atau open data tanpa bukti.
 
 Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
 tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan
@@ -82,3 +95,8 @@ menghitungnya.
   Google, dan dataset SPKLU dapat berubah.
 - Status rute kondisional bukan bukti izin penggunaan charger dealer; pengguna
   tetap harus melakukan konfirmasi operasional sebelum perjalanan.
+- Nol pelanggaran SOC berarti konsisten dengan model linier dan data leg yang
+  dipakai versi penghasil, bukan validasi konsumsi kendaraan nyata.
+- Hash dataset/artefak menjamin identitas byte, bukan provenance atau izin
+  redistribusi. Tindak lanjut terdapat pada
+  [`data_provenance.md`](data_provenance.md).

@@ -42,7 +42,7 @@ class Config:
     """Konfigurasi default untuk pengembangan lokal."""
 
     APP_NAME = "Sistem Rekomendasi SPKLU Sulawesi"
-    APP_VERSION = "0.14.0"
+    APP_VERSION = "0.15.0"
     APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
@@ -76,7 +76,7 @@ class Config:
     DEFAULT_ROUTE_SAMPLE_STEP_KM = _env_float(
         "DEFAULT_ROUTE_SAMPLE_STEP_KM", 5
     )
-    DEFAULT_SOC_STEP = _env_int("DEFAULT_SOC_STEP", 5)
+    DEFAULT_SOC_STEP = _env_float("DEFAULT_SOC_STEP", 5)
 
     GOOGLE_MAPS_BROWSER_API_KEY = os.getenv(
         "GOOGLE_MAPS_BROWSER_API_KEY", ""
@@ -122,3 +122,4 @@ class Config:
     )
 
     PUBLIC_CONTACT_EMAIL = os.getenv("PUBLIC_CONTACT_EMAIL", "").strip()
+    SOURCE_REVISION = os.getenv("SOURCE_REVISION", "").strip() or None

@@ -7,6 +7,9 @@ const SULAWESI_BOUNDS = {
     north: 3,
     east: 126.5,
 };
+const HEALTH_TIMEOUT_MS = 8_000;
+const MAPS_LOAD_TIMEOUT_MS = 20_000;
+const RECOMMENDATION_TIMEOUT_MS = 125_000;
 
 const elements = {
     serviceState: document.getElementById("serviceState"),
@@ -39,6 +42,8 @@ const elements = {
     diagnosticList: document.getElementById("diagnosticList"),
     mapElement: document.getElementById("map"),
     mapEmpty: document.getElementById("mapEmpty"),
+    mapEmptyTitle: document.getElementById("mapEmptyTitle"),
+    mapEmptyMessage: document.getElementById("mapEmptyMessage"),
     mapLoading: document.getElementById("mapLoading"),
 };
 
@@ -50,8 +55,11 @@ const state = {
     infoWindow: null,
     polyline: null,
     markers: [],
+    autocompletes: {},
     interfaceReady: false,
     isSubmitting: false,
+    inputRevision: 0,
+    requestSequence: 0,
     selectedPlaces: {
         origin: null,
         destination: null,
@@ -71,9 +79,39 @@ function readFrontendConfig() {
 function setFormStatus(message, type = "info") {
     if (!elements.formStatus) return;
     elements.formStatus.textContent = message;
-    elements.formStatus.classList.remove("is-error", "is-success");
+    elements.formStatus.classList.remove("is-error", "is-success", "is-warning");
     if (type === "error") elements.formStatus.classList.add("is-error");
     if (type === "success") elements.formStatus.classList.add("is-success");
+    if (type === "warning") elements.formStatus.classList.add("is-warning");
+}
+
+function setServiceState(type, message) {
+    if (!elements.serviceState) return;
+    elements.serviceState.classList.remove("is-ready", "is-error");
+    if (type === "ready") elements.serviceState.classList.add("is-ready");
+    if (type === "error") elements.serviceState.classList.add("is-error");
+    const label = elements.serviceState.querySelector(".service-state-label");
+    if (label) label.textContent = message;
+}
+
+function setMapEmptyState(title, message, type = "info") {
+    if (elements.mapEmptyTitle) elements.mapEmptyTitle.textContent = title;
+    if (elements.mapEmptyMessage) elements.mapEmptyMessage.textContent = message;
+    elements.mapEmpty?.classList.toggle("is-error", type === "error");
+    elements.mapEmpty?.classList.remove("is-hidden");
+}
+
+async function fetchWithTimeout(url, options, timeoutMs, timeoutMessage) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } catch (error) {
+        if (error?.name === "AbortError") throw new Error(timeoutMessage);
+        throw error;
+    } finally {
+        window.clearTimeout(timer);
+    }
 }
 
 function initializationErrorMessage(error) {
@@ -105,9 +143,9 @@ async function checkServiceHealth() {
     if (!elements.serviceState) throw new Error("Indikator layanan tidak tersedia.");
 
     try {
-        const response = await fetch("/api/health", {
+        const response = await fetchWithTimeout("/api/health", {
             headers: { Accept: "application/json" },
-        });
+        }, HEALTH_TIMEOUT_MS, "Pemeriksaan server melewati batas waktu.");
         const payload = await response.json();
 
         if (!response.ok || payload.status !== "ok") {
@@ -117,18 +155,9 @@ async function checkServiceHealth() {
         const mapsReady = payload.data?.google_maps?.recommendation_endpoint_ready;
         if (!mapsReady) throw new Error("Endpoint rekomendasi belum siap");
 
-        elements.serviceState.classList.remove("is-error");
-        elements.serviceState.classList.add("is-ready");
-        const nodeCount = payload.data?.dataset?.logical_nodes;
-        elements.serviceState.querySelector("span:last-child").textContent = nodeCount
-            ? `Sistem siap · ${nodeCount} lokasi`
-            : "Sistem siap";
         return payload.data;
     } catch (error) {
-        elements.serviceState.classList.remove("is-ready");
-        elements.serviceState.classList.add("is-error");
-        elements.serviceState.querySelector("span:last-child").textContent =
-            "Sistem bermasalah";
+        setServiceState("error", "Bermasalah");
         throw error;
     }
 }
@@ -162,28 +191,53 @@ function loadGoogleMaps(apiKey) {
     return new Promise((resolve, reject) => {
         const callbackName = `initSpkluMaps_${Date.now()}`;
         const script = document.createElement("script");
+        const previousAuthFailure = window.gm_authFailure;
+        let settled = false;
         const parameters = new URLSearchParams({
             key: apiKey,
             loading: "async",
             callback: callbackName,
-            v: "weekly",
+            v: "quarterly",
             libraries: "maps,places,marker",
             language: "id",
             region: "ID",
         });
 
-        window[callbackName] = () => {
+        const cleanup = () => {
+            window.clearTimeout(timeoutId);
             delete window[callbackName];
+            if (previousAuthFailure) {
+                window.gm_authFailure = previousAuthFailure;
+            } else {
+                delete window.gm_authFailure;
+            }
+        };
+        const succeed = () => {
+            if (settled) return;
+            settled = true;
+            cleanup();
             resolve();
+        };
+        const fail = (message) => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            script.remove();
+            reject(new Error(message));
+        };
+        const timeoutId = window.setTimeout(
+            () => fail("Google Maps melewati batas waktu saat dimuat."),
+            MAPS_LOAD_TIMEOUT_MS,
+        );
+        window[callbackName] = succeed;
+        window.gm_authFailure = () => {
+            fail("Google Maps menolak browser API key atau restriction yang digunakan.");
         };
         script.async = true;
         script.nonce = document.querySelector("script[nonce]")?.nonce || "";
         script.src = `https://maps.googleapis.com/maps/api/js?${parameters}`;
         script.referrerPolicy = "strict-origin-when-cross-origin";
-        script.onerror = () => {
-            delete window[callbackName];
-            reject(new Error("Google Maps JavaScript API gagal dimuat."));
-        };
+        script.onerror = () => fail("Google Maps JavaScript API gagal dimuat.");
         document.head.append(script);
     });
 }
@@ -221,10 +275,15 @@ function createPlaceAutocomplete({ host, kind, placeholder, description }) {
         }
         state.selectedPlaces[kind] = null;
         setPlaceSelectionStatus(kind, false);
+        invalidateRecommendation();
         updateSubmitAvailability();
     });
     autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
         try {
+            invalidateRecommendation();
+            state.selectedPlaces[kind] = null;
+            setPlaceSelectionStatus(kind, false);
+            updateSubmitAvailability();
             const place = placePrediction.toPlace();
             await place.fetchFields({
                 fields: ["displayName", "formattedAddress", "location"],
@@ -255,6 +314,7 @@ function createPlaceAutocomplete({ host, kind, placeholder, description }) {
     autocomplete.addEventListener("gmp-error", () => {
         state.selectedPlaces[kind] = null;
         setPlaceSelectionStatus(kind, false);
+        invalidateRecommendation();
         updateSubmitAvailability();
         setFormStatus(
             "Saran lokasi Google gagal dimuat. Periksa Places API, browser key, dan quota sebelum mencoba lagi.",
@@ -263,6 +323,7 @@ function createPlaceAutocomplete({ host, kind, placeholder, description }) {
     });
 
     host.replaceChildren(autocomplete);
+    state.autocompletes[kind] = autocomplete;
     return autocomplete;
 }
 
@@ -290,7 +351,7 @@ async function initializeMapsInterface() {
         streetViewControl: false,
         fullscreenControl: true,
         clickableIcons: false,
-        gestureHandling: "greedy",
+        gestureHandling: "cooperative",
     });
     state.infoWindow = new mapsLibrary.InfoWindow();
 
@@ -323,6 +384,23 @@ function selectedChargingNetworkValues() {
     return elements.networkInputs
         .filter((input) => input.checked)
         .map((input) => input.value);
+}
+
+function chargingNetworkSelectionKey() {
+    const selected = selectedChargingNetworkValues();
+    return selected.length ? selected.join(",") : "PUBLIC_ONLY";
+}
+
+function updateConnectorAvailabilityCounts() {
+    const availability = state.config.connectorAvailability || {};
+    const selectionKey = chargingNetworkSelectionKey();
+    document.querySelectorAll("[data-connector-count]").forEach((element) => {
+        const connector = element.dataset.connectorCount;
+        const count = availability[connector]?.[selectionKey];
+        if (Number.isInteger(count)) {
+            element.textContent = `${count} lokasi tersedia`;
+        }
+    });
 }
 
 function networkConnectorCounts(input) {
@@ -380,6 +458,16 @@ function updateNetworkCompatibilityNote() {
     note.textContent = "Jaringan dealer yang dipilih akan disaring lagi berdasarkan konektor kendaraan.";
 }
 
+function invalidateRecommendation({ inputChanged = true } = {}) {
+    if (inputChanged) state.inputRevision += 1;
+    if (elements.resultsPanel) elements.resultsPanel.hidden = true;
+    clearMapOverlays();
+    setMapEmptyState(
+        "Siap menyusun perjalanan",
+        "Lengkapi lokasi dan kondisi kendaraan, lalu cari rekomendasi.",
+    );
+}
+
 function requestConnectors(data) {
     if (Array.isArray(data.request.connectors)) return data.request.connectors;
     return data.request.connector ? [data.request.connector] : [];
@@ -390,6 +478,9 @@ function requestConnectorLabel(data) {
 }
 
 function validateForm() {
+    [elements.currentSoc, elements.minimumSoc, elements.targetSoc].forEach(
+        (input) => input?.removeAttribute("aria-invalid"),
+    );
     if (!elements.routeForm.checkValidity()) {
         elements.routeForm.reportValidity();
         throw new Error("Lengkapi parameter kendaraan dengan nilai yang valid.");
@@ -407,9 +498,13 @@ function validateForm() {
     const minimumSoc = numberValue(elements.minimumSoc);
     const targetSoc = numberValue(elements.targetSoc);
     if (currentSoc <= minimumSoc) {
+        elements.currentSoc.setAttribute("aria-invalid", "true");
+        elements.minimumSoc.setAttribute("aria-invalid", "true");
         throw new Error("SOC saat ini harus lebih besar dari SOC minimum.");
     }
     if (targetSoc <= minimumSoc) {
+        elements.targetSoc.setAttribute("aria-invalid", "true");
+        elements.minimumSoc.setAttribute("aria-invalid", "true");
         throw new Error("Target SOC harus lebih besar dari SOC minimum.");
     }
 }
@@ -439,6 +534,14 @@ function buildRequestPayload() {
 
 function setLoading(isLoading) {
     state.isSubmitting = isLoading;
+    elements.routeForm?.setAttribute("aria-busy", String(isLoading));
+    elements.mapElement?.setAttribute("aria-busy", String(isLoading));
+    if (elements.routeFieldset) {
+        elements.routeFieldset.disabled = isLoading || !state.interfaceReady;
+    }
+    Object.values(state.autocompletes).forEach((autocomplete) => {
+        autocomplete.disabled = isLoading || !state.interfaceReady;
+    });
     updateSubmitAvailability();
     elements.submitButton.querySelector("span").textContent = isLoading
         ? "Menghitung rekomendasi…"
@@ -506,6 +609,14 @@ function stationInfoContent(stop) {
         ? `${station.route_charging_network_label} · akses perlu dikonfirmasi`
         : "SPKLU publik";
     content.append(charging, access);
+    if (station.maps_url) {
+        const mapsLink = document.createElement("a");
+        mapsLink.href = station.maps_url;
+        mapsLink.target = "_blank";
+        mapsLink.rel = "noopener noreferrer";
+        mapsLink.textContent = "Lihat lokasi di Google Maps";
+        content.append(mapsLink);
+    }
     return content;
 }
 
@@ -513,7 +624,7 @@ function renderMap(data) {
     clearMapOverlays();
     const feasible = data.optimization.feasible;
     const route = data.recommended_route || data.base_route;
-    if (!route?.coordinates?.length) return;
+    if (!route?.coordinates?.length || !state.map) return;
 
     const path = route.coordinates.map(coordinateLiteral);
     elements.mapEmpty.classList.add("is-hidden");
@@ -619,7 +730,11 @@ function renderSummary(data) {
             summaryItem("SOC tiba tujuan", formatPercent(itinerary.final_soc_percent)),
             summaryItem(
                 "Status akses",
-                data.route_access?.conditional ? "Rute kondisional" : "Rute publik",
+                itinerary.charging_stop_count === 0
+                    ? "Tidak perlu SPKLU"
+                    : data.route_access?.conditional
+                        ? "Rute kondisional"
+                        : "Rute publik",
             ),
         );
     } else {
@@ -656,7 +771,7 @@ function renderItinerary(data) {
         metadata.textContent = `${formatDistance(leg.road_distance_km)} · ${formatDuration(leg.road_duration_minutes)} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
         copy.append(title, metadata);
 
-        const stop = stopByNodeId(itinerary.charging_stops, leg.source_id);
+        const stop = stopByNodeId(itinerary.charging_stops, leg.target_id);
         if (stop) {
             const station = stop.station;
             const stopCard = document.createElement("div");
@@ -669,7 +784,17 @@ function renderItinerary(data) {
                 : "SPKLU publik";
             const compatibleConnectors = station.route_compatible_connectors
                 || station.connectors;
-            stopCard.textContent = `Pengisian SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${compatibleConnectors.join(", ")} · ${accessLabel}`;
+            const stopText = document.createElement("span");
+            stopText.textContent = `Setelah tiba, isi SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${compatibleConnectors.join(", ")} · ${accessLabel}`;
+            stopCard.append(stopText);
+            if (station.maps_url) {
+                const mapsLink = document.createElement("a");
+                mapsLink.href = station.maps_url;
+                mapsLink.target = "_blank";
+                mapsLink.rel = "noopener noreferrer";
+                mapsLink.textContent = "Lihat lokasi di Google Maps";
+                stopCard.append(mapsLink);
+            }
             copy.append(stopCard);
         }
 
@@ -727,20 +852,41 @@ function renderDiagnostics(data) {
             ),
         );
     }
+    const finalValidation = data.optimization.final_route_validation;
+    if (finalValidation) {
+        pairs.push(
+            ...diagnosticPair(
+                "Validasi SOC rute final",
+                finalValidation.status === "passed"
+                    ? "Lulus"
+                    : "Tidak tersedia",
+            ),
+            ...diagnosticPair(
+                "Selisih jarak Matrix–rute final",
+                formatDistance(
+                    finalValidation.distance_delta_km || 0,
+                ),
+            ),
+        );
+    }
     elements.diagnosticList.replaceChildren(...pairs);
 }
 
 function renderRecommendation(data) {
     const feasible = data.optimization.feasible;
     const conditional = feasible && Boolean(data.route_access?.conditional);
+    const direct = feasible
+        && Number(data.optimization.itinerary?.charging_stop_count || 0) === 0;
     elements.resultsPanel.hidden = false;
     elements.resultBadge.classList.toggle("is-infeasible", !feasible);
     elements.resultBadge.classList.toggle("is-conditional", conditional);
     elements.resultBadge.textContent = !feasible
         ? "Tidak feasible"
-        : conditional
-            ? "Rute kondisional"
-            : "Rute publik";
+        : direct
+            ? "Tanpa pengisian"
+            : conditional
+                ? "Rute kondisional"
+                : "Rute publik";
     elements.resultsTitle.textContent = feasible
         ? "Rute perjalanan ditemukan"
         : "Rute aman belum ditemukan";
@@ -756,17 +902,25 @@ function renderRecommendation(data) {
 
     setFormStatus(
         feasible
-            ? conditional
-                ? "Rekomendasi selesai. Rute menggunakan charger dealer yang perlu dikonfirmasi sebelum berangkat."
-                : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
+            ? direct
+                ? "Rekomendasi selesai. Kendaraan dapat mencapai tujuan tanpa berhenti untuk mengisi baterai."
+                : conditional
+                    ? "Rekomendasi selesai. Rute menggunakan charger dealer yang perlu dikonfirmasi sebelum berangkat."
+                    : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
             : "Perhitungan selesai, tetapi tidak ditemukan rangkaian SPKLU yang memenuhi batas SOC.",
-        feasible ? "success" : "error",
+        feasible ? "success" : "warning",
     );
-    elements.resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    elements.resultsPanel.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "start",
+    });
+    elements.resultsTitle.focus({ preventScroll: true });
 }
 
 async function submitRecommendation(event) {
     event.preventDefault();
+    if (state.isSubmitting) return;
     try {
         validateForm();
     } catch (error) {
@@ -774,17 +928,24 @@ async function submitRecommendation(event) {
         return;
     }
 
+    invalidateRecommendation({ inputChanged: false });
+    const requestSequence = ++state.requestSequence;
+    const inputRevision = state.inputRevision;
     setLoading(true);
-    setFormStatus("Mengambil rute dan menjalankan Dynamic Programming…");
+    setFormStatus("Mengambil data rute dan menyusun perjalanan aman…");
     try {
-        const response = await fetch("/api/recommendations", {
+        const response = await fetchWithTimeout("/api/recommendations", {
             method: "POST",
             headers: {
                 Accept: "application/json",
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(buildRequestPayload()),
-        });
+        }, RECOMMENDATION_TIMEOUT_MS, (
+            "Perhitungan melewati batas waktu. Server mungkin masih menyelesaikan "
+            + "request sebelumnya; tunggu sampai selesai dan jangan mencoba "
+            + "berulang kali."
+        ));
         let payload;
         try {
             payload = await response.json();
@@ -795,6 +956,16 @@ async function submitRecommendation(event) {
         }
         if (!response.ok || payload.status !== "ok") {
             throw new Error(recommendationErrorMessage(response, payload));
+        }
+        if (
+            requestSequence !== state.requestSequence
+            || inputRevision !== state.inputRevision
+        ) {
+            setFormStatus(
+                "Input perjalanan berubah saat perhitungan berlangsung. Hasil lama tidak ditampilkan; jalankan rekomendasi kembali sekali setelah input final.",
+                "warning",
+            );
+            return;
         }
         renderRecommendation(payload.data);
     } catch (error) {
@@ -812,23 +983,50 @@ async function initializeApplication() {
     elements.routeForm?.addEventListener("submit", submitRecommendation);
     elements.connectorInputs.forEach((input) => {
         input.addEventListener("change", () => {
+            invalidateRecommendation();
             updateSubmitAvailability();
             updateNetworkCompatibilityNote();
         });
     });
     elements.networkInputs.forEach((input) => {
-        input.addEventListener("change", updateNetworkCompatibilityNote);
+        input.addEventListener("change", () => {
+            invalidateRecommendation();
+            updateConnectorAvailabilityCounts();
+            updateNetworkCompatibilityNote();
+        });
     });
+    [
+        elements.currentSoc,
+        elements.maxRange,
+        elements.minimumSoc,
+        elements.targetSoc,
+    ].forEach((input) => {
+        input?.addEventListener("input", () => {
+            input.removeAttribute("aria-invalid");
+            invalidateRecommendation();
+        });
+    });
+    updateConnectorAvailabilityCounts();
     updateSubmitAvailability();
     updateNetworkCompatibilityNote();
     try {
-        await Promise.all([
-            checkServiceHealth(),
-            initializeMapsInterface(),
-        ]);
+        setServiceState("checking", "Memeriksa server");
+        const health = await checkServiceHealth();
+        setServiceState("checking", "Memuat peta");
+        await initializeMapsInterface();
         state.interfaceReady = true;
         elements.routeFieldset.disabled = false;
+        Object.values(state.autocompletes).forEach((autocomplete) => {
+            autocomplete.disabled = false;
+        });
         updateSubmitAvailability();
+        const locationCount = health.dataset?.logical_nodes;
+        setServiceState(
+            "ready",
+            Number.isInteger(locationCount)
+                ? `Siap · ${locationCount} data`
+                : "Siap",
+        );
         setFormStatus(
             "Sistem siap. Pilih lokasi awal dan tujuan dari daftar saran Google; tombol pencarian akan aktif setelah keduanya tersimpan.",
             "success",
@@ -836,7 +1034,16 @@ async function initializeApplication() {
     } catch (error) {
         state.interfaceReady = false;
         elements.routeFieldset.disabled = true;
+        Object.values(state.autocompletes).forEach((autocomplete) => {
+            autocomplete.disabled = true;
+        });
         updateSubmitAvailability();
+        setServiceState("error", "Tidak siap");
+        setMapEmptyState(
+            "Peta belum dapat digunakan",
+            "Periksa konfigurasi Google Maps dan status server, lalu muat ulang halaman.",
+            "error",
+        );
         setFormStatus(
             initializationErrorMessage(error),
             "error",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import re
@@ -11,9 +12,24 @@ from pathlib import Path
 from ..constants import CHARGING_TIME_INCLUDED, RESEARCH_CONNECTOR
 from .dataset import CONNECTOR_ORDER, normalize_connector
 from .evaluation import ExperimentDefinitionError, load_experiment_definition
+from .google_routes import POLYLINE_QUALITY, ROUTING_PREFERENCE, TRAVEL_MODE
+from .graph import GEODESIC_LOWER_BOUND_MARGIN_RATIO
 
 
-RELEASE_MANIFEST_SCHEMA_VERSION = 2
+RELEASE_MANIFEST_SCHEMA_VERSION = 3
+RESEARCH_MANIFEST_SCHEMA_VERSION = 1
+SOURCE_SCOPE = "application-runtime-v2"
+SOURCE_SUFFIXES = frozenset({".py", ".html", ".js", ".css", ".svg"})
+SOURCE_ROOT_FILES = (
+    "Dockerfile",
+    ".dockerignore",
+    ".env.example",
+    ".github/workflows/ci.yml",
+    "gunicorn.conf.py",
+    "requirements.txt",
+    "run.py",
+    "wsgi.py",
+)
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 QUOTA_LIMIT_NAMES = frozenset(
     {
@@ -63,6 +79,43 @@ def _relative_path(mapping, key, field):
     return raw_path
 
 
+def compute_source_tree_sha256(project_root):
+    """Hash stabil source runtime aplikasi untuk identitas rilis."""
+
+    project_root = Path(project_root).expanduser().resolve()
+    missing_required_files = [
+        relative_path
+        for relative_path in SOURCE_ROOT_FILES
+        if not (project_root / relative_path).is_file()
+    ]
+    if missing_required_files:
+        raise ReleaseManifestError(
+            "Berkas wajib source scope tidak ditemukan: "
+            + ", ".join(missing_required_files)
+            + "."
+        )
+    source_paths = [
+        path
+        for path in (project_root / "app").rglob("*")
+        if path.is_file() and path.suffix in SOURCE_SUFFIXES
+    ]
+    source_paths.extend(
+        project_root / relative_path
+        for relative_path in SOURCE_ROOT_FILES
+    )
+    source_paths.sort()
+    if not source_paths:
+        raise ReleaseManifestError("Source Python aplikasi tidak ditemukan.")
+    digest = hashlib.sha256()
+    for source_path in source_paths:
+        relative_path = source_path.relative_to(project_root).as_posix()
+        digest.update(relative_path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(source_path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def validate_release_manifest(manifest):
     """Memvalidasi schema manifest tanpa membaca dataset atau skenario."""
 
@@ -73,6 +126,14 @@ def validate_release_manifest(manifest):
             f"{RELEASE_MANIFEST_SCHEMA_VERSION}."
         )
     _text(manifest, "application_version", "root")
+
+    source = _mapping(manifest.get("source"), "root.source")
+    if _text(source, "scope", "root.source") != SOURCE_SCOPE:
+        raise ReleaseManifestError(
+            f"root.source.scope harus bernilai {SOURCE_SCOPE}."
+        )
+    if not SHA256_PATTERN.fullmatch(_text(source, "sha256", "root.source")):
+        raise ReleaseManifestError("root.source.sha256 tidak valid.")
 
     python_versions = manifest.get("supported_python_versions")
     if (
@@ -94,6 +155,11 @@ def validate_release_manifest(manifest):
     _positive_integer(dataset, "logical_nodes", "root.dataset")
     if not SHA256_PATTERN.fullmatch(_text(dataset, "sha256", "root.dataset")):
         raise ReleaseManifestError("root.dataset.sha256 tidak valid.")
+    _relative_path(dataset, "metadata_path", "root.dataset")
+    if not SHA256_PATTERN.fullmatch(
+        _text(dataset, "metadata_sha256", "root.dataset")
+    ):
+        raise ReleaseManifestError("root.dataset.metadata_sha256 tidak valid.")
 
     dependencies = _mapping(
         manifest.get("dependencies"),
@@ -128,6 +194,18 @@ def validate_release_manifest(manifest):
         raise ReleaseManifestError(
             "root.algorithm.charging_time_included wajib berupa boolean."
         )
+    _text(algorithm, "travel_mode", "root.algorithm")
+    _text(algorithm, "routing_preference", "root.algorithm")
+    _text(algorithm, "polyline_quality", "root.algorithm")
+    margin = algorithm.get("geodesic_lower_bound_margin_ratio")
+    if (
+        isinstance(margin, bool)
+        or not isinstance(margin, (int, float))
+        or not 0 <= float(margin) < 1
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.geodesic_lower_bound_margin_ratio tidak valid."
+        )
 
     experiments = manifest.get("experiments")
     if not isinstance(experiments, list) or not experiments:
@@ -143,6 +221,18 @@ def validate_release_manifest(manifest):
             raise ReleaseManifestError(f"Path eksperimen duplikat: {path}.")
         known_paths.add(path)
         _positive_integer(experiment, "scenario_count", field)
+        if not SHA256_PATTERN.fullmatch(_text(experiment, "sha256", field)):
+            raise ReleaseManifestError(f"{field}.sha256 tidak valid.")
+
+    research_manifest = _mapping(
+        manifest.get("research_manifest"),
+        "root.research_manifest",
+    )
+    _relative_path(research_manifest, "path", "root.research_manifest")
+    if not SHA256_PATTERN.fullmatch(
+        _text(research_manifest, "sha256", "root.research_manifest")
+    ):
+        raise ReleaseManifestError("root.research_manifest.sha256 tidak valid.")
 
     quota_limits = _mapping(
         manifest.get("quota_limits"),
@@ -154,6 +244,155 @@ def validate_release_manifest(manifest):
         )
     for name in sorted(QUOTA_LIMIT_NAMES):
         _positive_integer(quota_limits, name, "root.quota_limits")
+    return manifest
+
+
+def validate_research_manifest(manifest):
+    """Memvalidasi manifest bukti penelitian yang direferensikan rilis."""
+
+    manifest = _mapping(manifest, "research")
+    if manifest.get("schema_version") != RESEARCH_MANIFEST_SCHEMA_VERSION:
+        raise ReleaseManifestError(
+            "schema_version research_manifest harus bernilai "
+            f"{RESEARCH_MANIFEST_SCHEMA_VERSION}."
+        )
+
+    analysis = _mapping(
+        manifest.get("analysis_release"),
+        "research.analysis_release",
+    )
+    _text(analysis, "application_version", "research.analysis_release")
+    if (
+        _text(analysis, "source_scope", "research.analysis_release")
+        != SOURCE_SCOPE
+    ):
+        raise ReleaseManifestError(
+            "research.analysis_release.source_scope tidak valid."
+        )
+    if not SHA256_PATTERN.fullmatch(
+        _text(analysis, "source_sha256", "research.analysis_release")
+    ):
+        raise ReleaseManifestError(
+            "research.analysis_release.source_sha256 tidak valid."
+        )
+
+    dataset = _mapping(manifest.get("dataset"), "research.dataset")
+    _relative_path(dataset, "path", "research.dataset")
+    _relative_path(dataset, "metadata_path", "research.dataset")
+    for key in ("sha256", "metadata_sha256"):
+        if not SHA256_PATTERN.fullmatch(
+            _text(dataset, key, "research.dataset")
+        ):
+            raise ReleaseManifestError(
+                f"research.dataset.{key} tidak valid."
+            )
+    _positive_integer(dataset, "source_rows", "research.dataset")
+    _positive_integer(dataset, "logical_nodes", "research.dataset")
+    _text(dataset, "provenance_status", "research.dataset")
+    _text(dataset, "license_status", "research.dataset")
+
+    artifacts = manifest.get("tracked_artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        raise ReleaseManifestError(
+            "research.tracked_artifacts wajib berupa daftar tidak kosong."
+        )
+    artifact_ids = set()
+    for index, artifact in enumerate(artifacts):
+        field = f"research.tracked_artifacts[{index}]"
+        artifact = _mapping(artifact, field)
+        artifact_id = _text(artifact, "id", field)
+        if artifact_id in artifact_ids:
+            raise ReleaseManifestError(
+                f"ID artifact penelitian duplikat: {artifact_id}."
+            )
+        artifact_ids.add(artifact_id)
+        _text(artifact, "kind", field)
+        _relative_path(artifact, "path", field)
+        if not SHA256_PATTERN.fullmatch(_text(artifact, "sha256", field)):
+            raise ReleaseManifestError(f"{field}.sha256 tidak valid.")
+        row_count = artifact.get("row_count")
+        if row_count is not None and (
+            isinstance(row_count, bool)
+            or not isinstance(row_count, int)
+            or row_count < 0
+        ):
+            raise ReleaseManifestError(f"{field}.row_count tidak valid.")
+
+    source_runs = manifest.get("source_runs")
+    if not isinstance(source_runs, list) or not source_runs:
+        raise ReleaseManifestError(
+            "research.source_runs wajib berupa daftar tidak kosong."
+        )
+    source_run_ids = set()
+    for index, source_run in enumerate(source_runs):
+        field = f"research.source_runs[{index}]"
+        source_run = _mapping(source_run, field)
+        run_id = _text(source_run, "id", field)
+        if run_id in source_run_ids:
+            raise ReleaseManifestError(
+                f"ID source run penelitian duplikat: {run_id}."
+            )
+        source_run_ids.add(run_id)
+        _relative_path(source_run, "path", field)
+        if not SHA256_PATTERN.fullmatch(
+            _text(source_run, "sha256", field)
+        ):
+            raise ReleaseManifestError(f"{field}.sha256 tidak valid.")
+        if not SHA256_PATTERN.fullmatch(
+            _text(
+                source_run,
+                "embedded_definition_canonical_sha256",
+                field,
+            )
+        ):
+            raise ReleaseManifestError(
+                f"{field}.embedded_definition_canonical_sha256 tidak valid."
+            )
+        _text(source_run, "source_application_version", field)
+        _positive_integer(source_run, "report_schema_version", field)
+        _text(source_run, "generated_at_utc", field)
+        if source_run.get("archive_status") not in {
+            "local_untracked",
+            "tracked",
+            "external_archive",
+        }:
+            raise ReleaseManifestError(f"{field}.archive_status tidak valid.")
+
+    derivations = manifest.get("derivations")
+    if not isinstance(derivations, list) or not derivations:
+        raise ReleaseManifestError(
+            "research.derivations wajib berupa daftar tidak kosong."
+        )
+    for index, derivation in enumerate(derivations):
+        field = f"research.derivations[{index}]"
+        derivation = _mapping(derivation, field)
+        artifact_id = _text(derivation, "artifact_id", field)
+        source_run_id = _text(derivation, "source_run_id", field)
+        transformation_id = _text(
+            derivation,
+            "transformation_artifact_id",
+            field,
+        )
+        if artifact_id not in artifact_ids:
+            raise ReleaseManifestError(f"{field}.artifact_id tidak dikenal.")
+        if source_run_id not in source_run_ids:
+            raise ReleaseManifestError(
+                f"{field}.source_run_id tidak dikenal."
+            )
+        if transformation_id not in artifact_ids:
+            raise ReleaseManifestError(
+                f"{field}.transformation_artifact_id tidak dikenal."
+            )
+
+    notes = manifest.get("limitations")
+    if (
+        not isinstance(notes, list)
+        or not notes
+        or any(not isinstance(note, str) or not note.strip() for note in notes)
+    ):
+        raise ReleaseManifestError(
+            "research.limitations wajib berupa daftar teks tidak kosong."
+        )
     return manifest
 
 
@@ -193,6 +432,12 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         "application.version",
         manifest["application_version"],
         app_version,
+    )
+    _add_check(
+        checks,
+        "source.sha256",
+        manifest["source"]["sha256"],
+        compute_source_tree_sha256(project_root),
     )
     runtime_python = f"{sys.version_info.major}.{sys.version_info.minor}"
     _add_check(
@@ -250,6 +495,45 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         dataset["sha256"],
         catalog.source_sha256,
     )
+    metadata_path = (project_root / dataset["metadata_path"]).resolve()
+    metadata_exists = metadata_path.is_file()
+    _add_check(checks, "dataset.metadata_exists", True, metadata_exists)
+    metadata_sha256 = (
+        hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+        if metadata_exists
+        else None
+    )
+    _add_check(
+        checks,
+        "dataset.metadata_sha256",
+        dataset["metadata_sha256"],
+        metadata_sha256,
+    )
+    metadata = {}
+    if metadata_exists:
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            metadata = {}
+        metadata_dataset = metadata.get("dataset", {})
+        _add_check(
+            checks,
+            "dataset.metadata_dataset_sha256",
+            dataset["sha256"],
+            metadata_dataset.get("sha256"),
+        )
+        _add_check(
+            checks,
+            "dataset.metadata_source_rows",
+            dataset["source_rows"],
+            metadata_dataset.get("source_rows"),
+        )
+        _add_check(
+            checks,
+            "dataset.metadata_logical_nodes",
+            dataset["logical_nodes"],
+            metadata_dataset.get("logical_nodes"),
+        )
 
     algorithm = manifest["algorithm"]
     _add_check(
@@ -270,6 +554,30 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         algorithm["charging_time_included"],
         CHARGING_TIME_INCLUDED,
     )
+    _add_check(
+        checks,
+        "algorithm.travel_mode",
+        algorithm["travel_mode"],
+        TRAVEL_MODE,
+    )
+    _add_check(
+        checks,
+        "algorithm.routing_preference",
+        algorithm["routing_preference"],
+        ROUTING_PREFERENCE,
+    )
+    _add_check(
+        checks,
+        "algorithm.polyline_quality",
+        algorithm["polyline_quality"],
+        POLYLINE_QUALITY,
+    )
+    _add_check(
+        checks,
+        "algorithm.geodesic_lower_bound_margin_ratio",
+        algorithm["geodesic_lower_bound_margin_ratio"],
+        GEODESIC_LOWER_BOUND_MARGIN_RATIO,
+    )
 
     for name, expected in sorted(manifest["quota_limits"].items()):
         _add_check(checks, f"quota.{name}", expected, config.get(name))
@@ -279,12 +587,19 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         relative_path = experiment["path"]
         check_prefix = f"experiment.{Path(relative_path).stem}"
         try:
-            definition = load_experiment_definition(project_root / relative_path)
+            experiment_path = project_root / relative_path
+            definition = load_experiment_definition(experiment_path)
         except (ExperimentDefinitionError, OSError) as error:
             _add_check(checks, f"{check_prefix}.valid", True, str(error))
             continue
 
         _add_check(checks, f"{check_prefix}.valid", True, True)
+        _add_check(
+            checks,
+            f"{check_prefix}.sha256",
+            experiment["sha256"],
+            hashlib.sha256(experiment_path.read_bytes()).hexdigest(),
+        )
         scenarios = definition["scenarios"]
         _add_check(
             checks,
@@ -315,6 +630,213 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         len(all_scenario_ids),
         len(set(all_scenario_ids)),
     )
+    research_manifest = manifest["research_manifest"]
+    research_manifest_path = (
+        project_root / research_manifest["path"]
+    ).resolve()
+    research_manifest_exists = research_manifest_path.is_file()
+    _add_check(
+        checks,
+        "research_manifest.exists",
+        True,
+        research_manifest_exists,
+    )
+    _add_check(
+        checks,
+        "research_manifest.sha256",
+        research_manifest["sha256"],
+        (
+            hashlib.sha256(research_manifest_path.read_bytes()).hexdigest()
+            if research_manifest_exists
+            else None
+        ),
+    )
+    research = None
+    if research_manifest_exists:
+        try:
+            research = validate_research_manifest(
+                json.loads(research_manifest_path.read_text(encoding="utf-8"))
+            )
+            research_validation_result = True
+        except (OSError, json.JSONDecodeError, ReleaseManifestError) as error:
+            research_validation_result = str(error)
+    else:
+        research_validation_result = "research_manifest tidak ditemukan"
+    _add_check(
+        checks,
+        "research_manifest.valid",
+        True,
+        research_validation_result,
+    )
+    if research is not None:
+        analysis = research["analysis_release"]
+        _add_check(
+            checks,
+            "research.analysis_application_version",
+            manifest["application_version"],
+            analysis["application_version"],
+        )
+        _add_check(
+            checks,
+            "research.analysis_source_sha256",
+            manifest["source"]["sha256"],
+            analysis["source_sha256"],
+        )
+        research_dataset = research["dataset"]
+        for key in ("path", "sha256", "source_rows", "logical_nodes"):
+            _add_check(
+                checks,
+                f"research.dataset_{key}",
+                dataset[key],
+                research_dataset[key],
+            )
+        _add_check(
+            checks,
+            "research.dataset_metadata_path",
+            dataset["metadata_path"],
+            research_dataset["metadata_path"],
+        )
+        _add_check(
+            checks,
+            "research.dataset_metadata_sha256",
+            dataset["metadata_sha256"],
+            research_dataset["metadata_sha256"],
+        )
+        metadata_provenance = metadata.get("provenance", {})
+        _add_check(
+            checks,
+            "research.dataset_provenance_status",
+            metadata_provenance.get("provenance_status"),
+            research_dataset["provenance_status"],
+        )
+        _add_check(
+            checks,
+            "research.dataset_license_status",
+            metadata_provenance.get("license_status"),
+            research_dataset["license_status"],
+        )
+
+        for artifact in research["tracked_artifacts"]:
+            artifact_id = artifact["id"]
+            artifact_path = (project_root / artifact["path"]).resolve()
+            artifact_exists = artifact_path.is_file()
+            _add_check(
+                checks,
+                f"research.artifact.{artifact_id}.exists",
+                True,
+                artifact_exists,
+            )
+            _add_check(
+                checks,
+                f"research.artifact.{artifact_id}.sha256",
+                artifact["sha256"],
+                (
+                    hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+                    if artifact_exists
+                    else None
+                ),
+            )
+            if "row_count" in artifact:
+                actual_row_count = None
+                if artifact_exists:
+                    with artifact_path.open(
+                        encoding="utf-8",
+                        newline="",
+                    ) as artifact_file:
+                        actual_row_count = max(
+                            0,
+                            sum(1 for _ in csv.reader(artifact_file)) - 1,
+                        )
+                _add_check(
+                    checks,
+                    f"research.artifact.{artifact_id}.row_count",
+                    artifact["row_count"],
+                    actual_row_count,
+                )
+
+        for source_run in research["source_runs"]:
+            source_id = source_run["id"]
+            source_path = (project_root / source_run["path"]).resolve()
+            source_exists = source_path.is_file()
+            source_optional = source_run["archive_status"] != "tracked"
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.available_or_declared",
+                True,
+                source_exists or source_optional,
+            )
+            source_payload = None
+            actual_source_sha = source_run["sha256"] if source_optional else None
+            if source_exists:
+                actual_source_sha = hashlib.sha256(
+                    source_path.read_bytes()
+                ).hexdigest()
+                try:
+                    source_payload = json.loads(
+                        source_path.read_text(encoding="utf-8")
+                    )
+                except (OSError, json.JSONDecodeError):
+                    source_payload = {}
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.sha256_if_available",
+                source_run["sha256"],
+                actual_source_sha,
+            )
+            execution = (source_payload or {}).get("execution", {})
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.schema_if_available",
+                source_run["report_schema_version"],
+                (
+                    (source_payload or {}).get("schema_version")
+                    if source_exists
+                    else source_run["report_schema_version"]
+                ),
+            )
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.version_if_available",
+                source_run["source_application_version"],
+                (
+                    execution.get("app_version")
+                    if source_exists
+                    else source_run["source_application_version"]
+                ),
+            )
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.timestamp_if_available",
+                source_run["generated_at_utc"],
+                (
+                    (source_payload or {}).get("generated_at_utc")
+                    if source_exists
+                    else source_run["generated_at_utc"]
+                ),
+            )
+            actual_definition_sha = source_run[
+                "embedded_definition_canonical_sha256"
+            ]
+            if source_exists and source_payload:
+                definition = source_payload.get("definition")
+                if isinstance(definition, dict):
+                    canonical_definition = json.dumps(
+                        definition,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                    actual_definition_sha = hashlib.sha256(
+                        canonical_definition
+                    ).hexdigest()
+                else:
+                    actual_definition_sha = None
+            _add_check(
+                checks,
+                f"research.source_run.{source_id}.definition_if_available",
+                source_run["embedded_definition_canonical_sha256"],
+                actual_definition_sha,
+            )
     passed_count = sum(check["passed"] for check in checks)
     return {
         "schema_version": RELEASE_MANIFEST_SCHEMA_VERSION,

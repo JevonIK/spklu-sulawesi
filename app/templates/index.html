@@ -6,12 +6,13 @@
     <meta name="description" content="Sistem rekomendasi SPKLU multi-stop untuk perjalanan antarkota di Sulawesi.">
     <title>{{ app_name }}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" nonce="{{ csp_nonce }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=app_version) }}" nonce="{{ csp_nonce }}">
     <style nonce="{{ csp_nonce }}"></style>
     <script id="frontendConfig" type="application/json" nonce="{{ csp_nonce }}">{{ frontend_config | tojson }}</script>
-    <script src="{{ url_for('static', filename='js/app.js') }}" nonce="{{ csp_nonce }}" defer></script>
+    <script src="{{ url_for('static', filename='js/app.js', v=app_version) }}" nonce="{{ csp_nonce }}" defer></script>
 </head>
 <body>
+    <a class="skip-link" href="#routeForm">Lewati ke formulir perjalanan</a>
     <header class="topbar">
         <a class="brand" href="{{ url_for('web.index') }}" aria-label="Halaman utama">
             <span class="brand-mark" aria-hidden="true">
@@ -27,7 +28,7 @@
 
         <div class="service-state" id="serviceState" aria-live="polite">
             <span class="state-dot" aria-hidden="true"></span>
-            <span>Memeriksa sistem</span>
+            <span class="service-state-label">Memeriksa</span>
         </div>
     </header>
 
@@ -43,7 +44,7 @@
                 </p>
             </div>
 
-            <form class="route-form" id="routeForm" aria-describedby="formStatus">
+            <form class="route-form" id="routeForm" aria-describedby="formStatus" aria-busy="false">
                 <fieldset id="routeFieldset" disabled>
                     <legend class="sr-only">Parameter perjalanan</legend>
 
@@ -52,7 +53,9 @@
                         class="autocomplete-host"
                         id="originAutocomplete"
                         aria-labelledby="originLabel"
-                    ></div>
+                    >
+                        <input class="autocomplete-fallback" type="text" placeholder="Memuat pencarian lokasi awal…" disabled aria-label="Pencarian lokasi awal sedang dimuat">
+                    </div>
                     <small class="selection-status" id="originSelectionStatus">
                         Belum dipilih dari daftar saran Google.
                     </small>
@@ -62,7 +65,9 @@
                         class="autocomplete-host"
                         id="destinationAutocomplete"
                         aria-labelledby="destinationLabel"
-                    ></div>
+                    >
+                        <input class="autocomplete-fallback" type="text" placeholder="Memuat pencarian lokasi tujuan…" disabled aria-label="Pencarian lokasi tujuan sedang dimuat">
+                    </div>
                     <small class="selection-status" id="destinationSelectionStatus">
                         Belum dipilih dari daftar saran Google.
                     </small>
@@ -78,9 +83,10 @@
                                 max="100"
                                 step="1"
                                 value="80"
+                                aria-describedby="currentSocNote"
                                 required
                             >
-                            <small class="field-note">Persentase baterai sebelum berangkat.</small>
+                            <small class="field-note" id="currentSocNote">Persentase baterai sebelum berangkat.</small>
                         </div>
                         <div>
                             <label for="maxRange">Jangkauan maksimum (km)</label>
@@ -92,9 +98,10 @@
                                 max="2000"
                                 step="1"
                                 value="300"
+                                aria-describedby="maxRangeNote"
                                 required
                             >
-                            <small class="field-note">Jarak maksimum kendaraan saat baterai 100%.</small>
+                            <small class="field-note" id="maxRangeNote">Jarak maksimum kendaraan saat baterai 100%.</small>
                         </div>
                         <div>
                             <label for="minimumSoc">SOC minimum (%)</label>
@@ -106,9 +113,10 @@
                                 max="99"
                                 step="1"
                                 value="{{ defaults.soc_min | int }}"
+                                aria-describedby="minimumSocNote"
                                 required
                             >
-                            <small class="field-note">Cadangan baterai terendah yang ingin dipertahankan.</small>
+                            <small class="field-note" id="minimumSocNote">Cadangan baterai terendah yang ingin dipertahankan.</small>
                         </div>
                         <div>
                             <label for="targetSoc">Target SOC (%)</label>
@@ -120,9 +128,10 @@
                                 max="100"
                                 step="1"
                                 value="{{ defaults.soc_target | int }}"
+                                aria-describedby="targetSocNote"
                                 required
                             >
-                            <small class="field-note">Batas SOC keberangkatan setelah berhenti di SPKLU.</small>
+                            <small class="field-note" id="targetSocNote">Batas SOC keberangkatan setelah berhenti di SPKLU.</small>
                         </div>
                     </div>
 
@@ -140,7 +149,7 @@
                                 >
                                 <span>
                                     <strong>{{ connector.label }}</strong>
-                                    <small>{{ connector.location_count }} lokasi</small>
+                                    <small data-connector-count="{{ connector.value }}">{{ connector.location_count }} lokasi tersedia</small>
                                 </span>
                             </label>
                             {% endfor %}
@@ -148,11 +157,11 @@
                     </fieldset>
                     <small class="field-note" id="connectorNote">
                         Pilih satu atau beberapa konektor yang benar-benar dapat digunakan kendaraan Anda.
-                        Jumlah lokasi mengikuti dataset saat ini.
+                        Jumlah lokasi diperbarui sesuai merek jaringan yang Anda pilih.
                     </small>
 
                     <fieldset class="network-fieldset" aria-describedby="networkNote networkCompatibilityNote">
-                        <legend>Jaringan charger yang disertakan</legend>
+                        <legend>Merek charger tambahan (opsional)</legend>
                         <div class="network-options">
                             <label class="network-option is-always-active">
                                 <input
@@ -185,8 +194,8 @@
                         </div>
                     </fieldset>
                     <small class="field-note" id="networkNote">
-                        Jaringan dealer bersifat tambahan. Ketersediaan dan izin penggunaan
-                        perlu dikonfirmasi sendiri kepada pengelola sebelum berangkat.
+                        Charger bermerek bersifat tambahan. Sistem membedakan lokasinya,
+                        tetapi izin dan ketersediaan tetap perlu Anda konfirmasi kepada pengelola.
                     </small>
                     <p class="network-compatibility-note" id="networkCompatibilityNote" aria-live="polite">
                         Saat ini sistem hanya menggunakan SPKLU publik.
@@ -198,7 +207,7 @@
                 </fieldset>
             </form>
 
-            <p class="form-status" id="formStatus" aria-live="polite">
+            <p class="form-status" id="formStatus" role="status" aria-live="polite" aria-atomic="true">
                 Memuat Google Maps dan layanan lokasi…
             </p>
 
@@ -206,7 +215,7 @@
                 <div class="result-heading">
                     <div>
                         <p class="eyebrow">Hasil rekomendasi</p>
-                        <h2 id="resultsTitle">Rute perjalanan</h2>
+                        <h2 id="resultsTitle" tabindex="-1">Rute perjalanan</h2>
                     </div>
                     <span class="result-badge" id="resultBadge"></span>
                 </div>
@@ -229,7 +238,7 @@
 
         <section class="map-panel" aria-labelledby="mapTitle">
             <h2 class="sr-only" id="mapTitle">Peta rekomendasi perjalanan</h2>
-            <div id="map" class="map-canvas" role="application" aria-label="Peta Google rute perjalanan"></div>
+            <div id="map" class="map-canvas" role="region" aria-label="Peta Google rute perjalanan"></div>
 
             <div class="map-empty" id="mapEmpty">
                 <span class="map-icon" aria-hidden="true">
@@ -238,23 +247,21 @@
                     </svg>
                 </span>
                 <p class="eyebrow">Peta perjalanan</p>
-                <h2>Pilih lokasi awal dan tujuan</h2>
-                <p>Rute dan SPKLU yang direkomendasikan akan muncul di sini.</p>
+                <h2 id="mapEmptyTitle">Pilih lokasi awal dan tujuan</h2>
+                <p id="mapEmptyMessage">Rute dan SPKLU yang direkomendasikan akan muncul di sini.</p>
             </div>
 
             <div class="map-loading" id="mapLoading" hidden>
                 <span class="spinner" aria-hidden="true"></span>
                 <strong>Menyusun rute terbaik…</strong>
-                <small>Memeriksa koridor, edge, dan batas SOC</small>
+                <small>Mencari SPKLU dan memeriksa batas baterai</small>
             </div>
 
             <aside class="method-strip" aria-label="Tahapan metode rekomendasi">
-                <span><strong>01</strong> Radius search</span>
-                <span><strong>02</strong> Graf feasible</span>
-                <span><strong>03</strong> DP berbasis SOC</span>
+                <span><strong>01</strong> Cari SPKLU di sekitar rute</span>
+                <span><strong>02</strong> Periksa jangkauan</span>
+                <span><strong>03</strong> Susun perjalanan aman</span>
             </aside>
-
-            <span class="google-attribution">Google Maps</span>
         </section>
     </main>
 

@@ -1,11 +1,20 @@
 # Hasil baseline live enam wilayah
 
+> **Batas provenance:** dokumen ini merangkum laporan live historis schema 2
+> dengan definisi skenario schema 1 tertanam, dibuat aplikasi 0.9.2. Kandidat
+> analisis 0.15.0 tidak menjalankan ulang request tersebut dan tidak boleh
+> dicantumkan sebagai versi penghasil hasil.
+
 ## Identitas eksperimen
 
 Baseline live dijalankan pada 13 Agustus 2026 menggunakan aplikasi versi 0.9.2,
 dataset 150 baris yang terkonsolidasi menjadi 149 node lokasi, konektor CCS2,
 jangkauan maksimum kendaraan 300 km, SOC awal 80%, SOC minimum 20%, target SOC
 80%, safety factor 0,9, interval SOC 5%, dan radius koridor 10 km.
+
+Jumlah data tersebut adalah konteks dokumentasi proyek; laporan mentah tidak
+merekam checksum dataset. Karena itu, kesamaan byte dengan dataset kandidat
+0.15.0 tidak dapat dibuktikan hanya dari laporan historis.
 
 Usable range awal dan setelah pengisian sampai target sama-sama 162 km:
 
@@ -16,6 +25,10 @@ Usable range awal dan setelah pengisian sampai target sama-sama 162 km:
 Enam skenario dibagi menjadi dua batch yang masing-masing berisi tiga skenario,
 dengan jeda 61 detik setelah batch pertama. Estimasi waktu pengisian tidak
 dihitung; seluruh nilai waktu pada dokumen ini adalah waktu berkendara.
+
+Laporan historis tidak merekam `route_sample_step_km`. Definisi skenario schema 2
+saat ini menetapkan 5 km untuk run baru, tetapi nilai itu tidak digunakan untuk
+mengisi metadata run lama melalui asumsi.
 
 ## Hasil per wilayah
 
@@ -115,6 +128,11 @@ quota `2026-08-12` Pacific Time; waktu eksekusinya adalah 13 Agustus di
 Indonesia. Perbedaan tanggal ini mengikuti reset quota Google pada tengah malam
 Pacific Time.
 
+Nilai 30 dan 625 per menit pada tabel adalah batas yang berlaku ketika baseline
+historis dijalankan. Kebijakan kandidat 0.15.0 saat ini memakai 100 Compute
+Routes dan 2.000 elemen Matrix per menit, tetap dengan batas harian 100/2.000;
+perubahan tersebut tidak mengubah catatan pemakaian historis.
+
 ## Integritas artefak lokal
 
 Laporan mentah berada di folder yang diabaikan Git:
@@ -147,3 +165,9 @@ dataset, serta kondisi layanan dapat berubah.
   langsung antara jarak rute rekomendasi dan rute dasar yang dihitung ulang.
 - Waktu yang dilaporkan hanya waktu berkendara, bukan waktu perjalanan termasuk
   pengisian.
+- Klaim nol pelanggaran SOC berasal dari simulasi itinerary pada implementasi
+  0.9.2. Validasi ulang per-leg Compute Routes final yang tersedia di 0.15.0
+  belum dijalankan terhadap run historis ini, sehingga keduanya tidak boleh
+  disamakan.
+- Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash
+  hanya mengidentifikasi file yang digunakan, bukan legalitas redistribusinya.

@@ -166,11 +166,14 @@ class GoogleRoutesQuotaLedger:
             finally:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
-    def _current_date(self):
+    def _current_time(self):
         current = self.now_fn()
         if current.tzinfo is None:
             current = current.replace(tzinfo=self.timezone)
-        return current.astimezone(self.timezone).date().isoformat()
+        return current.astimezone(self.timezone)
+
+    def _current_date(self):
+        return self._current_time().date().isoformat()
 
     @staticmethod
     def _day(data, date_key):
@@ -179,13 +182,33 @@ class GoogleRoutesQuotaLedger:
             {"runs": [], "reservations": {}, "releases": []},
         )
 
-    def _status_from_data(self, data, date_key):
+    @staticmethod
+    def _all_active_reservations(data):
+        return [
+            reservation
+            for day in data["days"].values()
+            for reservation in day.get("reservations", {}).values()
+        ]
+
+    def _status_from_data(self, data, date_key, *, now=None):
+        now = self._current_time() if now is None else now
+        current_date_key = now.date().isoformat()
         day = data["days"].get(
             date_key,
             {"runs": [], "reservations": {}},
         )
         runs = day.get("runs", [])
         reservations = day.get("reservations", {})
+        global_active_reservations = self._all_active_reservations(data)
+        carryover_reservations = (
+            [
+                reservation
+                for reservation in global_active_reservations
+                if reservation.get("date") != date_key
+            ]
+            if date_key == current_date_key
+            else []
+        )
         actual_compute = sum(
             run["compute_routes_attempt_count"] for run in runs
         )
@@ -195,16 +218,24 @@ class GoogleRoutesQuotaLedger:
         reserved_compute = sum(
             item["maximum_compute_routes"]
             for item in reservations.values()
+        ) + sum(
+            item["maximum_compute_routes"] for item in carryover_reservations
         )
         reserved_matrix = sum(
             item["maximum_matrix_elements"]
             for item in reservations.values()
+        ) + sum(
+            item["maximum_matrix_elements"] for item in carryover_reservations
         )
-        now = self.now_fn()
-        if now.tzinfo is None:
-            now = now.replace(tzinfo=self.timezone)
-        recent_runs = []
-        for run in runs:
+        recent_run_candidates = runs
+        if date_key == current_date_key:
+            recent_run_candidates = [
+                run
+                for candidate_day in data["days"].values()
+                for run in candidate_day.get("runs", [])
+            ]
+        recent_runs_by_source = {}
+        for ordinal, run in enumerate(recent_run_candidates):
             finished_at = run.get("finished_at")
             if not finished_at:
                 continue
@@ -216,7 +247,15 @@ class GoogleRoutesQuotaLedger:
                 finished = finished.replace(tzinfo=self.timezone)
             elapsed = (now - finished.astimezone(now.tzinfo)).total_seconds()
             if 0 <= elapsed < 60:
-                recent_runs.append(run)
+                source_id = run.get("source_run_id") or run.get("run_id")
+                if source_id is None:
+                    # Schema lama belum selalu memiliki ID run. Setiap record
+                    # tanpa ID harus tetap dihitung terpisah; hanya pasangan
+                    # original/carryover yang memang berbagi source ID yang
+                    # boleh dideduplikasi.
+                    source_id = ("legacy-record", ordinal)
+                recent_runs_by_source.setdefault(source_id, run)
+        recent_runs = list(recent_runs_by_source.values())
         recent_compute = sum(
             run["compute_routes_attempt_count"] for run in recent_runs
         )
@@ -245,8 +284,13 @@ class GoogleRoutesQuotaLedger:
                 - reserved_matrix,
             ),
             "completed_or_failed_run_count": len(runs),
-            "active_reservation_count": len(reservations),
-            "active_reservations": list(reservations.values()),
+            "active_reservation_count": (
+                len(reservations) + len(carryover_reservations)
+            ),
+            "active_reservations": [
+                *reservations.values(),
+                *carryover_reservations,
+            ],
             "compute_routes_per_minute_limit": (
                 self.compute_routes_per_minute_limit
             ),
@@ -266,9 +310,10 @@ class GoogleRoutesQuotaLedger:
         }
 
     def status(self, date_key=None):
-        date_key = date_key or self._current_date()
         with self._locked():
-            return self._status_from_data(self._load(), date_key)
+            now = self._current_time()
+            date_key = date_key or now.date().isoformat()
+            return self._status_from_data(self._load(), date_key, now=now)
 
     def reserve(
         self,
@@ -290,11 +335,12 @@ class GoogleRoutesQuotaLedger:
         if not isinstance(label, str) or not label.strip():
             raise ValueError("Label reservasi quota wajib diisi.")
 
-        date_key = self._current_date()
         with self._locked():
+            now = self._current_time()
+            date_key = now.date().isoformat()
             data = self._load()
-            status = self._status_from_data(data, date_key)
-            if status["active_reservation_count"]:
+            status = self._status_from_data(data, date_key, now=now)
+            if self._all_active_reservations(data):
                 raise QuotaLedgerError(
                     "Masih ada reservasi quota aktif. Jangan menjalankan "
                     "eksperimen live secara paralel; selesaikan proses atau "
@@ -344,7 +390,7 @@ class GoogleRoutesQuotaLedger:
             reservation = {
                 "reservation_id": reservation_id,
                 "label": label.strip(),
-                "created_at": self.now_fn().isoformat(),
+                "created_at": now.isoformat(),
                 "date": date_key,
                 "maximum_compute_routes": maximum_compute_routes,
                 "maximum_matrix_elements": maximum_matrix_elements,
@@ -401,28 +447,44 @@ class GoogleRoutesQuotaLedger:
                     "Pemakaian elemen Route Matrix melebihi reservasi."
                 )
 
+            now = self._current_time()
+            finished_at = now.isoformat()
+            current_date_key = now.date().isoformat()
             day["reservations"].pop(reservation_id)
-            day["runs"].append(
-                {
-                    "run_id": reservation_id,
-                    "label": reservation["label"],
-                    "started_at": reservation["created_at"],
-                    "finished_at": self.now_fn().isoformat(),
-                    "outcome": outcome,
-                    "compute_routes_attempt_count": (
-                        compute_routes_attempt_count
-                    ),
-                    "matrix_element_attempt_count": (
-                        matrix_element_attempt_count
-                    ),
-                    "report_path": str(Path(report_path).resolve())
-                    if report_path
-                    else None,
-                    "source_sha256": None,
-                }
-            )
+            run = {
+                "run_id": reservation_id,
+                "label": reservation["label"],
+                "started_at": reservation["created_at"],
+                "finished_at": finished_at,
+                "outcome": outcome,
+                "compute_routes_attempt_count": compute_routes_attempt_count,
+                "matrix_element_attempt_count": matrix_element_attempt_count,
+                "report_path": str(Path(report_path).resolve())
+                if report_path
+                else None,
+                "source_sha256": None,
+                "crossed_quota_day": current_date_key != date_key,
+            }
+            day["runs"].append(run)
+            if current_date_key != date_key and (
+                compute_routes_attempt_count or matrix_element_attempt_count
+            ):
+                current_day = self._day(data, current_date_key)
+                current_day["runs"].append(
+                    {
+                        **run,
+                        "run_id": f"{reservation_id}-carryover-{current_date_key}",
+                        "outcome": "cross_day_conservative_debit",
+                        "source_run_id": reservation_id,
+                        "report_path": None,
+                    }
+                )
             self._write(data)
-            return self._status_from_data(data, date_key)
+            return self._status_from_data(
+                data,
+                current_date_key,
+                now=now,
+            )
 
     def import_report(self, report_path):
         report_path = Path(report_path).expanduser().resolve()
@@ -555,25 +617,45 @@ class GoogleRoutesQuotaLedger:
                         "Percobaan elemen Route Matrix melebihi reservasi."
                     )
 
+                now = self._current_time()
+                finished_at = now.isoformat()
+                current_date_key = now.date().isoformat()
                 day["reservations"].pop(reservation_id)
-                day["runs"].append(
-                    {
-                        "run_id": reservation_id,
-                        "label": reservation["label"],
-                        "started_at": reservation["created_at"],
-                        "finished_at": self.now_fn().isoformat(),
-                        "outcome": "recovered_failed",
-                        "compute_routes_attempt_count": (
-                            compute_routes_attempt_count
-                        ),
-                        "matrix_element_attempt_count": (
-                            matrix_element_attempt_count
-                        ),
-                        "report_path": None,
-                        "source_sha256": None,
-                        "recovery_reason": reason.strip(),
-                    }
-                )
+                run = {
+                    "run_id": reservation_id,
+                    "label": reservation["label"],
+                    "started_at": reservation["created_at"],
+                    "finished_at": finished_at,
+                    "outcome": "recovered_failed",
+                    "compute_routes_attempt_count": (
+                        compute_routes_attempt_count
+                    ),
+                    "matrix_element_attempt_count": (
+                        matrix_element_attempt_count
+                    ),
+                    "report_path": None,
+                    "source_sha256": None,
+                    "recovery_reason": reason.strip(),
+                    "crossed_quota_day": current_date_key != date_key,
+                }
+                day["runs"].append(run)
+                if current_date_key != date_key and (
+                    compute_routes_attempt_count or matrix_element_attempt_count
+                ):
+                    self._day(data, current_date_key)["runs"].append(
+                        {
+                            **run,
+                            "run_id": (
+                                f"{reservation_id}-carryover-{current_date_key}"
+                            ),
+                            "outcome": "cross_day_conservative_debit",
+                            "source_run_id": reservation_id,
+                        }
+                    )
                 self._write(data)
-                return self._status_from_data(data, date_key)
+                return self._status_from_data(
+                    data,
+                    current_date_key,
+                    now=now,
+                )
         raise QuotaLedgerError("Reservasi quota tidak ditemukan.")

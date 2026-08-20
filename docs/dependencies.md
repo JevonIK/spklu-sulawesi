@@ -5,7 +5,7 @@ Proyek memakai dua lapis spesifikasi dependency:
 - `requirements.txt` dan `requirements-dev.txt` menyatakan rentang kompatibilitas
   dependency langsung; dan
 - `constraints.txt` mengunci versi dependency langsung serta transitif yang
-  digunakan kandidat rilis 0.14.0.
+  digunakan kandidat rilis 0.15.0.
 
 Gunakan keduanya saat membuat environment pengembangan:
 
@@ -20,6 +20,11 @@ python -m pip check
 Docker dan GitHub Actions juga memasang dependency dengan constraint yang sama.
 Dockerfile menerima build argument `PYTHON_VERSION`; default kandidat produksi
 tetap Python 3.12.
+
+`constraints.txt` memiliki checksum khusus pada manifest. Selain itu,
+`requirements.txt` termasuk dalam source scope `application-runtime-v2`, sehingga
+perubahan daftar dependency produksi juga wajib diikuti pembaruan identitas source
+dan tidak dapat lolos audit hanya karena constraint belum berubah.
 
 ## Kompatibilitas Python
 
@@ -37,20 +42,28 @@ Metadata kompatibilitas dapat diperiksa pada halaman resmi PyPI untuk
 
 Instalasi container telah diverifikasi pada Python 3.11, 3.12, dan 3.13 dengan
 NumPy 2.3.5 serta SciPy 1.16.3. Audit rilis sebelumnya di ketiga image lulus;
-versi 0.14.0 mempertahankan audit sebanyak 24 check.
+hasil tersebut adalah bukti historis dan tidak menggantikan matrix CI kandidat
+0.15.0. Jumlah test, coverage, dan check audit final harus diambil dari artefak
+workflow pada revision kandidat yang sama, bukan disalin dari dokumentasi lama.
 
 ## Memperbarui dependency
 
 Pembaruan lock harus dilakukan sebagai perubahan tersendiri:
 
 1. tinjau release note dan requirement Python setiap paket yang diubah;
-2. ubah versi pada `constraints.txt` tanpa memperlebar hard limit Google Maps;
+2. ubah `requirements.txt` dan/atau versi pada `constraints.txt` secara sengaja
+   tanpa memperlebar hard limit Google Maps;
 3. buat environment bersih dan jalankan `pip check` serta seluruh test;
 4. verifikasi instalasi pada Python 3.11, 3.12, dan 3.13;
 5. hitung ulang SHA-256 `constraints.txt`;
-6. perbarui `dependencies.sha256` pada `release_manifest.json`;
+6. perbarui `dependencies.sha256` dan hash source scope pada
+   `release_manifest.json` bila berkas terkait berubah;
 7. jalankan `release-audit`; dan
 8. bangun ulang image serta lakukan smoke test offline.
+
+Unduh `coverage.xml` dan `release-audit.json` untuk ketiga runtime, serta bukti
+container, sebelum menyatakan lock terverifikasi. Hash constraint memastikan
+identitas file, tetapi tidak sendiri membuktikan kompatibilitas seluruh runtime.
 
 Audit rilis sengaja gagal bila berkas constraint hilang atau hash-nya berbeda.
 Jangan mengganti hash manifest hanya untuk membuat CI hijau tanpa meninjau versi

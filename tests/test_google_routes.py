@@ -66,13 +66,22 @@ def quota_options(**overrides):
     return options
 
 
-def route_payload(distance_meters=123_400, duration="7200s"):
+def route_payload(
+    distance_meters=123_400,
+    duration="7200s",
+    legs=None,
+):
+    if legs is None:
+        legs = [
+            {"distanceMeters": distance_meters, "duration": duration},
+        ]
     return {
         "routes": [
             {
                 "distanceMeters": distance_meters,
                 "duration": duration,
                 "polyline": {"encodedPolyline": ENCODED_POLYLINE},
+                "legs": legs,
             }
         ]
     }
@@ -104,7 +113,18 @@ def test_invalid_polyline_is_rejected(encoded):
 
 
 def test_compute_route_uses_safe_headers_and_expected_options():
-    session = RecordingSession([FakeResponse(route_payload())])
+    session = RecordingSession(
+        [
+            FakeResponse(
+                route_payload(
+                    legs=[
+                        {"distanceMeters": 60_000, "duration": "3600s"},
+                        {"distanceMeters": 63_400, "duration": "3600s"},
+                    ]
+                )
+            )
+        ]
+    )
     client = GoogleRoutesClient("server-secret", session=session)
 
     route = client.compute_route(
@@ -116,6 +136,7 @@ def test_compute_route_uses_safe_headers_and_expected_options():
     assert route.distance_km == pytest.approx(123.4)
     assert route.duration_minutes == pytest.approx(120)
     assert len(route.coordinates) == 3
+    assert [leg.distance_km for leg in route.legs] == [60, 63.4]
     url, request = session.calls[0]
     assert url == COMPUTE_ROUTES_URL
     assert "server-secret" not in url
@@ -383,6 +404,120 @@ def test_matrix_groups_requests_by_origin_and_skips_unavailable_elements():
     )
     assert len(session.calls[0][1]["json"]["origins"]) == 1
     assert len(session.calls[0][1]["json"]["destinations"]) == 3
+
+
+@pytest.mark.parametrize(
+    "malformed_element",
+    [
+        {
+            "originIndex": 0,
+            "destinationIndex": 0,
+            "status": {},
+            "condition": "ROUTE_EXISTS",
+            "duration": "120s",
+        },
+        {
+            "originIndex": 0,
+            "destinationIndex": 0,
+            "status": {"code": 5},
+            "condition": "ROUTE_EXISTS",
+            "distanceMeters": 1000,
+            "duration": "120s",
+        },
+        {
+            "originIndex": 0,
+            "status": {},
+            "condition": "ROUTE_NOT_FOUND",
+        },
+        {
+            "originIndex": 0,
+            "destinationIndex": 0,
+            "status": {},
+            "condition": "CONDITION_UNSPECIFIED",
+        },
+    ],
+)
+def test_matrix_rejects_malformed_elements_instead_of_false_unavailable(
+    malformed_element,
+):
+    client = GoogleRoutesClient(
+        "key",
+        session=RecordingSession([FakeResponse([malformed_element])]),
+    )
+
+    with pytest.raises(GoogleRoutesError) as captured:
+        client.fetch((road_request("a", (0, 0), (0, 0.1)),))
+
+    assert captured.value.code == "invalid_response"
+
+
+def test_matrix_rejects_duplicate_destination_index():
+    element = {
+        "originIndex": 0,
+        "destinationIndex": 0,
+        "status": {},
+        "condition": "ROUTE_NOT_FOUND",
+    }
+    client = GoogleRoutesClient(
+        "key",
+        session=RecordingSession([FakeResponse([element, element])]),
+    )
+
+    with pytest.raises(GoogleRoutesError, match="duplikat"):
+        client.fetch((road_request("a", (0, 0), (0, 0.1)),))
+
+
+def test_matrix_preflight_rejects_oversized_batch_before_any_http_call():
+    requests_to_fetch = tuple(
+        road_request(str(index), (0, 0), (0, 0.001 + index / 10_000))
+        for index in range(626)
+    )
+    session = RecordingSession()
+    client = GoogleRoutesClient("key", session=session)
+
+    with client.request_budget(
+        **quota_options(maximum_matrix_elements=625)
+    ) as budget:
+        with pytest.raises(ApiQuotaBudgetExceeded) as captured:
+            client.fetch(requests_to_fetch)
+
+    assert captured.value.code == "matrix_elements_budget_exceeded"
+    assert budget.matrix_element_attempt_count == 0
+    assert session.calls == []
+
+
+def test_matrix_batch_size_respects_custom_per_minute_limit():
+    clock = FakeClock()
+    unavailable = lambda count: [
+        {
+            "originIndex": 0,
+            "destinationIndex": index,
+            "status": {"code": 5},
+            "condition": "ROUTE_NOT_FOUND",
+        }
+        for index in range(count)
+    ]
+    session = RecordingSession(
+        [FakeResponse(unavailable(100)), FakeResponse(unavailable(1))]
+    )
+    client = GoogleRoutesClient("key", session=session)
+    requests_to_fetch = tuple(
+        road_request(str(index), (0, 0), (0, 0.001 + index / 10_000))
+        for index in range(101)
+    )
+
+    with client.request_budget(
+        **quota_options(maximum_matrix_elements_per_minute=100),
+        clock=clock,
+        sleeper=clock.sleep,
+    ):
+        batch = client.fetch(requests_to_fetch)
+
+    assert batch.external_request_count == 2
+    assert [
+        len(call[1]["json"]["destinations"]) for call in session.calls
+    ] == [100, 1]
+    assert clock.sleeps and clock.sleeps[0] >= 60
 
 
 def test_empty_matrix_request_does_not_call_google():

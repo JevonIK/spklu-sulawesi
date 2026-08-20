@@ -5,6 +5,10 @@ tetapi menggunakan skenario terdokumentasi dan menghasilkan laporan JSON serta
 CSV. Eksekusi dilakukan berurutan agar jumlah panggilan API dan penggunaan
 sumber daya per skenario dapat diaudit.
 
+Definisi skenario kandidat 0.15.0 wajib memakai `schema_version: 2`. Laporan
+yang dibuat sekarang memakai `schema_version: 3`; angka schema skenario dan
+laporan sengaja berbeda karena keduanya memiliki kontrak data yang berbeda.
+
 ## Skenario penelitian
 
 `experiments/scenarios_baseline.json` memuat satu koridor pada masing-masing
@@ -53,6 +57,12 @@ ketidaklayakan jaringan SPKLU.
 `soc_violation_count` dihitung ulang dari SOC tiba setiap leg hasil itinerary.
 Skenario infeasible tidak memiliki leg dan mendapat nilai nol; status
 `route_feasible` dan `reason` tetap harus dibaca bersamanya.
+
+Untuk setiap itinerary feasible, versi 0.15.0 juga memvalidasi ulang SOC dari
+jarak setiap leg rute yang ditampilkan, bukan hanya edge Route Matrix yang
+dipakai DP.
+Mismatch jumlah leg atau pelanggaran SOC final dicatat sebagai error dan rute
+tidak dilaporkan feasible. Jaminan tersebut tetap terbatas pada model SOC linier.
 
 Runtime mencakup validasi input, panggilan Google Routes, pencarian spasial,
 pembentukan graf, dan DP. Karena latensi jaringan ikut tercakup, eksperimen
@@ -112,10 +122,20 @@ artefak laporan penelitian yang memang hendak dijadikan bukti versi.
 Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
-Schema laporan versi 2 juga menyimpan nama SPKLU terpilih, rincian leg dan SOC,
+Schema laporan versi 3 menyimpan nama SPKLU terpilih, rincian leg dan SOC,
 jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
-statistik optimizer. Polyline serta koordinat hasil Google tidak disalin ke
-laporan eksperimen.
+statistik optimizer. Laporan juga merekam provenance kandidat: versi aplikasi,
+hash source scope `application-runtime-v2`, dataset dan metadatanya, definisi
+skenario, `constraints.txt`, manifest rilis/penelitian, nilai default algoritma,
+`HIGH_QUALITY`, `TRAFFIC_UNAWARE`, margin geodesik 1%, serta ringkasan lingkungan
+eksekusi. Polyline, API key, dan koordinat hasil Google tidak disalin ke laporan.
+
+Baseline dan sensitivitas yang sudah dipakai notebook adalah laporan historis
+schema 2, masing-masing dibuat aplikasi 0.9.2 dan 0.10.0. Definisi yang tertanam
+di kedua laporan lama memakai schema skenario 1; berkas skenario kandidat saat
+ini sudah schema 2. Perubahan tersebut dan schema laporan 3 tidak mengubah
+provenance run lama. Khususnya, langkah sampling rute tidak direkam di laporan
+lama dan tidak boleh diisi dengan mengasumsikan default 0.15.0.
 
 ## Pengaman quota live
 
@@ -215,6 +235,15 @@ langsung oleh program lain atau API key yang sama di luar aplikasi. Google Cloud
 quota tetap menjadi sumber kontrol utama; cocokkan status ledger dengan
 dashboard sebelum eksperimen berbayar.
 
+Nilai aktif proyek adalah 100 Compute Routes per hari dan per menit, serta 2.000
+elemen Route Matrix per hari dan per menit. Endpoint web mereservasi paling
+banyak 2 Compute Routes dan 625 elemen Matrix per request. Places Autocomplete,
+Get Place, dan map load masing-masing dibatasi 500, 200, dan 100 per hari serta
+per menit; ledger backend tidak mencatat pemakaian browser. Detail dan daftar API
+yang dilarang berada pada
+[`google_maps_api_limits.md`](google_maps_api_limits.md). Nilai ini adalah
+kebijakan kandidat saat ini, bukan bukti pemakaian aktual Google Cloud.
+
 CLI menolak menimpa laporan lama. Gunakan label baru untuk replikasi, misalnya
 `baseline-enam-wilayah-uji-2`. Opsi `--overwrite` hanya digunakan jika
 penggantian berkas memang disengaja.
@@ -230,6 +259,8 @@ Sebelum mengambil kesimpulan, periksa hal berikut:
 4. Jelaskan rute infeasible berdasarkan `reason`, kandidat koridor, dan bentuk
    graf; jangan menyimpulkan bahwa implementasi gagal hanya dari infeasibility.
 5. Catat tanggal, label keluaran, parameter, dan kondisi eksperimen pada laporan.
+6. Catat versi aplikasi penghasil dan schema laporan; jangan mengatribusikan
+   hasil historis 0.9.2/0.10.0 kepada kandidat analisis 0.15.0.
 
 Hasil sensitivitas live yang telah divalidasi tersedia pada
 [`sensitivity_results.md`](sensitivity_results.md). Kebijakan seluruh layanan

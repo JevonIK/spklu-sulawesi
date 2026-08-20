@@ -1,82 +1,101 @@
-# Kandidat rilis 0.14.0
+# Kandidat rilis 0.15.0
+
+Dokumen ini adalah identitas kandidat, bukan pernyataan bahwa deployment sudah
+produksi. Status lulus hanya boleh diberikan setelah manifest 0.15.0 sinkron,
+audit offline lulus, seluruh job GitHub Actions hijau, dan artefak run tersebut
+diunduh serta diperiksa.
 
 ## Identitas
 
-| Komponen | Nilai |
+| Komponen | Nilai kandidat |
 |---|---|
-| Versi aplikasi | 0.14.0 |
+| Versi aplikasi/analisis | 0.15.0 |
 | Dataset | 150 baris, 149 node logis |
 | SHA-256 dataset | `24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85` |
+| Provenance/lisensi dataset | `incomplete` / `unknown` |
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
 | Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |
 | SPKLU publik | Selalu disertakan |
 | Konektor eksperimen | CCS2 |
+| Schema skenario / laporan baru | 2 / 3 |
+| Mode rute | `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY` |
+| Margin lower bound geodesik | 1% |
 | Estimasi waktu pengisian | Tidak termasuk |
 | Python didukung | 3.11, 3.12, 3.13 |
 
-## Bukti verifikasi lokal
+## Perubahan yang perlu diverifikasi
 
-- 180 test lulus tanpa request Google Maps API;
-- coverage total 91,50%, di atas ambang CI 90%;
-- `pip check`, kompilasi Python, sintaks JavaScript, dan workflow YAML lulus;
-- audit kandidat rilis offline lulus 24/24 check;
-- health endpoint dari konfigurasi bersih memuat hash dataset yang benar; dan
-- source scan tidak menemukan API key Google tertanam.
+- laporan schema 3 merekam provenance source, data, skenario, dependency,
+  manifest, parameter algoritma, dan lingkungan eksekusi;
+- manifest rilis mengunci hash source scope `application-runtime-v2`, metadata
+  dataset, definisi skenario, manifest penelitian, dependency, konstanta rute,
+  margin geodesik, serta hard limit;
+- Compute Routes memakai `HIGH_QUALITY` dan `TRAFFIC_UNAWARE`;
+- prapemangkasan geodesik memakai lower bound dengan margin 1%;
+- jarak setiap leg Compute Routes final divalidasi ulang terhadap SOC minimum;
+- CI mengunggah `coverage.xml`, `release-audit.json`, `container-health.json`,
+  dan `container-release-audit.json` sebagai artefak 14 hari;
+- container smoke test memakai root filesystem read-only, tanpa jaringan
+  eksternal, semua capability dihapus, `no-new-privileges`, serta tmpfs terbatas;
+- source di image dimiliki root dan harus tidak dapat ditulis oleh user runtime
+  `spklu`; hanya direktori ledger/laporan yang diberi media tulis; dan
+- audit serta test otomatis tidak memakai Google Maps API atau secret produksi.
 
-Smoke test produksi lokal terakhir pada versi 0.13.0 memverifikasi:
+Jangan menyalin angka jumlah test, coverage, atau check audit dari rilis lama.
+Nilai final harus diambil dari artefak GitHub Actions untuk revision kandidat
+0.15.0 yang sama. Keberhasilan versi sebelumnya tidak membuktikan image 0.15.0.
 
-- Gunicorn satu worker dapat boot dan melayani health HTTP 200;
-- hostname tidak tepercaya ditolak dengan HTTP 400;
-- CSP, HSTS, anti-frame, dan header keamanan lain aktif;
-- image `spklu-sulawesi:0.13.0-rc1` berhasil dibangun tanpa jaringan;
-- healthcheck container berstatus `healthy`;
-- audit rilis di dalam container lulus 24/24 check;
-- proses container berjalan sebagai user non-root `spklu`; dan
-- direktori `/app/reports/generated` dapat ditulis oleh user runtime.
+## Hard limit aktif
 
-Smoke test hanya mengakses halaman utama dan health endpoint dengan dummy key.
-Tidak ada Maps, Places, Compute Routes, atau Route Matrix yang dipanggil.
-Karena kode aplikasi berubah pada versi 0.14.0, job container GitHub harus
-dijalankan kembali setelah commit; bukti container 0.13.0 tidak dianggap sebagai
-verifikasi final image 0.14.0.
+| Layanan/dimensi | Harian | Per menit |
+|---|---:|---:|
+| Compute Routes | 100 request | 100 request |
+| Compute Route Matrix | 2.000 elemen | 2.000 elemen |
+| Places Autocomplete | 500 request | 500 request |
+| Get Place | 200 request | 200 request |
+| Map loads | 100 load | 100 load |
 
-Pengujian baru memverifikasi klasifikasi 117 node publik, 8 Hyundai, 17 Wuling,
-dan 7 Toyota/Lexus; filter jaringan per unit; kombinasi CCS2 + Wuling yang tidak
-memasukkan charger GB/T; serta status rute kondisional ketika itinerary memakai
-charger dealer.
+Endpoint web juga dibatasi maksimal 2 Compute Routes dan 625 elemen Matrix per
+request. Nilai di atas adalah kebijakan source saat ini; sebelum tindakan live,
+operator tetap harus memeriksa bahwa override Google Cloud benar-benar aktif,
+menghitung sisa pemakaian, dan memperoleh izin. API yang dilarang tetap tercantum
+pada [`google_maps_api_limits.md`](google_maps_api_limits.md).
 
-Quota guard endpoint juga telah diverifikasi dengan layanan palsu: reservasi
-harian atomik, pencatatan attempt sukses/gagal, hard cap 2 Compute Routes dan
-625 elemen Matrix per request, batas menit 100 Compute Routes dan 2.000 elemen
-Matrix tanpa jeda buatan, migrasi ledger schema lama ke v3, serta respons HTTP 429
-untuk request paralel atau kapasitas yang tidak mencukupi.
+## Provenance bukti penelitian
 
-`release_manifest.json` mengunci versi, hash dependency, identitas dataset,
-empat konektor aplikasi, konektor eksperimen CCS2, 6 skenario baseline, 7
-skenario sensitivitas, dan enam hard limit.
-Command `release-audit` menjadi quality gate pada ketiga job Python di CI dan
-tidak menggunakan layanan Google Maps.
+Hasil penelitian yang tersedia tidak dibuat oleh 0.15.0:
 
-Dependency lock yang sama sebelumnya berhasil dipasang pada image Python 3.11,
-3.12, dan 3.13. Ketiganya menjalankan NumPy 2.3.5 dan SciPy 1.16.3. Audit lokal
-versi 0.14.0 memiliki 24 check; matrix CI harus menjalankannya kembali setelah
-push.
+| Artefak | Versi penghasil | Schema laporan | Ruang lingkup |
+|---|---:|---:|---|
+| Baseline enam wilayah | 0.9.2 | 2 | 6 skenario; 3 feasible |
+| Sensitivitas Makassar–Rantepao | 0.10.0 | 2 | 7 skenario feasible |
 
-GitHub Actions harus tetap diperiksa setelah push karena keberhasilan simulasi
-lokal tidak menggantikan hasil runner GitHub untuk Python 3.11, Python 3.13,
-dan job container tanpa jaringan eksternal.
+Versi 0.15.0 adalah versi analisis dan kandidat untuk run berikutnya. Notebook
+membaca snapshot historis secara offline. Klaim nol pelanggaran SOC pada hasil
+lama berasal dari simulasi versi penghasilnya; fitur rekonsiliasi leg final
+0.15.0 tidak dijalankan secara retroaktif. Laporan lama juga tidak merekam
+langkah sampling rute atau checksum dataset, dan definisi skenario tertanamnya
+masih schema 1. Nilai yang hilang tidak boleh ditebak dari default atau file
+skenario schema 2 yang sekarang.
 
-## Bukti penelitian
+Sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan hak redistribusi
+dataset belum dikonfirmasi. Sebelum paper atau CSV dipublikasikan, pemilik
+penelitian harus melengkapi bukti tersebut sebagaimana dijelaskan pada
+[`data_provenance.md`](data_provenance.md).
 
-- baseline enam wilayah: 6 skenario selesai, 3 feasible, 0 error, dan 0
-  pelanggaran SOC pada itinerary feasible;
-- sensitivitas Makassar–Rantepao: 7 skenario selesai dan feasible, 0 error, dan
-  0 pelanggaran SOC; serta
-- pemakaian ledger setelah pengujian: 39/100 attempt Compute Routes dan
-  1.012/2.000 elemen Route Matrix pada hari quota terkait.
+## Gerbang penerimaan
 
-## Status kandidat rilis
+Kandidat baru dapat disebut terverifikasi setelah:
 
-Kandidat rilis siap untuk pengujian CI dan smoke test produksi tanpa request
-rekomendasi. Status produksi final tetap memerlukan domain, HTTPS, Map ID,
-restriction key, email kontak, quota Cloud, dan persetujuan sebelum test live.
+1. audit offline berjalan terhadap manifest 0.15.0 tanpa mismatch;
+2. test dan coverage lulus pada Python 3.11, 3.12, dan 3.13;
+3. job container 0.15.0 lulus dalam mode read-only dan tanpa jaringan;
+4. artefak kualitas/container dari run yang sama berhasil diunduh dan diperiksa;
+5. tidak ada secret atau laporan live mentah dalam commit;
+6. data provenance/lisensi ditangani atau batas publikasinya dinyatakan jelas;
+7. domain, HTTPS, Map ID, key restriction, email kontak, quota, dan volume
+   persisten siap untuk deployment; dan
+8. setiap test live mendapat izin terpisah serta laporan pemakaian aktual.
+
+Sampai semua butir relevan terpenuhi, status yang tepat adalah **kandidat untuk
+verifikasi**, bukan “siap produksi” atau “tervalidasi penuh”.

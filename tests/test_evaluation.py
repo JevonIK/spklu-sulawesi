@@ -35,13 +35,18 @@ def scenario(scenario_id="skenario-uji"):
         "options": {
             "minimum_soc_percent": 20,
             "target_soc_percent": 80,
+            "safety_factor": 0.9,
+            "soc_step_percent": 5,
+            "corridor_radius_km": 10,
+            "route_sample_step_km": 5,
+            "additional_charging_networks": [],
         },
     }
 
 
 def definition(*scenarios):
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": "eksperimen-uji",
         "description": "Definisi eksperimen untuk pengujian.",
         "scenarios": list(scenarios or (scenario(),)),
@@ -202,7 +207,8 @@ def test_scenario_records_metrics_and_soc_safety():
     assert result["recommended_route_distance_km"] == 250
     assert result["charging_stops"][0]["node_id"] == "spklu-tengah"
     assert result["graph_build_stats"]["accepted_edges"] == 6
-    assert result["safety_factor"] is None
+    assert result["safety_factor"] == pytest.approx(0.9)
+    assert result["route_sample_step_km"] == pytest.approx(5)
     assert result["total_driving_duration_minutes"] == 300
     assert result["total_external_requests"] == 3
     assert result["runtime_ms"] >= 0
@@ -247,7 +253,7 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
     assert rows[0]["minimum_soc_percent"] == "20"
     assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"
-    assert report["schema_version"] == 2
+    assert report["schema_version"] == 3
 
     with pytest.raises(FileExistsError, match="sudah ada"):
         write_experiment_report(report, tmp_path, "hasil-uji")
@@ -329,7 +335,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-            "app_version": "0.14.0",
+            "app_version": "0.15.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,

@@ -17,9 +17,10 @@ RUN python -m pip install --no-cache-dir \
     -r requirements.txt \
     -c constraints.txt
 
-COPY --chown=spklu:spklu . .
-RUN mkdir -p /app/reports/generated \
-    && chown -R spklu:spklu /app/reports
+# Source dan dataset tetap dimiliki root serta hanya dapat dibaca user runtime.
+# Hanya ledger/laporan yang memerlukan direktori tulis khusus.
+COPY . .
+RUN install -d -o spklu -g spklu -m 0750 /app/reports/generated
 
 USER spklu
 

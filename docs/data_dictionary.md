@@ -1,10 +1,13 @@
 # Kamus Data SPKLU Sulawesi
 
-Dokumen ini menjelaskan dataset mentah dan transformasi yang dilakukan aplikasi.
-CSV sumber tidak diubah oleh proses normalisasi agar asal-usul data tetap dapat
-ditelusuri dan eksperimen dapat direproduksi.
+Dokumen ini menjelaskan dataset yang diterima proyek dan transformasi yang
+dilakukan aplikasi. CSV tidak diubah oleh proses normalisasi sehingga identitas
+byte dan transformasi komputasinya dapat diaudit. Hal itu tidak sama dengan
+provenance sumber yang lengkap: penyedia asli, tanggal snapshot, metode
+pengumpulan, lisensi, dan hak redistribusi saat ini belum diketahui.
 
-Dataset yang dipakai pada baseline dan sensitivitas memiliki SHA-256:
+Dataset yang berada pada kandidat 0.15.0 dan dipakai analisis notebook offline
+memiliki SHA-256:
 
 ```text
 24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85
@@ -12,6 +15,23 @@ Dataset yang dipakai pada baseline dan sensitivitas memiliki SHA-256:
 
 Hash harus dihitung ulang dan perubahan dataset harus dijelaskan apabila baris,
 koordinat, konektor, atau informasi unit diperbarui.
+
+Laporan live historis baseline 0.9.2 dan sensitivitas 0.10.0 mencatat ukuran data,
+tetapi belum merekam SHA-256 dataset. Karena itu, kesamaan byte dataset historis
+dengan file kandidat sekarang tidak dapat dibuktikan dari laporan tersebut dan
+tidak boleh dinyatakan hanya berdasarkan kecocokan jumlah baris/node.
+
+## Status provenance
+
+`dataset_metadata.json` mencatat dataset sebagai `user_supplied`, dengan
+`provenance_status: incomplete`, `license_status: unknown`, dan hak redistribusi
+yang belum dikonfirmasi. Nilai kosong tidak boleh diisi dengan dugaan. Sebelum
+publikasi atau redistribusi, pemilik penelitian harus memberikan sumber primer,
+tanggal snapshot, metode pengumpulan, lisensi/izin, dan format sitasi. Checklist
+dan batas klaim tersedia pada [`data_provenance.md`](data_provenance.md).
+
+Hash di atas membuktikan versi file yang dipakai komputasi, bukan bahwa dataset
+resmi, lengkap, terkini, atau berlisensi terbuka.
 
 ## Kolom sumber
 

@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -70,6 +71,101 @@ def test_parallel_reservation_is_rejected(tmp_path):
     with pytest.raises(QuotaLedgerError, match="secara paralel"):
         quota.reserve(
             label="run-kedua",
+            maximum_compute_routes=1,
+            maximum_matrix_elements=1,
+        )
+
+
+def test_reservation_before_midnight_blocks_after_quota_day_reset(tmp_path):
+    clock = FixedNow(
+        datetime(2026, 8, 12, 23, 59, 50, tzinfo=PACIFIC)
+    )
+    quota = ledger(tmp_path, now_fn=clock)
+    reservation = quota.reserve(
+        label="lintas-hari",
+        maximum_compute_routes=20,
+        maximum_matrix_elements=300,
+    )
+
+    clock.value += timedelta(seconds=20)
+    current_status = quota.status()
+
+    assert current_status["date"] == "2026-08-13"
+    assert current_status["active_reservation_count"] == 1
+    assert current_status["reserved_compute_routes"] == 20
+    with pytest.raises(QuotaLedgerError, match="secara paralel"):
+        quota.reserve(
+            label="run-baru",
+            maximum_compute_routes=1,
+            maximum_matrix_elements=1,
+        )
+
+    finalized = quota.finalize(
+        reservation["reservation_id"],
+        compute_routes_attempt_count=4,
+        matrix_element_attempt_count=30,
+        outcome="completed",
+    )
+
+    assert finalized["date"] == "2026-08-13"
+    assert finalized["actual_compute_routes"] == 4
+    assert finalized["actual_matrix_elements"] == 30
+    assert finalized["recent_compute_routes"] == 4
+    assert finalized["recent_matrix_elements"] == 30
+    assert quota.status("2026-08-12")["actual_compute_routes"] == 4
+
+
+def test_reservation_uses_quota_day_after_waiting_for_lock_across_midnight(
+    tmp_path,
+):
+    before_midnight = datetime(
+        2026,
+        8,
+        12,
+        23,
+        59,
+        59,
+        999000,
+        tzinfo=PACIFIC,
+    )
+    after_midnight = datetime(
+        2026,
+        8,
+        13,
+        0,
+        0,
+        0,
+        1000,
+        tzinfo=PACIFIC,
+    )
+    seeded = ledger(tmp_path, now_fn=FixedNow(after_midnight))
+    seeded_reservation = seeded.reserve(
+        label="quota-hari-baru-penuh",
+        maximum_compute_routes=100,
+        maximum_matrix_elements=2000,
+    )
+    seeded.finalize(
+        seeded_reservation["reservation_id"],
+        compute_routes_attempt_count=100,
+        matrix_element_attempt_count=2000,
+        outcome="completed",
+    )
+
+    clock = FixedNow(before_midnight)
+    quota = ledger(tmp_path, now_fn=clock)
+    original_locked = quota._locked
+
+    @contextmanager
+    def lock_crossing_midnight():
+        with original_locked():
+            clock.value = after_midnight
+            yield
+
+    quota._locked = lock_crossing_midnight
+
+    with pytest.raises(QuotaLedgerError, match="quota harian Compute Routes"):
+        quota.reserve(
+            label="harus-memakai-hari-baru",
             maximum_compute_routes=1,
             maximum_matrix_elements=1,
         )
@@ -311,6 +407,60 @@ def test_schema_two_ledger_keeps_usage_when_rate_limits_change(tmp_path):
         "compute_routes": 100,
         "matrix_elements": 2000,
     }
+
+
+def test_legacy_runs_without_ids_are_counted_separately_in_rolling_window(
+    tmp_path,
+):
+    clock = FixedNow(
+        datetime(2026, 8, 12, 20, 0, 30, tzinfo=PACIFIC)
+    )
+    quota = ledger(tmp_path, now_fn=clock)
+    quota.path.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "timezone": "America/Los_Angeles",
+                "daily_limits": {
+                    "compute_routes": 100,
+                    "matrix_elements": 2000,
+                },
+                "per_minute_limits": {
+                    "compute_routes": 30,
+                    "matrix_elements": 625,
+                },
+                "days": {
+                    "2026-08-12": {
+                        "runs": [
+                            {
+                                "compute_routes_attempt_count": 1,
+                                "matrix_element_attempt_count": 10,
+                                "finished_at": (
+                                    "2026-08-12T20:00:05-07:00"
+                                ),
+                            },
+                            {
+                                "compute_routes_attempt_count": 1,
+                                "matrix_element_attempt_count": 10,
+                                "finished_at": (
+                                    "2026-08-12T20:00:10-07:00"
+                                ),
+                            },
+                        ],
+                        "reservations": {},
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = quota.status()
+
+    assert status["actual_compute_routes"] == 2
+    assert status["recent_compute_routes"] == 2
+    assert status["actual_matrix_elements"] == 20
+    assert status["recent_matrix_elements"] == 20
 
 
 def test_report_import_rejects_fractional_usage(tmp_path):

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "dataset": {
+    "path": "dataset_spklu_sulawesi.csv",
+    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "source_rows": 150,
+    "logical_nodes": 149,
+    "geographic_scope": "Enam provinsi di Pulau Sulawesi, Indonesia"
+  },
+  "provenance": {
+    "source_type": "user_supplied",
+    "source_description": null,
+    "source_organization": null,
+    "source_url": null,
+    "acquired_at": null,
+    "collection_method": null,
+    "license_status": "unknown",
+    "redistribution_status": "not_confirmed",
+    "provenance_status": "incomplete"
+  },
+  "known_transformations": [
+    "Normalisasi label konektor hanya dilakukan di memori.",
+    "Dua unit pada koordinat identik dipertahankan sebagai unit terpisah dan dikonsolidasikan menjadi satu node algoritma.",
+    "Jaringan Hyundai, Wuling, dan Toyota/Lexus diturunkan dari penanda eksplisit pada nama lokasi."
+  ],
+  "known_limitations": [
+    "Tanggal snapshot dan metode pengumpulan belum didokumentasikan.",
+    "Status lisensi dan hak redistribusi belum dikonfirmasi.",
+    "Ketersediaan operasional, akses dealer, daya, tarif, dan status real-time tidak tersedia.",
+    "Lokasi sangat berdekatan tidak digabung tanpa pengenal lokasi eksplisit."
+  ],
+  "publication_action_required": "Konfirmasi dan isi sumber, tanggal snapshot, metode pengumpulan, serta status lisensi sebelum publikasi atau distribusi dataset."
+}

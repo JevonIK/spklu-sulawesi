@@ -172,3 +172,113 @@ def test_web_reservation_cannot_exceed_lower_daily_limit():
                 "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST": 101,
             }
         )
+
+
+@pytest.mark.parametrize(
+    "name, value",
+    [
+        ("DEFAULT_SOC_MIN", 100),
+        ("DEFAULT_SOC_TARGET", 20),
+        ("DEFAULT_SAFETY_FACTOR", 0),
+        ("DEFAULT_CORRIDOR_RADIUS_KM", 101),
+        ("DEFAULT_ROUTE_SAMPLE_STEP_KM", 0.01),
+        ("DEFAULT_SOC_STEP", 0),
+        ("GOOGLE_ROUTES_TIMEOUT_SECONDS", 0),
+        ("GOOGLE_ROUTES_TIMEOUT_SECONDS", 121),
+    ],
+)
+def test_invalid_algorithm_defaults_fail_fast_at_startup(name, value):
+    with pytest.raises(ProductionConfigurationError, match=name):
+        create_app(config_overrides={name: value})
+
+
+def test_web_reservation_cannot_exceed_lower_per_minute_limit():
+    with pytest.raises(
+        ProductionConfigurationError,
+        match="per request tidak boleh melebihi batas per menit",
+    ):
+        create_app(
+            config_overrides={
+                "GOOGLE_ROUTE_MATRIX_PER_MINUTE_ELEMENT_LIMIT": 100,
+                "GOOGLE_WEB_MAX_MATRIX_ELEMENTS_PER_REQUEST": 101,
+            }
+        )
+
+
+def test_production_requires_separate_browser_and_server_keys():
+    with pytest.raises(ProductionConfigurationError, match="wajib berbeda"):
+        create_app(
+            config_overrides=production_config(
+                GOOGLE_MAPS_BROWSER_API_KEY="same-key",
+                GOOGLE_MAPS_SERVER_API_KEY="same-key",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "name, value, expected_field",
+    [
+        ("SECRET_KEY", " " * 48, "SECRET_KEY"),
+        ("SECRET_KEY", "a" * 31 + " ", "SECRET_KEY"),
+        ("GOOGLE_MAPS_BROWSER_API_KEY", "   ", "GOOGLE_MAPS_BROWSER_API_KEY"),
+        ("GOOGLE_MAPS_SERVER_API_KEY", "\t", "GOOGLE_MAPS_SERVER_API_KEY"),
+        ("GOOGLE_MAPS_MAP_ID", " ", "GOOGLE_MAPS_MAP_ID"),
+        ("TRUSTED_HOSTS", [" "], "TRUSTED_HOSTS"),
+        ("TRUSTED_HOSTS", ["https://example.test"], "TRUSTED_HOSTS"),
+        ("TRUSTED_HOSTS", ["example.test:443"], "TRUSTED_HOSTS"),
+        ("TRUSTED_HOSTS", ["bad_host.test"], "TRUSTED_HOSTS"),
+        ("PUBLIC_CONTACT_EMAIL", "@", "PUBLIC_CONTACT_EMAIL"),
+        ("PUBLIC_CONTACT_EMAIL", "admin@localhost", "PUBLIC_CONTACT_EMAIL"),
+        ("PUBLIC_CONTACT_EMAIL", "admin@127.0.0.1", "PUBLIC_CONTACT_EMAIL"),
+        ("PUBLIC_CONTACT_EMAIL", "admin@example.123", "PUBLIC_CONTACT_EMAIL"),
+        ("PUBLIC_CONTACT_EMAIL", "admin..ops@example.test", "PUBLIC_CONTACT_EMAIL"),
+    ],
+)
+def test_production_rejects_disguised_empty_or_malformed_values(
+    name,
+    value,
+    expected_field,
+):
+    with pytest.raises(ProductionConfigurationError, match=expected_field):
+        create_app(config_overrides=production_config(**{name: value}))
+
+
+def test_production_normalizes_safe_text_hosts_and_contact_email():
+    application = create_app(
+        config_overrides=production_config(
+            SECRET_KEY=f"  {'s' * 48}  ",
+            GOOGLE_MAPS_BROWSER_API_KEY=" browser-key ",
+            GOOGLE_MAPS_SERVER_API_KEY=" server-key ",
+            GOOGLE_MAPS_MAP_ID=" production-map-id ",
+            TRUSTED_HOSTS=[
+                " APP.EXAMPLE.TEST ",
+                ".Example.Test",
+                "127.0.0.1",
+                "app.example.test",
+            ],
+            PUBLIC_CONTACT_EMAIL=" Admin.Ops@Example.Test ",
+        )
+    )
+
+    assert application.config["SECRET_KEY"] == "s" * 48
+    assert application.config["GOOGLE_MAPS_BROWSER_API_KEY"] == "browser-key"
+    assert application.config["GOOGLE_MAPS_SERVER_API_KEY"] == "server-key"
+    assert application.config["GOOGLE_MAPS_MAP_ID"] == "production-map-id"
+    assert application.config["TRUSTED_HOSTS"] == [
+        "app.example.test",
+        ".example.test",
+        "127.0.0.1",
+    ]
+    assert application.config["PUBLIC_CONTACT_EMAIL"] == (
+        "Admin.Ops@example.test"
+    )
+
+
+def test_production_compares_trimmed_api_keys():
+    with pytest.raises(ProductionConfigurationError, match="wajib berbeda"):
+        create_app(
+            config_overrides=production_config(
+                GOOGLE_MAPS_BROWSER_API_KEY=" same-key ",
+                GOOGLE_MAPS_SERVER_API_KEY="same-key",
+            )
+        )

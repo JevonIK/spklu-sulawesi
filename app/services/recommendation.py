@@ -11,13 +11,19 @@ from .dataset import (
     CHARGING_NETWORK_LABELS,
     CONNECTOR_ORDER,
     PUBLIC_CHARGING_NETWORK,
+    SULAWESI_LATITUDE_RANGE,
+    SULAWESI_LONGITUDE_RANGE,
     matching_charging_networks,
     node_is_eligible,
     parse_additional_charging_networks,
     parse_connectors,
 )
-from .energy import EnergyParameters
+from .energy import EnergyParameters, SOC_TOLERANCE
 from .graph import build_travel_graph
+from .google_routes import (
+    MAX_INTERMEDIATE_WAYPOINTS,
+    GoogleRoutesError,
+)
 from .optimizer import optimize_itinerary
 from .quota_ledger import QuotaLedgerError
 from .spatial import (
@@ -70,6 +76,23 @@ def _coordinate(payload, field):
         return normalize_coordinate((latitude, longitude))
     except ValueError as error:
         raise RecommendationValidationError(field, str(error)) from error
+
+
+def validate_sulawesi_coordinate_scope(coordinate, field):
+    """Menolak request publik di luar cakupan geografis penelitian."""
+
+    if not (
+        SULAWESI_LATITUDE_RANGE[0]
+        <= coordinate[0]
+        <= SULAWESI_LATITUDE_RANGE[1]
+        and SULAWESI_LONGITUDE_RANGE[0]
+        <= coordinate[1]
+        <= SULAWESI_LONGITUDE_RANGE[1]
+    ):
+        raise RecommendationValidationError(
+            field,
+            f"{field} harus berada dalam cakupan wilayah Sulawesi.",
+        )
 
 
 @dataclass(frozen=True)
@@ -161,7 +184,12 @@ class RecommendationInput:
             "options.corridor_radius_km",
             default=defaults["corridor_radius_km"],
         )
-        route_sample_step = float(defaults["route_sample_step_km"])
+        route_sample_step = _number(
+            options,
+            "route_sample_step_km",
+            "options.route_sample_step_km",
+            default=defaults["route_sample_step_km"],
+        )
 
         if maximum_range > 2000:
             raise RecommendationValidationError(
@@ -172,6 +200,11 @@ class RecommendationInput:
             raise RecommendationValidationError(
                 "options.corridor_radius_km",
                 "Radius koridor harus berada pada rentang >0 sampai 100 km.",
+            )
+        if not 0.1 <= route_sample_step <= 100:
+            raise RecommendationValidationError(
+                "options.route_sample_step_km",
+                "Langkah sampling rute harus berada pada rentang 0,1 sampai 100 km.",
             )
         try:
             parameters = EnergyParameters(
@@ -285,6 +318,113 @@ class RecommendationService:
                 }
             )
         return summaries
+
+    @staticmethod
+    def _reconcile_final_route_itinerary(
+        optimization_payload,
+        final_route,
+        base_route,
+        parameters,
+    ):
+        """Memvalidasi ulang SOC memakai leg Compute Routes yang digambar."""
+
+        itinerary = optimization_payload.get("itinerary")
+        if not itinerary or not final_route.legs:
+            optimization_payload["final_route_validation"] = {
+                "status": "not_available",
+                "reason": "final_route_legs_unavailable",
+            }
+            return
+        legs = itinerary["legs"]
+        if len(legs) != len(final_route.legs):
+            raise GoogleRoutesError(
+                "final_route_leg_mismatch",
+                "Jumlah leg rute final tidak sesuai itinerary hasil optimasi.",
+            )
+
+        stops_by_node = {
+            stop["node_id"]: stop
+            for stop in itinerary.get("charging_stops", [])
+        }
+        current_soc = float(legs[0]["departure_soc_percent"])
+        minimum_observed_soc = current_soc
+        matrix_distance_km = sum(
+            float(leg["road_distance_km"]) for leg in legs
+        )
+        for leg, final_leg in zip(legs, final_route.legs):
+            stop = stops_by_node.get(leg["source_id"])
+            if stop is not None:
+                planned_departure = float(stop["departure_soc_percent"])
+                departure_soc = max(current_soc, planned_departure)
+                stop["arrival_soc_percent"] = current_soc
+                stop["departure_soc_percent"] = departure_soc
+                stop["charged_soc_percent"] = max(
+                    0.0,
+                    departure_soc - current_soc,
+                )
+                if stop["charged_soc_percent"] <= SOC_TOLERANCE:
+                    raise GoogleRoutesError(
+                        "final_route_charge_not_required",
+                        (
+                            "Rute final Google membuat salah satu pemberhentian "
+                            "tidak lagi memerlukan pengisian; rekomendasi tidak "
+                            "ditampilkan."
+                        ),
+                    )
+            else:
+                departure_soc = current_soc
+
+            arrival_soc = parameters.arrival_soc_percent(
+                departure_soc,
+                final_leg.distance_km,
+            )
+            if arrival_soc + SOC_TOLERANCE < parameters.minimum_soc_percent:
+                raise GoogleRoutesError(
+                    "final_route_soc_violation",
+                    (
+                        "Rute final Google tidak lagi memenuhi batas SOC "
+                        "minimum; rekomendasi tidak ditampilkan."
+                    ),
+                )
+            leg.update(
+                {
+                    "matrix_road_distance_km": leg["road_distance_km"],
+                    "matrix_road_duration_minutes": leg[
+                        "road_duration_minutes"
+                    ],
+                    "road_distance_km": final_leg.distance_km,
+                    "road_duration_minutes": final_leg.duration_minutes,
+                    "departure_soc_percent": departure_soc,
+                    "arrival_soc_percent": arrival_soc,
+                    "consumption_soc_percent": (
+                        parameters.consumption_percent(final_leg.distance_km)
+                    ),
+                }
+            )
+            current_soc = arrival_soc
+            minimum_observed_soc = min(minimum_observed_soc, arrival_soc)
+
+        itinerary["total_road_distance_km"] = sum(
+            leg.distance_km for leg in final_route.legs
+        )
+        itinerary["total_driving_duration_minutes"] = sum(
+            leg.duration_minutes for leg in final_route.legs
+        )
+        itinerary["total_detour_km"] = max(
+            0.0,
+            final_route.distance_km - base_route.distance_km,
+        )
+        itinerary["final_soc_percent"] = current_soc
+        itinerary["minimum_observed_soc_percent"] = minimum_observed_soc
+        optimization_payload["final_route_validation"] = {
+            "status": "passed",
+            "leg_count": len(final_route.legs),
+            "matrix_distance_km": matrix_distance_km,
+            "final_route_distance_km": final_route.distance_km,
+            "distance_delta_km": final_route.distance_km - matrix_distance_km,
+            "minimum_soc_percent": parameters.minimum_soc_percent,
+            "minimum_observed_soc_percent": minimum_observed_soc,
+        }
 
     @staticmethod
     def _annotate_route_access(
@@ -424,6 +564,14 @@ class RecommendationService:
                 graph.node(stop.node_id).coordinate
                 for stop in optimization.itinerary.charging_stops
             )
+            if len(stop_coordinates) > MAX_INTERMEDIATE_WAYPOINTS:
+                raise GoogleRoutesError(
+                    "too_many_charging_stops",
+                    (
+                        "Rute memerlukan terlalu banyak pemberhentian untuk "
+                        "divalidasi oleh Google Routes API."
+                    ),
+                )
             if stop_coordinates:
                 recommended_route = self.routes_client.compute_route(
                     recommendation_input.origin,
@@ -435,6 +583,13 @@ class RecommendationService:
                 recommended_route = base_route
 
         optimization_payload = optimization.to_dict()
+        if recommended_route is not None:
+            self._reconcile_final_route_itinerary(
+                optimization_payload,
+                recommended_route,
+                base_route,
+                parameters,
+            )
         route_access = self._annotate_route_access(
             optimization_payload,
             graph,
@@ -517,19 +672,86 @@ class QuotaProtectedRecommendationService:
         if not isinstance(payload, dict):
             return self.service.parse_input(payload)
 
+        allowed_top_level = {"origin", "destination", "vehicle", "options"}
+        unknown_top_level = sorted(set(payload) - allowed_top_level)
+        if unknown_top_level:
+            field = unknown_top_level[0]
+            raise RecommendationValidationError(
+                field,
+                f"Field {field} tidak dikenal pada endpoint rekomendasi.",
+            )
+        for coordinate_field in ("origin", "destination"):
+            coordinate = payload.get(coordinate_field)
+            if isinstance(coordinate, dict):
+                unknown = sorted(
+                    set(coordinate) - {"latitude", "longitude"}
+                )
+                if unknown:
+                    field = f"{coordinate_field}.{unknown[0]}"
+                    raise RecommendationValidationError(
+                        field,
+                        f"Field {field} tidak dikenal.",
+                    )
+        vehicle = payload.get("vehicle")
+        if isinstance(vehicle, dict):
+            unknown_vehicle = sorted(
+                set(vehicle)
+                - {
+                    "maximum_range_km",
+                    "current_soc_percent",
+                    "connector",
+                    "connectors",
+                }
+            )
+            if unknown_vehicle:
+                field = f"vehicle.{unknown_vehicle[0]}"
+                raise RecommendationValidationError(
+                    field,
+                    f"Field {field} tidak dikenal.",
+                )
+            if "connector" in vehicle and "connectors" in vehicle:
+                raise RecommendationValidationError(
+                    "vehicle.connectors",
+                    (
+                        "Gunakan salah satu dari vehicle.connector atau "
+                        "vehicle.connectors, bukan keduanya."
+                    ),
+                )
+
         public_payload = dict(payload)
         options = payload.get("options")
         if isinstance(options, dict):
+            allowed_options = {
+                "minimum_soc_percent",
+                "target_soc_percent",
+                "additional_charging_networks",
+            }
+            unknown_options = sorted(set(options) - allowed_options)
+            if unknown_options:
+                field = f"options.{unknown_options[0]}"
+                raise RecommendationValidationError(
+                    field,
+                    (
+                        f"{field} tidak tersedia pada endpoint publik; "
+                        "parameter penelitian dikelola oleh backend."
+                    ),
+                )
             public_payload["options"] = {
                 key: options[key]
-                for key in (
-                    "minimum_soc_percent",
-                    "target_soc_percent",
-                    "additional_charging_networks",
-                )
+                for key in allowed_options
                 if key in options
             }
-        return self.service.parse_input(public_payload)
+        recommendation_input = self.service.parse_input(public_payload)
+        if isinstance(recommendation_input, RecommendationInput):
+            validate_sulawesi_coordinate_scope(
+                recommendation_input.origin,
+                "origin",
+            )
+            validate_sulawesi_coordinate_scope(
+                recommendation_input.destination,
+                "destination",
+            )
+        return recommendation_input
 
     @staticmethod
     def _quota_payload(status, budget):

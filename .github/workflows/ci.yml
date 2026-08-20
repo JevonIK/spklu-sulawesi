@@ -54,16 +54,46 @@ jobs:
           python -m pytest -q
           --cov=app
           --cov-report=term-missing
+          --cov-report=xml:coverage.xml
           --cov-fail-under=90
 
       - name: Periksa kompilasi Python
-        run: python -m compileall -q app tests
+        run: python -m compileall -q app scripts tests
+
+      - name: Validasi artefak JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          paths = [
+              path
+              for root in (Path("experiments"), Path("notebooks"))
+              for path in root.rglob("*.json")
+          ] + [Path("dataset_metadata.json"), Path("release_manifest.json"), Path("research_manifest.json")]
+          for path in paths:
+              json.loads(path.read_text(encoding="utf-8"))
+          print(f"{len(paths)} artefak JSON valid")
+          PY
 
       - name: Audit kandidat rilis offline
-        run: python -m flask --app run.py release-audit
+        run: >-
+          python -m flask --app run.py release-audit
+          > release-audit.json
 
       - name: Periksa sintaks JavaScript
         run: node --check app/static/js/app.js
+
+      - name: Arsipkan bukti kualitas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-python-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            release-audit.json
+          if-no-files-found: warn
+          retention-days: 14
 
   container-smoke:
     name: Container smoke test
@@ -90,6 +120,11 @@ jobs:
         run: |
           docker run --rm --detach \
             --network none \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m \
             --name "${CONTAINER_NAME}" \
             --env SECRET_KEY=dummy-production-secret-key-32-chars-minimum \
             --env GOOGLE_MAPS_BROWSER_API_KEY=dummy-browser-key \
@@ -162,8 +197,22 @@ jobs:
         run: |
           user_id=$(docker exec "${CONTAINER_NAME}" id -u)
           test "${user_id}" != "0"
+          docker exec "${CONTAINER_NAME}" python -m pip check
           docker exec "${CONTAINER_NAME}" python -c \
             "from pathlib import Path; path=Path('/app/reports/generated/ci-write-test'); path.write_text('ok'); path.unlink()"
+          docker exec "${CONTAINER_NAME}" python -c \
+            "import os; assert not os.access('/app/app', os.W_OK)"
+
+      - name: Arsipkan bukti container
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-smoke-evidence
+          path: |
+            container-health.json
+            container-release-audit.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Tampilkan log dan bersihkan container
         if: always()

@@ -31,6 +31,7 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 | BB-21 | Jaringan dealer tidak dipilih | Charger dealer dikeluarkan, SPKLU publik tetap tersedia | `test_recommendation.py` |
 | BB-22 | Wuling dipilih dengan CCS2 | Lokasi Wuling dilaporkan tidak kompatibel karena dataset memakai GB/T | `test_recommendation.py` |
 | BB-23 | Rute memakai charger dealer | Respons ditandai `conditional` dan lokasi dealer dicantumkan | `test_recommendation.py` |
+| BB-24 | Leg Compute Routes final melanggar SOC minimum | Rekomendasi ditolak dengan `final_route_soc_violation`, bukan ditampilkan feasible | `test_recommendation.py` |
 
 ## Smoke test browser
 
@@ -62,6 +63,10 @@ tab dan hindari reload berulang. Test otomatis tidak memakai layanan Google.
 
 - Seluruh test otomatis lulus.
 - Tidak ada itinerary feasible dengan SOC tiba di bawah SOC minimum.
+- Rute dengan SPKLU hanya ditampilkan setelah validasi ulang seluruh leg
+  Compute Routes final lulus. Test layanan untuk pelanggaran SOC tersedia; test
+  HTTP end-to-end khusus envelope error final-route tetap perlu ditambahkan bila
+  kontrak API ini diubah.
 - Error validasi, konfigurasi, upstream, dan internal memiliki status serta
   pesan yang dapat dipahami tanpa menampilkan API key atau exception internal.
 - Header keamanan tidak menghalangi pemuatan Google Maps pada environment yang
@@ -95,3 +100,7 @@ Setelah `http://127.0.0.1:8765/*` dan `http://localhost:8765/*` ditambahkan ke
 website restriction browser key, smoke test versi 0.9.2 berhasil memuat peta,
 kontrol kamera, data peta, attribution Google Maps, dan Places. Formulir aktif
 dan tidak muncul lagi pesan error otorisasi pada canvas.
+
+Catatan tersebut adalah bukti historis 0.9.0/0.9.2, bukan verifikasi UI kandidat
+0.15.0. Smoke test baru harus mencatat revision dan hasilnya sendiri tanpa
+menjalankan rekomendasi live kecuali ada izin serta budget API terpisah.

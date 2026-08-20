@@ -42,6 +42,12 @@ Hasil **Rute aman ditemukan** menampilkan:
 - SOC berangkat dan tiba pada setiap leg; serta
 - statistik kandidat, graf, DP, dan pemakaian API.
 
+Untuk setiap rute feasible, sistem menghitung ulang SOC dari setiap leg rute
+Google yang ditampilkan. Hasil tidak ditampilkan sebagai aman bila jumlah leg tidak
+sesuai atau SOC tiba melanggar batas minimum. Durasi memakai
+`TRAFFIC_UNAWARE`, sehingga tidak memperhitungkan lalu lintas real-time atau
+prediktif.
+
 Badge **Rute publik** berarti seluruh pemberhentian pengisian yang dipilih
 algoritma berasal dari SPKLU publik. Badge **Rute kondisional** berarti rute
 mengandalkan sedikitnya satu charger dealer. Untuk rute kondisional, pengguna
@@ -93,6 +99,7 @@ interaksi pengguna harian.
 | HTTP 400 | perbaiki field yang disebut pada respons validasi |
 | HTTP 429 | tunggu request aktif selesai atau reset quota; jangan retry berulang |
 | HTTP 502 | periksa jaringan, Routes API, billing, restriction server key, dan quota |
+| Rute final ditolak karena SOC | jarak leg final berbeda dari matriks dan melanggar batas model; jangan memaksa hasil, periksa parameter kendaraan atau pilih rencana lain |
 | Rute tidak feasible | baca reason dan statistik graf; ini dapat menjadi hasil penelitian yang valid |
 | Perhitungan lama | tunggu satu request selesai; kandidat/edge dan latensi Google memengaruhi waktu |
 

@@ -1,6 +1,10 @@
 {
-  "schema_version": 2,
-  "application_version": "0.14.0",
+  "schema_version": 3,
+  "application_version": "0.15.0",
+  "source": {
+    "scope": "application-runtime-v2",
+    "sha256": "fdeb554d7d94644f502e3ccd400e6808b1b6a0f14db1e9e2326d4a395c90d884"
+  },
   "supported_python_versions": [
     "3.11",
     "3.12",
@@ -8,13 +12,15 @@
   ],
   "dependencies": {
     "constraints_path": "constraints.txt",
-    "sha256": "53f7044a7b05f6acae7a04c6490c1459fc00556b580c544418f4443e49917a66"
+    "sha256": "8b215f5018e047ca647daf19cd43f809d525a5a9982ec09a772a5d0910a4c342"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
     "source_rows": 150,
     "logical_nodes": 149,
-    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "metadata_path": "dataset_metadata.json",
+    "metadata_sha256": "3305e40d74b8fea45c9f8e56ed53b01dfc58faf5c9e3da5dfe49bb628ff985d2"
   },
   "algorithm": {
     "supported_connectors": [
@@ -24,18 +30,28 @@
       "GB/T"
     ],
     "research_connector": "CCS2",
-    "charging_time_included": false
+    "charging_time_included": false,
+    "travel_mode": "DRIVE",
+    "routing_preference": "TRAFFIC_UNAWARE",
+    "polyline_quality": "HIGH_QUALITY",
+    "geodesic_lower_bound_margin_ratio": 0.01
   },
   "experiments": [
     {
       "path": "experiments/scenarios_baseline.json",
-      "scenario_count": 6
+      "scenario_count": 6,
+      "sha256": "e3f7ffcd6d73c6fe4a590e570ec7d4cf9d13047e91aabbfcd2fb9aca9a1f2908"
     },
     {
       "path": "experiments/scenarios_sensitivity.json",
-      "scenario_count": 7
+      "scenario_count": 7,
+      "sha256": "24ebc9e342deb79700e3ca25b87affbefff7bc1ba66d41dcb19ef5058dfa9871"
     }
   ],
+  "research_manifest": {
+    "path": "research_manifest.json",
+    "sha256": "410cd940a980f4addb8755b82acd85868f6302c935f931c0b09612be7bf7e78b"
+  },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,
     "GOOGLE_COMPUTE_ROUTES_PER_MINUTE_LIMIT": 100,

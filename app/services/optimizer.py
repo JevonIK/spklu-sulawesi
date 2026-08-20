@@ -351,7 +351,12 @@ def optimize_itinerary(
         )
 
     discretizer = SocDiscretizer(parameters)
-    initial_level = discretizer.quantize_down(current_soc)
+    # SOC awal diketahui dari input dan tidak boleh dibuang ke grid. Membulatkan
+    # nilai ini dapat menciptakan surplus SOC kontinu pada station pertama,
+    # sehingga DP merencanakan "pengisian" ke level yang ternyata sudah
+    # terlampaui kendaraan saat simulasi akhir. Setelah leg pertama, state SOC
+    # tetap dikuantisasi turun secara konservatif seperti semula.
+    initial_level = current_soc
     objective_mode = _objective_mode(graph)
     states = {
         (ORIGIN_NODE_ID, initial_level): _DpRecord(
@@ -487,4 +492,3 @@ def optimize_itinerary(
         stats=stats,
         itinerary=itinerary,
     )
-
