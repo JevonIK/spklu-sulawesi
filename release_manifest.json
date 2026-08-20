@@ -3,16 +3,17 @@
   "application_version": "0.15.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "32500d168dd35aac0e4044bda4104c936beea0b21d243830a8e88a534b840783"
+    "sha256": "55fa99361a912dbf66fb2ef0df58b964d5bf2063cc03055663236578fe62977b"
   },
   "supported_python_versions": [
     "3.11",
     "3.12",
-    "3.13"
+    "3.13",
+    "3.14"
   ],
   "dependencies": {
     "constraints_path": "constraints.txt",
-    "sha256": "8b215f5018e047ca647daf19cd43f809d525a5a9982ec09a772a5d0910a4c342"
+    "sha256": "fcf1b12358383555ab3420dbbb0f584b12a648489002d525397937fedc9280f0"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -57,7 +58,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "ea0bd79e5dcaa8828106f5a7813265dd5e0ffb3da800b2e12480d2e5e6e64052"
+    "sha256": "b943b3cef002c688dede0e26ba104cc7d27e515defb164b1cb72e327c0260cca"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

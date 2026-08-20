@@ -2,7 +2,7 @@
 
 Workflow `.github/workflows/ci.yml` memverifikasi setiap push, pull request, dan
 eksekusi manual melalui GitHub Actions. Matrix test memakai Python 3.11, 3.12,
-dan 3.13 sesuai versi yang didukung proyek.
+3.13, dan 3.14 sesuai versi yang didukung proyek.
 
 ## Pemeriksaan otomatis
 
@@ -17,7 +17,7 @@ Setiap job matrix Python melakukan:
 7. pemeriksaan sintaks JavaScript; dan
 8. pengunggahan `coverage.xml` serta `release-audit.json` meskipun job gagal.
 
-Setelah ketiga job Python lulus, job **Container smoke test**:
+Setelah keempat job Python lulus, job **Container smoke test**:
 
 1. membangun image kandidat dengan Python 3.12 dan dependency lock;
 2. menjalankan container dengan `--network none`, root filesystem read-only,
@@ -76,7 +76,7 @@ Workflow menggunakan major release `actions/checkout@v6` dan
 
 1. Buka tab **Actions** pada repository.
 2. Pilih workflow **Validasi aplikasi**.
-3. Pastikan job Python 3.11, Python 3.12, Python 3.13, dan
+3. Pastikan job Python 3.11, Python 3.12, Python 3.13, Python 3.14, dan
    **Container smoke test** berwarna hijau.
 4. Buka setiap job jika ada kegagalan dan baca langkah pertama yang merah.
 5. Unduh artefak keempat job, cocokkan revision, lalu periksa JSON/XML-nya.
@@ -90,7 +90,7 @@ Setelah workflow pertama berhasil:
 1. buka **Settings → Branches** atau **Rules → Rulesets**;
 2. buat aturan untuk branch utama (`main` atau nama branch utama repository);
 3. aktifkan kewajiban status checks sebelum merge;
-4. pilih check `Python 3.11`, `Python 3.12`, `Python 3.13`, dan
+4. pilih check `Python 3.11`, `Python 3.12`, `Python 3.13`, `Python 3.14`, dan
    `Container smoke test`; dan
 5. jangan aktifkan deployment otomatis yang memakai billing sebelum environment
    produksi serta approval manual tersedia.

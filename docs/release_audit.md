@@ -70,7 +70,7 @@ hijau tanpa meninjau perubahan datanya.
 Audit offline tidak menggantikan pemeriksaan berikut:
 
 - memastikan `.env`, ledger, dan laporan mentah tidak masuk commit;
-- memastikan tiga job Python dan satu job container GitHub Actions benar-benar
+- memastikan empat job Python dan satu job container GitHub Actions benar-benar
   hijau;
 - memastikan artefak CI yang diunduh berasal dari revision kandidat yang sama;
 - memeriksa restriction API key, domain HTTPS, volume persisten, dan gateway;
@@ -85,7 +85,7 @@ GitHub, lingkungan deployment, Google Cloud, atau persetujuan pengguna.
 
 ## Integrasi CI
 
-Workflow menjalankan `release-audit` pada Python 3.11, 3.12, dan 3.13 setelah
+Workflow menjalankan `release-audit` pada Python 3.11, 3.12, 3.13, dan 3.14 setelah
 test serta kompilasi. API key tetap dikosongkan. Output `release-audit.json` dan
 `coverage.xml` diunggah per versi Python selama 14 hari. Job container mengunggah
 `container-health.json` dan `container-release-audit.json`, juga selama 14 hari.

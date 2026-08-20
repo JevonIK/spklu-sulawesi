@@ -22,7 +22,7 @@ diunduh serta diperiksa.
 | Margin lower bound geodesik | 1% |
 | Estimasi waktu pengisian | Tidak termasuk |
 | Penyeberangan feri | Terdeteksi generik; jarak feri tidak mengurangi SOC; akses kendaraan kondisional |
-| Python didukung | 3.11, 3.12, 3.13 |
+| Python didukung | 3.11, 3.12, 3.13, 3.14 |
 
 ## Perubahan yang perlu diverifikasi
 
@@ -89,7 +89,7 @@ penelitian harus melengkapi bukti tersebut sebagaimana dijelaskan pada
 Kandidat baru dapat disebut terverifikasi setelah:
 
 1. audit offline berjalan terhadap manifest 0.15.0 tanpa mismatch;
-2. test dan coverage lulus pada Python 3.11, 3.12, dan 3.13;
+2. test dan coverage lulus pada Python 3.11, 3.12, 3.13, dan 3.14;
 3. job container 0.15.0 lulus dalam mode read-only dan tanpa jaringan;
 4. artefak kualitas/container dari run yang sama berhasil diunduh dan diperiksa;
 5. tidak ada secret atau laporan live mentah dalam commit;

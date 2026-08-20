@@ -32,14 +32,14 @@ pencegahan eksperimen paralel, impor laporan idempoten, dan pemulihan proses
 terhenti yang tetap mencatat pemakaian API.
 Fase 7E memperketat audit eksperimen: laporan parsial tetap disimpan ketika
 skenario error, tetapi exit code dan outcome ledger ditandai gagal.
-Fase 8 menambahkan continuous integration pada tiga versi Python, test yang
+Fase 8 menambahkan continuous integration lintas versi Python, test yang
 terisolasi dari secret lokal, batas coverage, dan checklist rilis penelitian.
 Fase 9 menerapkan ledger dan hard limit Routes API pada endpoint rekomendasi,
 termasuk pencatatan attempt aktual serta penolakan request live paralel.
 Fase 10 menambahkan manifest kandidat rilis, audit offline atas dataset,
 skenario, ruang lingkup algoritma dan hard limit, serta menjadikannya quality
 gate pada seluruh matrix CI.
-Fase 11 mengunci dependency langsung dan transitif lintas Python 3.11–3.13,
+Fase 11 mengunci dependency langsung dan transitif lintas Python 3.11–3.14,
 memasukkan hash constraint ke manifest, dan memverifikasi instalasi container
 pada ketiga runtime.
 Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
@@ -81,7 +81,7 @@ Estimasi waktu pengisian tidak termasuk dalam ruang lingkup sistem.
 
 ## Menjalankan aplikasi secara lokal
 
-Gunakan Python 3.11, 3.12, atau 3.13. Python 3.12 direkomendasikan untuk menjaga
+Gunakan Python 3.11, 3.12, 3.13, atau 3.14. Python 3.12 direkomendasikan untuk menjaga
 kompatibilitas pustaka analisis data.
 
 ```bash

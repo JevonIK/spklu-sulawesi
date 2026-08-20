@@ -78,7 +78,7 @@ docker run --rm -p 8080:8080 \
 ```
 
 Base Python dapat diuji secara eksplisit dengan
-`--build-arg PYTHON_VERSION=3.11` atau `3.13`. Image produksi kandidat tetap
+`--build-arg PYTHON_VERSION=3.11`, `3.13`, atau `3.14`. Image produksi kandidat tetap
 memakai default Python 3.12. Seluruh instalasi memakai `constraints.txt` yang
 hash-nya dikunci oleh manifest rilis.
 
