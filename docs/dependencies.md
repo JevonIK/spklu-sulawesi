@@ -10,7 +10,7 @@ Proyek memakai dua lapis spesifikasi dependency:
 Gunakan keduanya saat membuat environment pengembangan:
 
 ```bash
-python3.12 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt -c constraints.txt
@@ -19,7 +19,7 @@ python -m pip check
 
 Docker dan GitHub Actions juga memasang dependency dengan constraint yang sama.
 Dockerfile menerima build argument `PYTHON_VERSION`; default kandidat produksi
-tetap Python 3.12.
+memakai Python 3.14 standar, bukan build free-threaded `3.14t`.
 
 `constraints.txt` memiliki checksum khusus pada manifest. Selain itu,
 `requirements.txt` termasuk dalam source scope `application-runtime-v2`, sehingga

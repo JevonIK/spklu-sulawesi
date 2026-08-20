@@ -23,6 +23,7 @@ diunduh serta diperiksa.
 | Estimasi waktu pengisian | Tidak termasuk |
 | Penyeberangan feri | Terdeteksi generik; jarak feri tidak mengurangi SOC; akses kendaraan kondisional |
 | Python didukung | 3.11, 3.12, 3.13, 3.14 |
+| Runtime container kandidat | Python 3.14 standar |
 
 ## Perubahan yang perlu diverifikasi
 

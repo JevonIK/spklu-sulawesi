@@ -3,7 +3,7 @@
   "application_version": "0.15.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "55fa99361a912dbf66fb2ef0df58b964d5bf2063cc03055663236578fe62977b"
+    "sha256": "cc555e1d109bf4002161391f0c213177fd14b04b6815eb2a576e533d1755fbc6"
   },
   "supported_python_versions": [
     "3.11",
@@ -58,7 +58,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "b943b3cef002c688dede0e26ba104cc7d27e515defb164b1cb72e327c0260cca"
+    "sha256": "3ba098750b322a307fc558883786b30407d9ce625e7bd315d7a2a991a69ff5be"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

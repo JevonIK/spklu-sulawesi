@@ -112,7 +112,7 @@ jobs:
       - name: Bangun image kandidat
         run: >-
           docker build
-          --build-arg PYTHON_VERSION=3.12
+          --build-arg PYTHON_VERSION=3.14
           --tag "${IMAGE_NAME}"
           .
 

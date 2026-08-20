@@ -42,7 +42,7 @@ gate pada seluruh matrix CI.
 Fase 11 mengunci dependency langsung dan transitif lintas Python 3.11–3.14,
 memasukkan hash constraint ke manifest, dan memverifikasi instalasi container
 pada ketiga runtime.
-Fase 12 menambahkan quality gate container pada CI: build Python 3.12, runtime
+Fase 12 menambahkan quality gate container pada CI: build runtime kandidat, runtime
 tanpa jaringan eksternal, healthcheck terbatas, audit rilis, user non-root, dan
 uji akses tulis yang dibatasi ke direktori runtime.
 Fase 13 menyederhanakan antarmuka untuk pengguna umum, menyediakan pilihan
@@ -81,11 +81,11 @@ Estimasi waktu pengisian tidak termasuk dalam ruang lingkup sistem.
 
 ## Menjalankan aplikasi secara lokal
 
-Gunakan Python 3.11, 3.12, 3.13, atau 3.14. Python 3.12 direkomendasikan untuk menjaga
-kompatibilitas pustaka analisis data.
+Gunakan Python 3.11, 3.12, 3.13, atau 3.14. Python 3.14 direkomendasikan untuk
+environment baru dan menjadi runtime container kandidat.
 
 ```bash
-python3.12 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt -c constraints.txt

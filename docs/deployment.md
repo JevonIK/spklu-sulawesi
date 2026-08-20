@@ -78,8 +78,8 @@ docker run --rm -p 8080:8080 \
 ```
 
 Base Python dapat diuji secara eksplisit dengan
-`--build-arg PYTHON_VERSION=3.11`, `3.13`, atau `3.14`. Image produksi kandidat tetap
-memakai default Python 3.12. Seluruh instalasi memakai `constraints.txt` yang
+`--build-arg PYTHON_VERSION=3.11`, `3.12`, atau `3.13`. Image produksi kandidat
+memakai default Python 3.14. Seluruh instalasi memakai `constraints.txt` yang
 hash-nya dikunci oleh manifest rilis.
 
 Build kandidat rilis dapat memakai suffix sementara, misalnya
@@ -187,7 +187,7 @@ wajib sebagai pengaman biaya utama.
    telah dikonfirmasi, atau dataset tidak didistribusikan dan keterbatasannya
    dinyatakan sesuai [`data_provenance.md`](data_provenance.md).
 8. Artefak CI untuk revision image yang sama telah diperiksa: coverage/audit pada
-   tiga Python serta health/audit container.
+   empat Python serta health/audit container Python 3.14.
 9. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.
 
 Eksperimen CLI dan endpoint web memiliki hard limit terpisah untuk panggilan

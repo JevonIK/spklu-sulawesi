@@ -19,7 +19,7 @@ Setiap job matrix Python melakukan:
 
 Setelah keempat job Python lulus, job **Container smoke test**:
 
-1. membangun image kandidat dengan Python 3.12 dan dependency lock;
+1. membangun image kandidat dengan Python 3.14 dan dependency lock;
 2. menjalankan container dengan `--network none`, root filesystem read-only,
    semua Linux capability dilepas, `no-new-privileges`, tmpfs terbatas, dan dummy
    key;
