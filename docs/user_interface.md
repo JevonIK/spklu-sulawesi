@@ -41,6 +41,9 @@ di luar ruang lingkup penelitian.
     peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
 11. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
+12. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,
+    menghapus lokasi tersimpan, hasil, marker, serta polyline tanpa reload dan
+    tanpa request Routes baru.
 
 ## Keamanan key
 

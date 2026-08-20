@@ -87,6 +87,39 @@ def test_stale_recommendation_is_invalidated_on_every_input_family():
     assert initialization.count("invalidateRecommendation();") >= 3
 
 
+def test_reset_button_restores_clean_default_journey(client):
+    html = client.get("/").get_data(as_text=True)
+    source = _javascript()
+    reset = _between(
+        source,
+        "function resetJourney",
+        "function requestConnectors",
+    )
+    initialization = _between(
+        source,
+        "async function initializeApplication",
+        "\ninitializeApplication();",
+    )
+
+    assert 'id="resetButton" class="button-secondary" type="button"' in html
+    assert "Reset perjalanan" in html
+    assert "elements.routeForm?.reset();" in reset
+    assert "state.selectedPlaces.origin = null" in reset
+    assert "state.selectedPlaces.destination = null" in reset
+    assert 'autocomplete.value = ""' in reset
+    assert "invalidateRecommendation({ inputChanged: false });" in reset
+    assert "elements.summaryGrid?.replaceChildren();" in reset
+    assert "elements.itineraryList?.replaceChildren();" in reset
+    assert "elements.diagnosticList?.replaceChildren();" in reset
+    assert "state.map.setCenter(SULAWESI_CENTER);" in reset
+    assert "state.map.setZoom(6.1);" in reset
+    assert '"Pilih lokasi awal dan tujuan"' in reset
+    assert "updateConnectorAvailabilityCounts();" in reset
+    assert "updateNetworkCompatibilityNote();" in reset
+    assert "updateSubmitAvailability();" in reset
+    assert 'elements.resetButton?.addEventListener("click", resetJourney);' in initialization
+
+
 def test_active_request_is_locked_and_stale_response_is_discarded():
     source = _javascript()
     loading = _between(source, "function setLoading", "function clearMapOverlays")

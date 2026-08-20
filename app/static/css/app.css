@@ -406,11 +406,18 @@ fieldset {
     font-weight: 800;
 }
 
+.form-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
 .route-form button {
     position: relative;
     width: 100%;
     min-height: 49px;
-    margin-top: 20px;
+    margin: 0;
     border: 0;
     border-radius: 12px;
     color: var(--white);
@@ -430,6 +437,24 @@ fieldset {
     cursor: not-allowed;
     background: #91a1a8;
     box-shadow: none;
+}
+
+.route-form .button-secondary {
+    border: 1px solid var(--teal-600);
+    color: var(--teal-700);
+    background: var(--white);
+    box-shadow: none;
+}
+
+.route-form .button-secondary:hover:not(:disabled) {
+    color: var(--white);
+    background: var(--teal-700);
+}
+
+.route-form .button-secondary:disabled {
+    border-color: #91a1a8;
+    color: #6e7d85;
+    background: #f1f4f5;
 }
 
 .form-status {
@@ -1017,6 +1042,7 @@ fieldset {
     .form-grid,
     .connector-options,
     .network-options,
+    .form-actions,
     .summary-grid {
         grid-template-columns: 1fr;
     }

@@ -27,9 +27,13 @@ troubleshooting di bawah.
 7. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
    **Cari rekomendasi SPKLU** baru aktif setelah keduanya tersimpan.
 8. Pilih tombol tersebut satu kali dan tunggu hasil.
+9. Gunakan **Reset perjalanan** untuk membersihkan lokasi, parameter, pilihan
+   konektor/jaringan, hasil, marker, dan garis rute sebelum membuat rencana baru.
 
 Jangan menekan tombol berulang selama loading. Setiap rekomendasi merupakan
 pengujian live yang dapat memakai Compute Routes dan elemen Route Matrix.
+Reset perjalanan tidak memanggil Google Routes API dan tidak memerlukan reload
+halaman.
 
 ## Membaca hasil
 

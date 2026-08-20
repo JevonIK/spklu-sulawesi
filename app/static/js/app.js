@@ -16,6 +16,7 @@ const elements = {
     routeForm: document.getElementById("routeForm"),
     routeFieldset: document.getElementById("routeFieldset"),
     submitButton: document.getElementById("submitButton"),
+    resetButton: document.getElementById("resetButton"),
     formStatus: document.getElementById("formStatus"),
     originHost: document.getElementById("originAutocomplete"),
     destinationHost: document.getElementById("destinationAutocomplete"),
@@ -40,6 +41,7 @@ const elements = {
     itinerarySection: document.getElementById("itinerarySection"),
     itineraryList: document.getElementById("itineraryList"),
     diagnosticList: document.getElementById("diagnosticList"),
+    diagnostics: document.getElementById("diagnostics"),
     mapElement: document.getElementById("map"),
     mapEmpty: document.getElementById("mapEmpty"),
     mapEmptyTitle: document.getElementById("mapEmptyTitle"),
@@ -466,6 +468,54 @@ function invalidateRecommendation({ inputChanged = true } = {}) {
         "Siap menyusun perjalanan",
         "Lengkapi lokasi dan kondisi kendaraan, lalu cari rekomendasi.",
     );
+}
+
+function resetJourney() {
+    if (state.isSubmitting) return;
+
+    state.requestSequence += 1;
+    state.inputRevision += 1;
+    elements.routeForm?.reset();
+    state.selectedPlaces.origin = null;
+    state.selectedPlaces.destination = null;
+    Object.entries(state.autocompletes).forEach(([kind, autocomplete]) => {
+        autocomplete.value = "";
+        setPlaceSelectionStatus(kind, false);
+    });
+    [
+        elements.currentSoc,
+        elements.maxRange,
+        elements.minimumSoc,
+        elements.targetSoc,
+    ].forEach((input) => input?.removeAttribute("aria-invalid"));
+
+    invalidateRecommendation({ inputChanged: false });
+    elements.resultBadge?.classList.remove("is-infeasible", "is-conditional");
+    if (elements.resultBadge) elements.resultBadge.textContent = "";
+    if (elements.resultsTitle) elements.resultsTitle.textContent = "Rute perjalanan";
+    if (elements.resultMessage) elements.resultMessage.textContent = "";
+    elements.summaryGrid?.replaceChildren();
+    elements.itineraryList?.replaceChildren();
+    elements.diagnosticList?.replaceChildren();
+    if (elements.itinerarySection) elements.itinerarySection.hidden = false;
+    if (elements.diagnostics) elements.diagnostics.open = false;
+
+    if (state.map) {
+        state.map.setCenter(SULAWESI_CENTER);
+        state.map.setZoom(6.1);
+    }
+    setMapEmptyState(
+        "Pilih lokasi awal dan tujuan",
+        "Rute dan SPKLU yang direkomendasikan akan muncul di sini.",
+    );
+    updateConnectorAvailabilityCounts();
+    updateNetworkCompatibilityNote();
+    updateSubmitAvailability();
+    setFormStatus(
+        "Perjalanan sudah direset. Pilih lokasi awal dan tujuan untuk membuat rencana baru.",
+        "success",
+    );
+    state.autocompletes.origin?.focus();
 }
 
 function requestConnectors(data) {
@@ -981,6 +1031,7 @@ async function submitRecommendation(event) {
 
 async function initializeApplication() {
     elements.routeForm?.addEventListener("submit", submitRecommendation);
+    elements.resetButton?.addEventListener("click", resetJourney);
     elements.connectorInputs.forEach((input) => {
         input.addEventListener("change", () => {
             invalidateRecommendation();
