@@ -53,6 +53,9 @@ def graph_edge(
     distance,
     duration=None,
     detour=0,
+    energy_distance=None,
+    ferry_distance=0,
+    ferry_duration=0,
 ):
     return GraphEdge(
         source_id=source,
@@ -63,6 +66,9 @@ def graph_edge(
         route_progress_delta_km=max(0, distance - detour),
         estimated_detour_km=detour,
         usable_range_limit_km=1000,
+        energy_distance_km=energy_distance,
+        ferry_distance_km=ferry_distance,
+        ferry_duration_minutes=ferry_duration,
     )
 
 
@@ -125,7 +131,7 @@ def _exhaustive_oracle(graph, current_soc_percent, parameters):
             charged_soc = max(0.0, departure_level - arrival_level)
             for edge in graph.outgoing_edges(node_id):
                 continuous_arrival = parameters.arrival_soc_percent(
-                    departure_level, edge.road_distance_km
+                    departure_level, edge.energy_distance_km
                 )
                 if (
                     continuous_arrival + SOC_TOLERANCE
@@ -369,6 +375,43 @@ def test_distance_is_used_when_duration_is_not_available():
     assert result.itinerary.objective_mode == "road_distance_km"
     assert result.itinerary.objective_value == pytest.approx(50)
     assert result.itinerary.total_driving_duration_minutes is None
+
+
+def test_ferry_distance_is_reported_but_does_not_reduce_soc():
+    graph = travel_graph(
+        [
+            graph_node(ORIGIN_NODE_ID, "origin", 0),
+            graph_node(DESTINATION_NODE_ID, "destination", 100),
+        ],
+        [
+            graph_edge(
+                ORIGIN_NODE_ID,
+                DESTINATION_NODE_ID,
+                100,
+                duration=90,
+                energy_distance=20,
+                ferry_distance=80,
+                ferry_duration=50,
+            )
+        ],
+    )
+
+    result = optimize_itinerary(
+        graph,
+        current_soc_percent=50,
+        parameters=default_parameters(maximum_range_km=100),
+    )
+
+    assert result.feasible is True
+    itinerary = result.itinerary
+    assert itinerary.final_soc_percent == pytest.approx(30)
+    assert itinerary.total_road_distance_km == pytest.approx(100)
+    assert itinerary.total_energy_distance_km == pytest.approx(20)
+    assert itinerary.total_ferry_distance_km == pytest.approx(80)
+    assert itinerary.total_ferry_duration_minutes == pytest.approx(50)
+    assert itinerary.total_driving_duration_minutes == pytest.approx(40)
+    assert itinerary.total_travel_duration_minutes == pytest.approx(90)
+    assert itinerary.legs[0].consumption_soc_percent == pytest.approx(20)
 
 
 def test_structurally_disconnected_graph_has_specific_reason():

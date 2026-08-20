@@ -19,15 +19,26 @@ Usable range pada SOC tertentu adalah:
 Rusable = ((SOC - SOCmin) / 100) × Rmax × alpha
 ```
 
-Konsumsi SOC sebuah edge dengan jarak jalan `d` adalah:
+Konsumsi SOC sebuah edge memakai jarak yang benar-benar ditempuh dengan tenaga
+kendaraan. Jika edge mengandung feri:
 
 ```text
-SOCconsumption = (d / (Rmax × alpha)) × 100
+denergy = max(0, dtotal - dferry)
+```
+
+Konsumsi SOC kemudian dihitung sebagai:
+
+```text
+SOCconsumption = (denergy / (Rmax × alpha)) × 100
 ```
 
 Edge hanya feasible jika SOC saat tiba tetap berada pada atau di atas SOC minimum.
 Safety factor `alpha` berada pada rentang lebih dari 0 sampai 1 dan menjadi margin
 ketidakpastian konsumsi energi.
+
+Jarak serta durasi feri tetap masuk informasi perjalanan, tetapi jarak feri tidak
+mengurangi SOC. Model tidak memperhitungkan pemakaian AC, sentry mode, atau beban
+aksesori ketika kendaraan berada di kapal.
 
 ## Transisi DP
 
@@ -46,7 +57,8 @@ urutan leg, lokasi pengisian, SOC tiba, dan SOC berangkat.
 Kelayakan SOC merupakan constraint wajib. Solusi feasible dibandingkan secara
 leksikografis berdasarkan:
 
-1. total waktu berkendara;
+1. total waktu perjalanan Google (darat dan pelayaran, tanpa waktu tunggu
+   jadwal feri);
 2. jumlah pemberhentian pengisian;
 3. total detour;
 4. jumlah SOC yang ditambahkan sebagai tie-breaker agar pengisian tidak berlebih;
@@ -74,8 +86,9 @@ leg rute yang ditampilkan dapat berbeda dari nilai matriks, sehingga versi
 0.15.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
 pengguna.
 
-Jumlah leg harus sama dengan itinerary. Setiap leg diperbarui dengan jarak,
-durasi, konsumsi, SOC berangkat, dan SOC tiba versi rute final; nilai matriks
+Jumlah leg harus sama dengan itinerary. Setiap leg diperbarui dengan jarak total,
+jarak darat untuk energi, jarak/durasi feri, konsumsi, SOC berangkat, dan SOC tiba
+versi rute final; nilai matriks
 tetap dipertahankan sebagai pembanding. Bila satu SOC tiba berada di bawah batas
 minimum, sistem menghasilkan error aman `final_route_soc_violation` dan tidak
 menyajikan rekomendasi itu sebagai feasible. Objek

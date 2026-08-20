@@ -64,13 +64,21 @@ dipakai DP.
 Mismatch jumlah leg atau pelanggaran SOC final dicatat sebagai error dan rute
 tidak dilaporkan feasible. Jaminan tersebut tetap terbatas pada model SOC linier.
 
+Rute feri menambah metrik `total_energy_distance_km`,
+`total_ferry_distance_km`, `total_ferry_duration_minutes`,
+`total_travel_duration_minutes`, dan `ferry_segment_count`. SOC hanya dihitung
+dari jarak energi/darat. Jadwal, kapasitas, dan akses kendaraan tidak menjadi
+metrik karena tidak tersedia secara real-time.
+
 Runtime mencakup validasi input, panggilan Google Routes, pencarian spasial,
 pembentukan graf, dan DP. Karena latensi jaringan ikut tercakup, eksperimen
 sebaiknya diulang pada kondisi jaringan yang sebanding. Peak memory merupakan
 pengukuran proses Python selama skenario dan bukan keseluruhan memori sistem.
 
-Estimasi waktu pengisian tidak dihitung. Kolom waktu hanya merujuk pada
-`total_driving_duration_minutes` dari rute jalan Google.
+Estimasi waktu pengisian tidak dihitung. `total_driving_duration_minutes`
+mengecualikan durasi feri, sedangkan `total_travel_duration_minutes` mencakup
+durasi darat dan pelayaran dari rute Google tetapi tidak mencakup antrean atau
+waktu tunggu jadwal kapal.
 
 ## Menjalankan eksperimen
 
@@ -127,8 +135,9 @@ jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
 statistik optimizer. Laporan juga merekam provenance kandidat: versi aplikasi,
 hash source scope `application-runtime-v2`, dataset dan metadatanya, definisi
 skenario, `constraints.txt`, manifest rilis/penelitian, nilai default algoritma,
-`HIGH_QUALITY`, `TRAFFIC_UNAWARE`, margin geodesik 1%, serta ringkasan lingkungan
-eksekusi. Polyline, API key, dan koordinat hasil Google tidak disalin ke laporan.
+`HIGH_QUALITY`, `TRAFFIC_UNAWARE`, margin geodesik 1%, aturan manuver feri,
+serta ringkasan lingkungan eksekusi. Polyline, API key, dan koordinat hasil
+Google tidak disalin ke laporan.
 
 Baseline dan sensitivitas yang sudah dipakai notebook adalah laporan historis
 schema 2, masing-masing dibuat aplikasi 0.9.2 dan 0.10.0. Definisi yang tertanam
@@ -136,6 +145,8 @@ di kedua laporan lama memakai schema skenario 1; berkas skenario kandidat saat
 ini sudah schema 2. Perubahan tersebut dan schema laporan 3 tidak mengubah
 provenance run lama. Khususnya, langkah sampling rute tidak direkam di laporan
 lama dan tidak boleh diisi dengan mengasumsikan default 0.15.0.
+Kedua laporan historis juga belum mempunyai metrik feri dan tidak dapat dipakai
+sebagai validasi empiris untuk fitur ferry-aware kandidat saat ini.
 
 ## Pengaman quota live
 

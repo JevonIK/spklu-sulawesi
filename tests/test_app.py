@@ -18,7 +18,8 @@ def test_index_is_available(client):
     assert b'id="originSelectionStatus"' in response.data
     assert b'id="destinationSelectionStatus"' in response.data
     assert b'name="connectors"' in response.data
-    assert response.data.count(b'type="checkbox"') == 8
+    assert response.data.count(b'type="checkbox"') == 9
+    assert b'id="allowFerries"' in response.data
     assert b'name="additional_charging_networks"' in response.data
     assert b'value="HYUNDAI"' in response.data
     assert b'value="WULING"' in response.data

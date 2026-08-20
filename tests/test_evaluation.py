@@ -210,6 +210,11 @@ def test_scenario_records_metrics_and_soc_safety():
     assert result["safety_factor"] == pytest.approx(0.9)
     assert result["route_sample_step_km"] == pytest.approx(5)
     assert result["total_driving_duration_minutes"] == 300
+    assert result["total_travel_duration_minutes"] == 300
+    assert result["total_energy_distance_km"] == 250
+    assert result["total_ferry_distance_km"] == 0
+    assert result["total_ferry_duration_minutes"] == 0
+    assert result["ferry_segment_count"] == 0
     assert result["total_external_requests"] == 3
     assert result["runtime_ms"] >= 0
     assert result["peak_memory_mb"] >= 0
@@ -250,6 +255,8 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
         rows = list(csv.DictReader(csv_file))
     assert [row["scenario_id"] for row in rows] == ["satu", "dua"]
     assert rows[0]["total_driving_duration_minutes"] == "300"
+    assert rows[0]["total_energy_distance_km"] == "250"
+    assert rows[0]["ferry_segment_count"] == "0"
     assert rows[0]["minimum_soc_percent"] == "20"
     assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"

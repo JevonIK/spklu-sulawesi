@@ -74,6 +74,25 @@ def test_release_audit_detects_constraints_hash_mismatch(app):
     ]
 
 
+def test_release_audit_detects_ferry_energy_policy_mismatch(app):
+    manifest_path = Path(app.config["RELEASE_MANIFEST_PATH"])
+    manifest = load_release_manifest(manifest_path)
+    manifest["algorithm"]["ferry_distance_consumes_soc"] = True
+
+    report = audit_release(
+        manifest,
+        project_root=manifest_path.parent,
+        app_version=app.config["APP_VERSION"],
+        catalog=app.extensions["station_catalog"],
+        config=app.config,
+    )
+
+    failed_ids = [
+        check["id"] for check in report["checks"] if not check["passed"]
+    ]
+    assert failed_ids == ["algorithm.ferry_distance_consumes_soc"]
+
+
 @pytest.mark.parametrize(
     "relative_path",
     [

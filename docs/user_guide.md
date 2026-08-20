@@ -22,12 +22,16 @@ troubleshooting di bawah.
    menunjukkan jumlah lokasi pada dataset.
 5. SPKLU publik selalu disertakan. Jika diperlukan, centang jaringan charger
    Hyundai, Wuling, atau Toyota/Lexus sebagai lokasi tambahan.
-6. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
+6. Biarkan **Izinkan feri kendaraan** aktif jika penyeberangan boleh digunakan,
+   atau nonaktifkan untuk meminta Google menghindari feri sejauh memungkinkan.
+   Jika feri tetap menjadi satu-satunya rute, sistem menolak hasil dan meminta
+   pengguna mengaktifkannya secara sadar.
+7. Tentukan SOC minimum sebagai cadangan baterai terendah dan target SOC sebagai
    batas SOC keberangkatan setelah berhenti di SPKLU.
-7. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
+8. Pastikan lokasi awal dan tujuan sudah dipilih dari daftar saran. Tombol
    **Cari rekomendasi SPKLU** baru aktif setelah keduanya tersimpan.
-8. Pilih tombol tersebut satu kali dan tunggu hasil.
-9. Gunakan **Reset perjalanan** untuk membersihkan lokasi, parameter, pilihan
+9. Pilih tombol tersebut satu kali dan tunggu hasil.
+10. Gunakan **Reset perjalanan** untuk membersihkan lokasi, parameter, pilihan
    konektor/jaringan, hasil, marker, dan garis rute sebelum membuat rencana baru.
 
 Jangan menekan tombol berulang selama loading. Setiap rekomendasi merupakan
@@ -39,7 +43,7 @@ halaman.
 
 Hasil **Rute aman ditemukan** menampilkan:
 
-- jarak dan waktu berkendara;
+- jarak darat, jarak feri jika ada, dan waktu perjalanan;
 - jumlah perhentian;
 - SOC akhir;
 - urutan leg dan SPKLU;
@@ -56,6 +60,12 @@ Badge **Rute publik** berarti seluruh pemberhentian pengisian yang dipilih
 algoritma berasal dari SPKLU publik. Badge **Rute kondisional** berarti rute
 mengandalkan sedikitnya satu charger dealer. Untuk rute kondisional, pengguna
 wajib memastikan izin, jam operasional, dan ketersediaan kepada pengelola.
+
+Badge **Feri kondisional** berarti Google mendeteksi sedikitnya satu
+penyeberangan. Ringkasan memisahkan jarak darat dan jarak feri; SOC hanya
+berkurang pada jarak darat. Pengguna tetap wajib memeriksa apakah kapal menerima
+mobil, jadwal keberangkatan, cuaca, antrean, dan kapasitas aktual. Sistem tidak
+menyediakan booking atau status kapal real-time.
 
 Pengisian dari SOC tiba menuju SOC berangkat dimodelkan sebagai perubahan state.
 Sistem tidak menghitung lama pengisian.
@@ -104,6 +114,7 @@ interaksi pengguna harian.
 | HTTP 429 | tunggu request aktif selesai atau reset quota; jangan retry berulang |
 | HTTP 502 | periksa jaringan, Routes API, billing, restriction server key, dan quota |
 | Rute final ditolak karena SOC | jarak leg final berbeda dari matriks dan melanggar batas model; jangan memaksa hasil, periksa parameter kendaraan atau pilih rencana lain |
+| Rute memakai feri | baca kartu penyeberangan dan konfirmasi layanan kendaraan langsung kepada operator atau pelabuhan |
 | Rute tidak feasible | baca reason dan statistik graf; ini dapat menjadi hasil penelitian yang valid |
 | Perhitungan lama | tunggu satu request selesai; kandidat/edge dan latensi Google memengaruhi waktu |
 

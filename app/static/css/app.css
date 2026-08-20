@@ -391,6 +391,52 @@ fieldset {
     background: #fff4d9;
 }
 
+.route-form .ferry-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 54px;
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    color: var(--ink);
+    background: #fbfcfc;
+    cursor: pointer;
+}
+
+.route-form .ferry-option:has(input:checked) {
+    border-color: #2e7da3;
+    background: #eaf5fb;
+}
+
+.route-form .ferry-option input {
+    flex: 0 0 auto;
+    width: 17px;
+    min-height: 17px;
+    margin: 2px 0 0;
+    padding: 0;
+    accent-color: #2e7da3;
+}
+
+.ferry-option span,
+.ferry-option strong,
+.ferry-option small {
+    display: block;
+}
+
+.ferry-option strong {
+    color: var(--navy-900);
+    font-size: 0.8rem;
+}
+
+.ferry-option small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
 .field-note {
     display: block;
     margin-top: 6px;
@@ -667,6 +713,17 @@ fieldset {
     border-left-color: #e1ad43;
     color: #654209;
     background: #fff4d9;
+}
+
+.ferry-card {
+    margin-top: 9px;
+    padding: 10px 12px;
+    border-left: 3px solid #2e7da3;
+    border-radius: 0 9px 9px 0;
+    color: #174b64;
+    background: #eaf5fb;
+    font-size: 0.72rem;
+    line-height: 1.5;
 }
 
 .diagnostics {

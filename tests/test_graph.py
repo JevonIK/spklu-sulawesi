@@ -3,6 +3,7 @@ import pytest
 from app.services.dataset import StationNode, StationUnit
 from app.services.graph import (
     DESTINATION_NODE_ID,
+    FerryProgressInterval,
     ORIGIN_NODE_ID,
     build_travel_graph,
 )
@@ -244,6 +245,55 @@ def test_haversine_margin_still_rejects_implausibly_short_road_distance():
             post_charge_usable_range_km=111,
             road_metric_provider=provider,
         )
+
+
+def test_ferry_distance_does_not_consume_range_or_trigger_geodesic_pruning():
+    provider = RecordingRoadMetricProvider(
+        overrides={"origin->destination": 112}
+    )
+    route = RouteGeometry(((0, 0), (0, 1)))
+
+    graph = build_travel_graph(
+        origin=(0, 0),
+        destination=(0, 1),
+        route=route,
+        candidates=(),
+        connector="CCS2",
+        initial_usable_range_km=40,
+        post_charge_usable_range_km=40,
+        road_metric_provider=provider,
+        ferry_intervals=(
+            FerryProgressInterval(
+                start_progress_km=30,
+                end_progress_km=90,
+                distance_km=80,
+                duration_minutes=45,
+            ),
+        ),
+    )
+
+    assert graph.has_origin_to_destination_path() is True
+    assert graph.stats.geodesic_pruned_pairs == 0
+    assert graph.stats.ferry_adjusted_pairs == 1
+    edge = graph.edges[0]
+    assert edge.road_distance_km == pytest.approx(112)
+    assert edge.ferry_distance_km == pytest.approx(80)
+    assert edge.energy_distance_km == pytest.approx(32)
+    assert edge.ferry_duration_minutes == pytest.approx(45)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (-1, 10, 5, 5),
+        (10, 10, 5, 5),
+        (0, 10, 0, 5),
+        (0, 10, 5, -1),
+    ],
+)
+def test_invalid_ferry_progress_interval_is_rejected(values):
+    with pytest.raises(ValueError, match="feri"):
+        FerryProgressInterval(*values)
 
 
 def test_graph_does_not_call_provider_when_every_pair_is_pruned():

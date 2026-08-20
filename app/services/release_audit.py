@@ -12,7 +12,12 @@ from pathlib import Path
 from ..constants import CHARGING_TIME_INCLUDED, RESEARCH_CONNECTOR
 from .dataset import CONNECTOR_ORDER, normalize_connector
 from .evaluation import ExperimentDefinitionError, load_experiment_definition
-from .google_routes import POLYLINE_QUALITY, ROUTING_PREFERENCE, TRAVEL_MODE
+from .google_routes import (
+    FERRY_MANEUVERS,
+    POLYLINE_QUALITY,
+    ROUTING_PREFERENCE,
+    TRAVEL_MODE,
+)
 from .graph import GEODESIC_LOWER_BOUND_MARGIN_RATIO
 
 
@@ -197,6 +202,25 @@ def validate_release_manifest(manifest):
     _text(algorithm, "travel_mode", "root.algorithm")
     _text(algorithm, "routing_preference", "root.algorithm")
     _text(algorithm, "polyline_quality", "root.algorithm")
+    ferry_maneuvers = algorithm.get("ferry_maneuvers")
+    if (
+        not isinstance(ferry_maneuvers, list)
+        or not ferry_maneuvers
+        or any(not isinstance(item, str) or not item for item in ferry_maneuvers)
+        or len(ferry_maneuvers) != len(set(ferry_maneuvers))
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.ferry_maneuvers wajib berupa daftar teks unik."
+        )
+    for name in (
+        "ferry_distance_consumes_soc",
+        "ferry_vehicle_access_guaranteed",
+        "ferry_user_control",
+    ):
+        if not isinstance(algorithm.get(name), bool):
+            raise ReleaseManifestError(
+                f"root.algorithm.{name} wajib berupa boolean."
+            )
     margin = algorithm.get("geodesic_lower_bound_margin_ratio")
     if (
         isinstance(margin, bool)
@@ -571,6 +595,30 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         "algorithm.polyline_quality",
         algorithm["polyline_quality"],
         POLYLINE_QUALITY,
+    )
+    _add_check(
+        checks,
+        "algorithm.ferry_maneuvers",
+        algorithm["ferry_maneuvers"],
+        sorted(FERRY_MANEUVERS),
+    )
+    _add_check(
+        checks,
+        "algorithm.ferry_distance_consumes_soc",
+        algorithm["ferry_distance_consumes_soc"],
+        False,
+    )
+    _add_check(
+        checks,
+        "algorithm.ferry_vehicle_access_guaranteed",
+        algorithm["ferry_vehicle_access_guaranteed"],
+        False,
+    )
+    _add_check(
+        checks,
+        "algorithm.ferry_user_control",
+        algorithm["ferry_user_control"],
+        True,
     )
     _add_check(
         checks,

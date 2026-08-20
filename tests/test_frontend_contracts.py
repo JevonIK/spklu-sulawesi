@@ -53,6 +53,9 @@ def test_dynamic_connector_counts_follow_selected_networks(client):
     html = response.get_data(as_text=True)
     assert 'data-connector-count="AC TYPE 2">94 lokasi tersedia' in html
     assert 'data-connector-count="GB/T">0 lokasi tersedia' in html
+    assert 'id="allowFerries"' in html
+    assert "Izinkan feri kendaraan" in html
+    assert "allow_ferries: Boolean(elements.allowFerries?.checked)" in _javascript()
 
 
 def test_stale_recommendation_is_invalidated_on_every_input_family():
@@ -201,9 +204,15 @@ def test_infeasible_is_warning_and_direct_route_needs_no_charger():
     summary = _between(source, "function renderSummary", "function stopByNodeId")
     css = _stylesheet()
 
-    assert 'feasible ? "success" : "warning"' in rendering
+    assert 'feasible && !conditional ? "success" : "warning"' in rendering
     assert '"Tanpa pengisian"' in rendering
+    assert '"Feri kondisional"' in rendering
     assert '"Tidak perlu SPKLU"' in summary
+    assert '"Jarak feri"' in summary
+    assert '"Durasi feri"' in summary
+    assert "SOC hanya dikurangi untuk jarak darat." in source
+    assert 'ferryCard.setAttribute("role", "note")' in source
+    assert ".ferry-card" in css
     assert ".form-status.is-warning" in css
 
 

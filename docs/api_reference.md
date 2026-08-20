@@ -61,7 +61,8 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
   "options": {
     "minimum_soc_percent": 20,
     "target_soc_percent": 80,
-    "additional_charging_networks": ["HYUNDAI", "TOYOTA"]
+    "additional_charging_networks": ["HYUNDAI", "TOYOTA"],
+    "allow_ferries": true
   }
 }
 ```
@@ -83,6 +84,7 @@ yang terdokumentasi. Aturan input:
 | `target_soc_percent` | lebih besar dari SOC minimum dan maksimal 100% |
 | `connectors` | daftar berisi sedikitnya satu dari `AC TYPE 2`, `CCS2`, `CHADEMO`, atau `GB/T` |
 | `additional_charging_networks` | daftar unik dari `HYUNDAI`, `WULING`, atau `TOYOTA`; boleh kosong |
+| `allow_ferries` | boolean; default `true`; jika `false`, Compute Routes diminta menghindari feri dan hasil ditolak bila feri tetap diperlukan |
 
 Node SPKLU dianggap kompatibel jika mendukung sedikitnya satu konektor yang
 dipilih pada unit yang juga memenuhi aturan akses jaringan. Memilih suatu
@@ -102,15 +104,22 @@ Objek `data` mencakup request ternormalisasi, parameter energi, rute dasar,
 jumlah kandidat sebelum/sesudah filter jaringan, statistik graf, hasil DP, rute
 rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
 `public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
-status kondisional berarti sedikitnya satu charger dealer dipakai dan aksesnya
-perlu dikonfirmasi. Waktu yang dilaporkan adalah waktu berkendara, bukan waktu
-pengisian.
+status kondisional berarti sedikitnya satu charger dealer atau penyeberangan
+feri dipakai dan aksesnya perlu dikonfirmasi. `route_access.ferry` memuat status,
+jumlah segmen, jarak, durasi, serta penanda bahwa dukungan kendaraan harus
+dikonfirmasi kepada operator. Waktu pengisian tidak dilaporkan.
+
+Itinerary memisahkan `total_road_distance_km` sebagai jarak perjalanan total,
+`total_energy_distance_km` sebagai jarak darat yang mengurangi SOC, serta
+`total_ferry_distance_km` dan `total_ferry_duration_minutes`. Setiap leg juga
+memuat `energy_distance_km`, `ferry_distance_km`, dan `contains_ferry`.
 
 Compute Routes memakai `HIGH_QUALITY` dan `TRAFFIC_UNAWARE`; durasi tidak
 memasukkan lalu lintas real-time/prediktif. Untuk setiap rute feasible,
 `data.optimization.final_route_validation.status` bernilai `passed` setelah SOC
 setiap leg rute final divalidasi ulang. Objek tersebut juga memuat jumlah leg,
 jarak matriks, jarak rute final, selisih keduanya, dan SOC minimum teramati.
+Untuk rute feri, validasi juga mencatat jarak energi dan jumlah segmen feri.
 
 `data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
 Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal

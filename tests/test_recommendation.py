@@ -9,7 +9,11 @@ from app.services.google_routes import (
     ApiQuotaBudgetExceeded,
     GoogleRoutesError,
 )
-from app.services.google_routes import ComputedRoute, ComputedRouteLeg
+from app.services.google_routes import (
+    ComputedRoute,
+    ComputedRouteLeg,
+    ComputedRouteStep,
+)
 from app.services.quota_ledger import GoogleRoutesQuotaLedger
 from app.services.recommendation import (
     QuotaProtectedRecommendationService,
@@ -108,6 +112,53 @@ class PipelineRoutesClient:
                 for request in requests
             ),
             external_request_count=1 if requests else 0,
+        )
+
+
+class FerryPipelineRoutesClient(PipelineRoutesClient):
+    def __init__(self):
+        super().__init__()
+        self.avoid_ferries_calls = []
+
+    def compute_route(
+        self,
+        origin,
+        destination,
+        *,
+        intermediates=(),
+        avoid_ferries=False,
+    ):
+        self.compute_route_calls.append((origin, destination, intermediates))
+        self.avoid_ferries_calls.append(avoid_ferries)
+        steps = (
+            ComputedRouteStep(
+                30,
+                30,
+                (0, 0),
+                (0, 0.3),
+                maneuver="STRAIGHT",
+            ),
+            ComputedRouteStep(
+                60,
+                50,
+                (0, 0.3),
+                (0, 0.7),
+                maneuver="FERRY",
+            ),
+            ComputedRouteStep(
+                22,
+                20,
+                (0, 0.7),
+                (0, 1),
+                maneuver="STRAIGHT",
+            ),
+        )
+        return ComputedRoute(
+            distance_km=112,
+            duration_minutes=100,
+            encoded_polyline="encoded-ferry-test",
+            coordinates=((0, 0), (0, 0.3), (0, 0.7), (0, 1)),
+            legs=(ComputedRouteLeg(112, 100, steps=steps),),
         )
 
 
@@ -278,6 +329,12 @@ def test_recommendation_input_accepts_explicit_route_sampling_step():
             ),
             "options.route_sample_step_km",
         ),
+        (
+            lambda body: body.update(
+                {"options": {"allow_ferries": "ya"}}
+            ),
+            "options.allow_ferries",
+        ),
     ],
 )
 def test_invalid_recommendation_input_has_field_context(
@@ -329,6 +386,52 @@ def test_full_recommendation_pipeline_selects_station_and_reports_api_usage():
     assert result["route_access"]["conditional"] is False
     assert result["optimization"]["final_route_validation"]["status"] == "passed"
     assert result["optimization"]["itinerary"]["total_road_distance_km"] == 112
+
+
+def test_ferry_pipeline_keeps_soc_constant_over_sea_and_marks_route_conditional():
+    routes_client = FerryPipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (station_node(connector="AC TYPE 2"),)
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+
+    result = service.recommend(service.parse_input(valid_payload()))
+
+    assert result["optimization"]["feasible"] is True
+    itinerary = result["optimization"]["itinerary"]
+    assert itinerary["charging_stop_count"] == 0
+    assert itinerary["total_road_distance_km"] == pytest.approx(112)
+    assert itinerary["total_energy_distance_km"] == pytest.approx(52)
+    assert itinerary["total_ferry_distance_km"] == pytest.approx(60)
+    assert itinerary["total_ferry_duration_minutes"] == pytest.approx(50)
+    assert itinerary["final_soc_percent"] == pytest.approx(28)
+    assert itinerary["legs"][0]["consumption_soc_percent"] == pytest.approx(52)
+    assert result["route_access"]["conditional"] is True
+    assert result["route_access"]["status"] == "conditional"
+    assert result["route_access"]["ferry"]["segment_count"] == 1
+    assert "konfirmasi jadwal" in result["route_access"]["notice"]
+
+
+def test_ferry_route_is_rejected_when_user_disables_ferries():
+    routes_client = FerryPipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (station_node(connector="AC TYPE 2"),)
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+    payload = valid_payload()
+    payload["options"] = {"allow_ferries": False}
+
+    with pytest.raises(RecommendationValidationError) as captured:
+        service.recommend(service.parse_input(payload))
+
+    assert captured.value.field == "options.allow_ferries"
+    assert routes_client.avoid_ferries_calls == [True]
 
 
 def test_dealer_station_requires_network_selection_and_marks_conditional_route():

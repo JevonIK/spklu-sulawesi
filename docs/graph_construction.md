@@ -25,6 +25,12 @@ range sumber (ditambah toleransi numerik kecil):
 - edge dari origin memakai initial usable range;
 - edge dari SPKLU memakai post-charge usable range maksimum.
 
+Jika pasangan melintasi segmen feri rute dasar, lower bound geodesik tidak
+dipakai untuk pemangkasan energi karena jarak lurus di laut bukan jarak traksi
+kendaraan. Pasangan tersebut tetap divalidasi oleh Route Matrix. Jarak energinya
+kemudian dihitung dari jarak total Matrix dikurangi estimasi jarak feri yang
+beririsan dengan progres edge.
+
 Margin ini adalah toleransi prapemangkasan geometri, bukan safety factor energi.
 Ia membuat filter sedikit lebih permisif agar pasangan dekat ambang tetap
 divalidasi oleh Route Matrix. Provider menerima seluruh pasangan yang tersisa
@@ -37,13 +43,16 @@ Provider mengembalikan jarak jalan dan, bila tersedia, durasi berkendara. Edge
 diterima apabila:
 
 1. provider berhasil menemukan rute;
-2. jarak jalan tidak melebihi usable range sumber;
+2. jarak energi setelah mengeluarkan segmen feri tidak melebihi usable range
+   sumber;
 3. estimasi detour tidak melampaui batas opsional.
 
 Sebagai pemeriksaan integritas respons, jarak jalan yang lebih pendek daripada
 lower bound geodesik di luar toleransi absolut ditolak sebagai data tidak masuk
-akal. Keputusan kelayakan energi tetap memakai jarak jalan yang dikembalikan
-provider, bukan jarak Haversine.
+akal. Keputusan kelayakan energi memakai jarak Matrix setelah bagian feri
+dipisahkan, bukan jarak Haversine. Compute Routes final kemudian mengganti
+estimasi itu dengan pembagian langkah aktual dan mensimulasikan SOC ulang
+sebelum hasil ditampilkan.
 
 Estimasi detour edge dihitung sebagai selisih nonnegatif antara jarak jalan dan
 kenaikan progres pada polyline utama. Setelah itinerary terpilih, total detour
@@ -54,5 +63,6 @@ rute akhir dihitung kembali dari Compute Routes final terhadap rute dasar.
 Setiap hasil pembangunan graf menyimpan jumlah kandidat, pasangan maju, pasangan
 yang dipangkas secara geodesik, pasangan yang dikirim ke provider, hasil yang tidak
 tersedia, edge yang gagal karena jarak jalan atau detour, edge yang diterima, dan
-jumlah permintaan eksternal. Statistik ini disiapkan untuk evaluasi kebutuhan API
-dan efisiensi komputasi.
+jumlah permintaan eksternal. Jumlah pasangan yang mendapat penyesuaian feri dan
+estimasi total jarak ferinya juga dicatat. Statistik ini disiapkan untuk evaluasi
+kebutuhan API dan efisiensi komputasi.

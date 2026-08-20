@@ -64,6 +64,32 @@ class GraphEdge:
     route_progress_delta_km: float
     estimated_detour_km: float
     usable_range_limit_km: float
+    energy_distance_km: float | None = None
+    ferry_distance_km: float = 0.0
+    ferry_duration_minutes: float = 0.0
+
+    def __post_init__(self):
+        energy_distance = (
+            self.road_distance_km
+            if self.energy_distance_km is None
+            else float(self.energy_distance_km)
+        )
+        ferry_distance = float(self.ferry_distance_km)
+        ferry_duration = float(self.ferry_duration_minutes)
+        if not math.isfinite(energy_distance) or energy_distance < 0:
+            raise ValueError("Jarak konsumsi energi edge tidak valid.")
+        if not math.isfinite(ferry_distance) or ferry_distance < 0:
+            raise ValueError("Jarak feri edge tidak valid.")
+        if not math.isfinite(ferry_duration) or ferry_duration < 0:
+            raise ValueError("Durasi feri edge tidak valid.")
+        if (
+            energy_distance + ferry_distance
+            > self.road_distance_km + ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM
+        ):
+            raise ValueError("Komponen jarak edge melebihi jarak total.")
+        object.__setattr__(self, "energy_distance_km", energy_distance)
+        object.__setattr__(self, "ferry_distance_km", ferry_distance)
+        object.__setattr__(self, "ferry_duration_minutes", ferry_duration)
 
     def to_dict(self):
         return {
@@ -72,6 +98,10 @@ class GraphEdge:
             "geodesic_distance_km": self.geodesic_distance_km,
             "road_distance_km": self.road_distance_km,
             "road_duration_minutes": self.road_duration_minutes,
+            "energy_distance_km": self.energy_distance_km,
+            "ferry_distance_km": self.ferry_distance_km,
+            "ferry_duration_minutes": self.ferry_duration_minutes,
+            "contains_ferry": self.ferry_distance_km > 0,
             "route_progress_delta_km": self.route_progress_delta_km,
             "estimated_detour_km": self.estimated_detour_km,
             "usable_range_limit_km": self.usable_range_limit_km,
@@ -92,6 +122,8 @@ class GraphBuildStats:
     detour_pruned_pairs: int
     accepted_edges: int
     external_request_count: int
+    ferry_adjusted_pairs: int = 0
+    estimated_ferry_distance_km: float = 0.0
 
     def to_dict(self):
         return {
@@ -105,7 +137,80 @@ class GraphBuildStats:
             "detour_pruned_pairs": self.detour_pruned_pairs,
             "accepted_edges": self.accepted_edges,
             "external_request_count": self.external_request_count,
+            "ferry_adjusted_pairs": self.ferry_adjusted_pairs,
+            "estimated_ferry_distance_km": self.estimated_ferry_distance_km,
         }
+
+
+@dataclass(frozen=True)
+class FerryProgressInterval:
+    """Segmen feri pada progres polyline rute dasar."""
+
+    start_progress_km: float
+    end_progress_km: float
+    distance_km: float
+    duration_minutes: float
+    maneuver: str = "FERRY"
+
+    def __post_init__(self):
+        values = (
+            self.start_progress_km,
+            self.end_progress_km,
+            self.distance_km,
+            self.duration_minutes,
+        )
+        if any(not math.isfinite(float(value)) for value in values):
+            raise ValueError("Segmen feri harus memakai angka finite.")
+        if self.start_progress_km < 0:
+            raise ValueError("Progres awal feri tidak boleh negatif.")
+        if self.end_progress_km <= self.start_progress_km:
+            raise ValueError("Progres akhir feri harus lebih besar dari awal.")
+        if self.distance_km <= 0 or self.duration_minutes < 0:
+            raise ValueError("Jarak/durasi feri tidak valid.")
+
+
+def ferry_distance_between(intervals, start_progress_km, end_progress_km):
+    """Mengestimasi jarak feri yang tumpang tindih dengan satu edge maju."""
+
+    start = float(start_progress_km)
+    end = float(end_progress_km)
+    if end <= start:
+        return 0.0
+    total = 0.0
+    for interval in intervals:
+        overlap = max(
+            0.0,
+            min(end, interval.end_progress_km)
+            - max(start, interval.start_progress_km),
+        )
+        interval_progress = (
+            interval.end_progress_km - interval.start_progress_km
+        )
+        if overlap > 0:
+            total += interval.distance_km * overlap / interval_progress
+    return total
+
+
+def ferry_duration_between(intervals, start_progress_km, end_progress_km):
+    """Mengestimasi durasi feri yang tumpang tindih dengan satu edge maju."""
+
+    start = float(start_progress_km)
+    end = float(end_progress_km)
+    if end <= start:
+        return 0.0
+    total = 0.0
+    for interval in intervals:
+        overlap = max(
+            0.0,
+            min(end, interval.end_progress_km)
+            - max(start, interval.start_progress_km),
+        )
+        interval_progress = (
+            interval.end_progress_km - interval.start_progress_km
+        )
+        if overlap > 0:
+            total += interval.duration_minutes * overlap / interval_progress
+    return total
 
 
 @dataclass(frozen=True)
@@ -165,6 +270,8 @@ class _PendingEdge:
     target: GraphNode
     usable_range_limit_km: float
     route_progress_delta_km: float
+    estimated_ferry_distance_km: float
+    estimated_ferry_duration_minutes: float
 
 
 def _positive_distance(value, label):
@@ -245,6 +352,7 @@ def build_travel_graph(
     post_charge_usable_range_km,
     road_metric_provider: RoadMetricProvider,
     max_edge_detour_km=None,
+    ferry_intervals=(),
 ):
     """Membentuk graf feasible dengan pemangkasan sebelum validasi jalan."""
 
@@ -271,6 +379,12 @@ def build_travel_graph(
         )
 
     candidates = tuple(candidates)
+    ferry_intervals = tuple(ferry_intervals)
+    if any(
+        not isinstance(interval, FerryProgressInterval)
+        for interval in ferry_intervals
+    ):
+        raise TypeError("Interval feri harus berupa FerryProgressInterval.")
     nodes, compatible_count = _graph_nodes(
         origin,
         destination,
@@ -294,6 +408,19 @@ def build_travel_graph(
                 continue
 
             possible_forward_pairs += 1
+            route_progress_delta = (
+                target.route_progress_km - source.route_progress_km
+            )
+            estimated_ferry_distance = ferry_distance_between(
+                ferry_intervals,
+                source.route_progress_km,
+                target.route_progress_km,
+            )
+            estimated_ferry_duration = ferry_duration_between(
+                ferry_intervals,
+                source.route_progress_km,
+                target.route_progress_km,
+            )
             geodesic_distance = haversine_distance_km(
                 source.coordinate, target.coordinate
             )
@@ -301,6 +428,8 @@ def build_travel_graph(
                 1 - GEODESIC_LOWER_BOUND_MARGIN_RATIO
             )
             if (
+                estimated_ferry_distance <= DISTANCE_TOLERANCE_KM
+                and
                 conservative_lower_bound
                 > usable_range_limit + DISTANCE_TOLERANCE_KM
             ):
@@ -319,9 +448,9 @@ def build_travel_graph(
                     source=source,
                     target=target,
                     usable_range_limit_km=usable_range_limit,
-                    route_progress_delta_km=(
-                        target.route_progress_km - source.route_progress_km
-                    ),
+                    route_progress_delta_km=route_progress_delta,
+                    estimated_ferry_distance_km=estimated_ferry_distance,
+                    estimated_ferry_duration_minutes=estimated_ferry_duration,
                 )
             )
 
@@ -365,8 +494,13 @@ def build_travel_graph(
                 f"Jarak jalan {pending.request.request_id} lebih pendek "
                 "daripada jarak geodesik."
             )
+        ferry_distance = min(
+            result.distance_km,
+            pending.estimated_ferry_distance_km,
+        )
+        energy_distance = max(0.0, result.distance_km - ferry_distance)
         if (
-            result.distance_km
+            energy_distance
             > pending.usable_range_limit_km + DISTANCE_TOLERANCE_KM
         ):
             road_distance_pruned_pairs += 1
@@ -393,6 +527,14 @@ def build_travel_graph(
                 route_progress_delta_km=pending.route_progress_delta_km,
                 estimated_detour_km=estimated_detour,
                 usable_range_limit_km=pending.usable_range_limit_km,
+                energy_distance_km=energy_distance,
+                ferry_distance_km=ferry_distance,
+                ferry_duration_minutes=min(
+                    result.duration_minutes
+                    if result.duration_minutes is not None
+                    else pending.estimated_ferry_duration_minutes,
+                    pending.estimated_ferry_duration_minutes,
+                ),
             )
         )
 
@@ -407,5 +549,13 @@ def build_travel_graph(
         detour_pruned_pairs=detour_pruned_pairs,
         accepted_edges=len(edges),
         external_request_count=batch.external_request_count,
+        ferry_adjusted_pairs=sum(
+            pending.estimated_ferry_distance_km > DISTANCE_TOLERANCE_KM
+            for pending in pending_edges
+        ),
+        estimated_ferry_distance_km=sum(
+            pending.estimated_ferry_distance_km
+            for pending in pending_edges
+        ),
     )
     return TravelGraph(nodes=nodes, edges=tuple(edges), stats=stats)

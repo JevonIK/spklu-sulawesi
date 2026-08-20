@@ -27,6 +27,7 @@ from .services.release_audit import (
 )
 from .services.graph import GEODESIC_LOWER_BOUND_MARGIN_RATIO
 from .services.google_routes import (
+    FERRY_MANEUVERS,
     POLYLINE_QUALITY,
     ROUTING_PREFERENCE,
     TRAVEL_MODE,
@@ -113,6 +114,10 @@ def _experiment_provenance(scenarios, service):
             "travel_mode": TRAVEL_MODE,
             "routing_preference": ROUTING_PREFERENCE,
             "polyline_quality": POLYLINE_QUALITY,
+            "ferry_maneuvers": sorted(FERRY_MANEUVERS),
+            "ferry_distance_consumes_soc": False,
+            "ferry_vehicle_access_guaranteed": False,
+            "ferry_user_control": True,
             "geodesic_lower_bound_margin_ratio": (
                 GEODESIC_LOWER_BOUND_MARGIN_RATIO
             ),

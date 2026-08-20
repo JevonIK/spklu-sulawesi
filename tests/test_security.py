@@ -63,6 +63,7 @@ def test_legal_pages_are_public_and_linked_from_home(client):
     assert terms.status_code == 200
     assert b"Ketentuan penggunaan" in terms.data
     assert b"Estimasi waktu pengisian tidak termasuk" in terms.data
+    assert b"kapal beroperasi dan menerima mobil" in terms.data
 
 
 def test_api_returns_json_for_payload_404_and_method_errors(app, client):

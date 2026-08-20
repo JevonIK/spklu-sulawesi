@@ -26,6 +26,7 @@ const elements = {
     maxRange: document.getElementById("maxRange"),
     minimumSoc: document.getElementById("minimumSoc"),
     targetSoc: document.getElementById("targetSoc"),
+    allowFerries: document.getElementById("allowFerries"),
     connectorInputs: Array.from(
         document.querySelectorAll('input[name="connectors"]'),
     ),
@@ -578,6 +579,7 @@ function buildRequestPayload() {
             minimum_soc_percent: numberValue(elements.minimumSoc),
             target_soc_percent: numberValue(elements.targetSoc),
             additional_charging_networks: selectedChargingNetworkValues(),
+            allow_ferries: Boolean(elements.allowFerries?.checked),
         },
     };
 }
@@ -773,27 +775,53 @@ function renderSummary(data) {
     elements.summaryGrid.replaceChildren();
     if (optimization.feasible) {
         const itinerary = optimization.itinerary;
-        elements.summaryGrid.append(
-            summaryItem("Jarak berkendara", formatDistance(itinerary.total_road_distance_km)),
-            summaryItem("Durasi berkendara", formatDuration(itinerary.total_driving_duration_minutes)),
+        const items = [
+            summaryItem("Jarak darat", formatDistance(itinerary.total_energy_distance_km)),
+            summaryItem("Durasi perjalanan", formatDuration(itinerary.total_travel_duration_minutes)),
             summaryItem("Pemberhentian SPKLU", String(itinerary.charging_stop_count)),
             summaryItem("SOC tiba tujuan", formatPercent(itinerary.final_soc_percent)),
             summaryItem(
                 "Status akses",
-                itinerary.charging_stop_count === 0
-                    ? "Tidak perlu SPKLU"
-                    : data.route_access?.conditional
-                        ? "Rute kondisional"
+                data.route_access?.conditional
+                    ? "Rute kondisional"
+                    : itinerary.charging_stop_count === 0
+                        ? "Tidak perlu SPKLU"
                         : "Rute publik",
             ),
-        );
+        ];
+        if (itinerary.contains_ferry) {
+            items.splice(
+                1,
+                0,
+                summaryItem(
+                    "Jarak feri",
+                    formatDistance(itinerary.total_ferry_distance_km),
+                ),
+                summaryItem(
+                    "Durasi feri",
+                    formatDuration(itinerary.total_ferry_duration_minutes),
+                ),
+            );
+        }
+        elements.summaryGrid.append(...items);
     } else {
-        elements.summaryGrid.append(
+        const items = [
             summaryItem("Jarak rute dasar", formatDistance(data.base_route.distance_km)),
             summaryItem("Durasi rute dasar", formatDuration(data.base_route.duration_minutes)),
             summaryItem(`Kandidat ${requestConnectorLabel(data)}`, String(data.candidate_summary.corridor_candidate_count)),
             summaryItem("Status", "Tidak feasible"),
-        );
+        ];
+        if (data.base_route.ferry_summary?.contains_ferry) {
+            items.splice(
+                2,
+                0,
+                summaryItem(
+                    "Jarak feri terdeteksi",
+                    formatDistance(data.base_route.ferry_summary.distance_km),
+                ),
+            );
+        }
+        elements.summaryGrid.append(...items);
     }
 }
 
@@ -818,8 +846,20 @@ function renderItinerary(data) {
         const title = document.createElement("strong");
         title.textContent = `${leg.source_name} → ${leg.target_name}`;
         const metadata = document.createElement("small");
-        metadata.textContent = `${formatDistance(leg.road_distance_km)} · ${formatDuration(leg.road_duration_minutes)} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
+        const distanceLabel = leg.contains_ferry
+            ? `Darat ${formatDistance(leg.energy_distance_km)} + feri ${formatDistance(leg.ferry_distance_km)}`
+            : formatDistance(leg.road_distance_km);
+        metadata.textContent = `${distanceLabel} · ${formatDuration(leg.road_duration_minutes)} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
         copy.append(title, metadata);
+
+        if (leg.contains_ferry) {
+            const ferryCard = document.createElement("div");
+            ferryCard.className = "ferry-card";
+            ferryCard.setAttribute("role", "note");
+            ferryCard.setAttribute("aria-label", "Peringatan penyeberangan feri");
+            ferryCard.textContent = `Penyeberangan feri sekitar ${formatDistance(leg.ferry_distance_km)} (${formatDuration(leg.ferry_duration_minutes)}). SOC hanya dikurangi untuk jarak darat. Konfirmasi jadwal dan layanan kendaraan kepada operator.`;
+            copy.append(ferryCard);
+        }
 
         const stop = stopByNodeId(itinerary.charging_stops, leg.target_id);
         if (stop) {
@@ -870,6 +910,20 @@ function renderDiagnostics(data) {
         ...diagnosticPair("Kandidat sebelum filter jaringan", data.candidate_summary.connector_candidate_count),
         ...diagnosticPair("Node graf", graph.node_count),
         ...diagnosticPair("Edge graf diterima", graph.edge_count),
+        ...diagnosticPair(
+            "Edge Matrix dengan penyesuaian feri",
+            graph.stats.ferry_adjusted_pairs || 0,
+        ),
+        ...diagnosticPair(
+            "Jarak darat untuk energi",
+            formatDistance(
+                data.optimization.itinerary?.total_energy_distance_km || 0,
+            ),
+        ),
+        ...diagnosticPair(
+            "Segmen feri rute final",
+            data.route_access?.ferry?.segment_count || 0,
+        ),
         ...diagnosticPair("State DP diproses", stats.processed_states),
         ...diagnosticPair("Elemen Route Matrix", usage.compute_route_matrix_elements),
         ...diagnosticPair("Total permintaan Google", usage.total_external_requests),
@@ -927,13 +981,16 @@ function renderRecommendation(data) {
     const conditional = feasible && Boolean(data.route_access?.conditional);
     const direct = feasible
         && Number(data.optimization.itinerary?.charging_stop_count || 0) === 0;
+    const ferry = feasible && Boolean(data.route_access?.ferry?.contains_ferry);
     elements.resultsPanel.hidden = false;
     elements.resultBadge.classList.toggle("is-infeasible", !feasible);
     elements.resultBadge.classList.toggle("is-conditional", conditional);
     elements.resultBadge.textContent = !feasible
         ? "Tidak feasible"
         : direct
-            ? "Tanpa pengisian"
+            ? ferry
+                ? "Feri kondisional"
+                : "Tanpa pengisian"
             : conditional
                 ? "Rute kondisional"
                 : "Rute publik";
@@ -953,12 +1010,14 @@ function renderRecommendation(data) {
     setFormStatus(
         feasible
             ? direct
-                ? "Rekomendasi selesai. Kendaraan dapat mencapai tujuan tanpa berhenti untuk mengisi baterai."
+                ? ferry
+                    ? "Rekomendasi selesai dengan penyeberangan feri. Konfirmasi jadwal dan layanan kendaraan sebelum berangkat."
+                    : "Rekomendasi selesai. Kendaraan dapat mencapai tujuan tanpa berhenti untuk mengisi baterai."
                 : conditional
-                    ? "Rekomendasi selesai. Rute menggunakan charger dealer yang perlu dikonfirmasi sebelum berangkat."
+                    ? "Rekomendasi selesai dengan akses kondisional. Baca peringatan feri atau charger dealer sebelum berangkat."
                     : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
             : "Perhitungan selesai, tetapi tidak ditemukan rangkaian SPKLU yang memenuhi batas SOC.",
-        feasible ? "success" : "warning",
+        feasible && !conditional ? "success" : "warning",
     );
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     elements.resultsPanel.scrollIntoView({
@@ -1045,6 +1104,9 @@ async function initializeApplication() {
             updateConnectorAvailabilityCounts();
             updateNetworkCompatibilityNote();
         });
+    });
+    elements.allowFerries?.addEventListener("change", () => {
+        invalidateRecommendation();
     });
     [
         elements.currentSoc,

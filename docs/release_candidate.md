@@ -21,6 +21,7 @@ diunduh serta diperiksa.
 | Mode rute | `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY` |
 | Margin lower bound geodesik | 1% |
 | Estimasi waktu pengisian | Tidak termasuk |
+| Penyeberangan feri | Terdeteksi generik; jarak feri tidak mengurangi SOC; akses kendaraan kondisional |
 | Python didukung | 3.11, 3.12, 3.13 |
 
 ## Perubahan yang perlu diverifikasi

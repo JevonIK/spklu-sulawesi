@@ -8,19 +8,24 @@ perhitungan energi tetap dilakukan oleh model SOC lokal.
 
 ## Alur permintaan
 
-1. `Compute Routes` mengambil rute dasar dari origin ke destination.
+1. `Compute Routes` mengambil rute dasar beserta langkah navigasi dari origin
+   ke destination. Manuver `FERRY` dan `FERRY_TRAIN` dipisahkan dari segmen
+   darat secara generik, tanpa hardcode nama lintasan.
 2. Encoded polyline didekode menjadi koordinat dan dipakai oleh Ball Tree untuk
    memilih SPKLU dengan konektor kompatibel di dalam koridor.
 3. Pemangkasan geodesik memakai lower bound dengan margin 1% untuk membuang
    pasangan yang tetap melebihi usable range setelah toleransi konservatif.
-4. `Compute Route Matrix` hanya memvalidasi pasangan edge yang tersisa.
+4. `Compute Route Matrix` hanya memvalidasi pasangan edge yang tersisa. Karena
+   Matrix tidak menyediakan langkah navigasi, jarak feri edge diestimasi dari
+   irisan progres terhadap segmen feri rute dasar.
 5. Dynamic Programming memilih itinerary berdasarkan durasi/jarak, jumlah
    pemberhentian, dan detour.
 6. Jika itinerary memiliki SPKLU, `Compute Routes` kedua mengambil polyline akhir
    dengan SPKLU terpilih sebagai intermediate waypoint. Rute langsung memakai
    kembali polyline dasar sehingga tidak menambah permintaan.
-7. Untuk setiap hasil feasible, jarak setiap leg rute yang ditampilkan
-   disimulasikan ulang dengan model SOC. Bila
+7. Untuk setiap hasil feasible, jarak darat dan feri setiap leg rute final
+   dipisahkan kembali dari langkah Compute Routes. Hanya jarak darat yang
+   mengurangi SOC. Bila
    jumlah leg berbeda dari itinerary atau satu leg tiba di bawah SOC minimum,
    rekomendasi ditolak dan tidak ditampilkan sebagai rute feasible.
 
@@ -36,6 +41,19 @@ koridor serta visualisasi memakai bentuk rute yang lebih rinci.
 sedangkan `TRAFFIC_UNAWARE` tidak boleh ditafsirkan sebagai estimasi waktu tiba
 di kondisi lalu lintas saat perjalanan. Kedua nilai dikunci dalam manifest
 kandidat dan direkam pada provenance laporan schema 3.
+
+## Penyeberangan feri
+
+Rute mode `DRIVE` dapat memuat langkah feri. Sistem mendeteksi manuver `FERRY`
+atau `FERRY_TRAIN`, mempertahankan jarak serta durasi pelayaran sebagai informasi
+perjalanan, tetapi menetapkan konsumsi traksi segmen tersebut menjadi nol. Beban
+aksesori kendaraan selama menunggu atau berlayar tidak dimodelkan.
+
+Deteksi Google bukan jaminan bahwa kapal sedang beroperasi, mempunyai ruang,
+atau menerima jenis kendaraan pengguna. Semua rute feri diberi status
+kondisional dan pengguna wajib mengonfirmasi jadwal, cuaca, antrean, kapasitas,
+serta aturan operator. Rincian metodologinya tersedia pada
+[`ferry_routes.md`](ferry_routes.md).
 
 ## Efisiensi pemakaian API
 

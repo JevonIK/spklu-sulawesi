@@ -72,6 +72,8 @@ tidak dapat ditulis oleh user runtime.
 - Pembentukan graf berarah dengan edge yang memenuhi batas jangkauan.
 - Dynamic Programming dengan state SOC diskret.
 - Rekomendasi urutan SPKLU, jarak setiap leg, SOC tiba/berangkat, dan detour.
+- Deteksi feri generik yang memisahkan jarak pelayaran dari konsumsi SOC dan
+  menandai akses kendaraan sebagai kondisional.
 - Evaluasi kelayakan, jumlah pelanggaran SOC, jumlah pemberhentian, kebutuhan API,
   runtime, dan penggunaan memori.
 
@@ -194,6 +196,9 @@ Model energi dan Dynamic Programming dijelaskan pada
 
 Alur, keamanan, payload, dan efisiensi Google Routes API dijelaskan pada
 [`docs/google_routes.md`](docs/google_routes.md).
+
+Deteksi langkah feri, penyesuaian energi, keterbatasan Matrix, dan kewajiban
+konfirmasi operator dijelaskan pada [`docs/ferry_routes.md`](docs/ferry_routes.md).
 
 Komponen dan alur interaksi antarmuka dijelaskan pada
 [`docs/user_interface.md`](docs/user_interface.md).

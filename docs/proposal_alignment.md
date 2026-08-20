@@ -76,6 +76,9 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
     hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
     lengkap, terkini, atau open data tanpa bukti.
+16. Untuk rute yang memuat feri, pisahkan jarak pelayaran dari jarak energi.
+    Nyatakan bahwa deteksi Google bukan bukti jadwal, kapasitas, atau izin
+    kendaraan dan seluruh akses feri bersifat kondisional.
 
 Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
 tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan
@@ -95,6 +98,8 @@ menghitungnya.
   Google, dan dataset SPKLU dapat berubah.
 - Status rute kondisional bukan bukti izin penggunaan charger dealer; pengguna
   tetap harus melakukan konfirmasi operasional sebelum perjalanan.
+- Status feri kondisional bukan bukti kapal beroperasi atau menerima mobil;
+  jadwal, kapasitas, antrean, dan aturan operator tetap harus dikonfirmasi.
 - Nol pelanggaran SOC berarti konsisten dengan model linier dan data leg yang
   dipakai versi penghasil, bukan validasi konsumsi kendaraan nyata.
 - Hash dataset/artefak menjamin identitas byte, bukan provenance atau izin

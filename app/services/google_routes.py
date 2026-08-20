@@ -23,7 +23,13 @@ COMPUTE_ROUTE_MATRIX_URL = (
 ROUTE_FIELD_MASK = (
     "routes.distanceMeters,routes.duration,"
     "routes.polyline.encodedPolyline,"
-    "routes.legs.distanceMeters,routes.legs.duration"
+    "routes.legs.distanceMeters,routes.legs.duration,"
+    "routes.legs.steps.distanceMeters,"
+    "routes.legs.steps.staticDuration,"
+    "routes.legs.steps.startLocation.latLng,"
+    "routes.legs.steps.endLocation.latLng,"
+    "routes.legs.steps.navigationInstruction.maneuver,"
+    "routes.legs.steps.travelMode"
 )
 MATRIX_FIELD_MASK = (
     "originIndex,destinationIndex,status,condition,distanceMeters,duration"
@@ -33,6 +39,7 @@ MAX_INTERMEDIATE_WAYPOINTS = 25
 TRAVEL_MODE = "DRIVE"
 ROUTING_PREFERENCE = "TRAFFIC_UNAWARE"
 POLYLINE_QUALITY = "HIGH_QUALITY"
+FERRY_MANEUVERS = frozenset({"FERRY", "FERRY_TRAIN"})
 
 
 class GoogleRoutesError(RuntimeError):
@@ -268,22 +275,112 @@ class ApiQuotaBudget:
 
 
 @dataclass(frozen=True)
+class ComputedRouteStep:
+    """Satu langkah navigasi untuk membedakan jalan dan penyeberangan."""
+
+    distance_km: float
+    duration_minutes: float
+    start_coordinate: tuple[float, float]
+    end_coordinate: tuple[float, float]
+    travel_mode: str = TRAVEL_MODE
+    maneuver: str = "MANEUVER_UNSPECIFIED"
+
+    def __post_init__(self):
+        if not math.isfinite(self.distance_km) or self.distance_km < 0:
+            raise ValueError("Jarak langkah rute harus berupa angka nonnegatif.")
+        if not math.isfinite(self.duration_minutes) or self.duration_minutes < 0:
+            raise ValueError("Durasi langkah rute harus berupa angka nonnegatif.")
+        object.__setattr__(
+            self,
+            "start_coordinate",
+            normalize_coordinate(self.start_coordinate),
+        )
+        object.__setattr__(
+            self,
+            "end_coordinate",
+            normalize_coordinate(self.end_coordinate),
+        )
+        if not isinstance(self.travel_mode, str) or not self.travel_mode:
+            raise ValueError("Travel mode langkah rute tidak valid.")
+        if not isinstance(self.maneuver, str) or not self.maneuver:
+            raise ValueError("Maneuver langkah rute tidak valid.")
+
+    @property
+    def is_ferry(self):
+        return self.maneuver in FERRY_MANEUVERS
+
+    def to_dict(self):
+        return {
+            "distance_km": self.distance_km,
+            "duration_minutes": self.duration_minutes,
+            "start": {
+                "latitude": self.start_coordinate[0],
+                "longitude": self.start_coordinate[1],
+            },
+            "end": {
+                "latitude": self.end_coordinate[0],
+                "longitude": self.end_coordinate[1],
+            },
+            "travel_mode": self.travel_mode,
+            "maneuver": self.maneuver,
+            "is_ferry": self.is_ferry,
+        }
+
+
+@dataclass(frozen=True)
 class ComputedRouteLeg:
     """Jarak dan durasi satu leg dari rute final Google."""
 
     distance_km: float
     duration_minutes: float
+    steps: tuple[ComputedRouteStep, ...] = ()
 
     def __post_init__(self):
         if not math.isfinite(self.distance_km) or self.distance_km < 0:
             raise ValueError("Jarak leg rute harus berupa angka nonnegatif.")
         if not math.isfinite(self.duration_minutes) or self.duration_minutes < 0:
             raise ValueError("Durasi leg rute harus berupa angka nonnegatif.")
+        if any(not isinstance(step, ComputedRouteStep) for step in self.steps):
+            raise TypeError("Langkah leg harus berupa ComputedRouteStep.")
+
+    @property
+    def ferry_steps(self):
+        return tuple(step for step in self.steps if step.is_ferry)
+
+    @property
+    def ferry_distance_km(self):
+        return min(
+            self.distance_km,
+            sum(step.distance_km for step in self.ferry_steps),
+        )
+
+    @property
+    def energy_distance_km(self):
+        return max(0.0, self.distance_km - self.ferry_distance_km)
+
+    @property
+    def ferry_duration_minutes(self):
+        return min(
+            self.duration_minutes,
+            sum(step.duration_minutes for step in self.ferry_steps),
+        )
+
+    @property
+    def driving_duration_minutes(self):
+        return max(0.0, self.duration_minutes - self.ferry_duration_minutes)
 
     def to_dict(self):
         return {
             "distance_km": self.distance_km,
             "duration_minutes": self.duration_minutes,
+            "energy_distance_km": self.energy_distance_km,
+            "ferry_distance_km": self.ferry_distance_km,
+            "ferry_duration_minutes": self.ferry_duration_minutes,
+            "driving_duration_minutes": self.driving_duration_minutes,
+            "contains_ferry": bool(self.ferry_steps),
+            "ferry_segments": [
+                step.to_dict() for step in self.ferry_steps
+            ],
         }
 
 
@@ -308,6 +405,11 @@ class ComputedRoute:
             raise ValueError("Rute harus memiliki sedikitnya dua koordinat.")
 
     def to_dict(self):
+        ferry_steps = tuple(
+            step
+            for leg in self.legs
+            for step in leg.ferry_steps
+        )
         return {
             "distance_km": self.distance_km,
             "duration_minutes": self.duration_minutes,
@@ -317,6 +419,19 @@ class ComputedRoute:
                 for latitude, longitude in self.coordinates
             ],
             "legs": [leg.to_dict() for leg in self.legs],
+            "ferry_summary": {
+                "contains_ferry": bool(ferry_steps),
+                "segment_count": len(ferry_steps),
+                "distance_km": sum(step.distance_km for step in ferry_steps),
+                "duration_minutes": sum(
+                    step.duration_minutes for step in ferry_steps
+                ),
+                "vehicle_access_status": (
+                    "requires_operator_confirmation"
+                    if ferry_steps
+                    else "not_applicable"
+                ),
+            },
         }
 
 
@@ -394,6 +509,70 @@ def _waypoint(coordinate):
             }
         }
     }
+
+
+def _step_coordinate(raw_location):
+    try:
+        lat_lng = raw_location["latLng"]
+        return normalize_coordinate(
+            (lat_lng["latitude"], lat_lng["longitude"])
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise GoogleRoutesError(
+            "invalid_response",
+            "Google Routes API mengembalikan koordinat langkah yang tidak valid.",
+        ) from error
+
+
+def _route_steps(raw_steps):
+    if raw_steps is None:
+        return ()
+    if not isinstance(raw_steps, list):
+        raise GoogleRoutesError(
+            "invalid_response",
+            "Google Routes API mengembalikan daftar langkah yang tidak valid.",
+        )
+    steps = []
+    for raw_step in raw_steps:
+        if not isinstance(raw_step, dict):
+            raise GoogleRoutesError(
+                "invalid_response",
+                "Google Routes API mengembalikan langkah yang tidak valid.",
+            )
+        navigation = raw_step.get("navigationInstruction") or {}
+        if not isinstance(navigation, dict):
+            raise GoogleRoutesError(
+                "invalid_response",
+                "Google Routes API mengembalikan instruksi langkah yang tidak valid.",
+            )
+        maneuver = str(
+            navigation.get("maneuver") or "MANEUVER_UNSPECIFIED"
+        )
+        if maneuver not in FERRY_MANEUVERS:
+            continue
+        try:
+            steps.append(
+                ComputedRouteStep(
+                    distance_km=float(raw_step["distanceMeters"]) / 1000,
+                    duration_minutes=_duration_minutes(
+                        raw_step["staticDuration"]
+                    ),
+                    start_coordinate=_step_coordinate(
+                        raw_step["startLocation"]
+                    ),
+                    end_coordinate=_step_coordinate(raw_step["endLocation"]),
+                    travel_mode=str(raw_step.get("travelMode") or TRAVEL_MODE),
+                    maneuver=maneuver,
+                )
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            if isinstance(error, GoogleRoutesError):
+                raise
+            raise GoogleRoutesError(
+                "invalid_response",
+                "Google Routes API mengembalikan data langkah yang tidak lengkap.",
+            ) from error
+    return tuple(steps)
 
 
 def _error_code_for_status(status_code):
@@ -509,7 +688,14 @@ class GoogleRoutesClient:
                 status_code=response.status_code,
             ) from error
 
-    def compute_route(self, origin, destination, *, intermediates=()):
+    def compute_route(
+        self,
+        origin,
+        destination,
+        *,
+        intermediates=(),
+        avoid_ferries=False,
+    ):
         """Mengambil satu rute berkendara dan overview polyline."""
 
         origin = normalize_coordinate(origin)
@@ -521,6 +707,8 @@ class GoogleRoutesClient:
             raise ValueError(
                 "Jumlah pemberhentian melebihi batas intermediate waypoint."
             )
+        if not isinstance(avoid_ferries, bool):
+            raise ValueError("avoid_ferries harus berupa boolean.")
 
         payload = {
             "origin": _waypoint(origin),
@@ -537,6 +725,8 @@ class GoogleRoutesClient:
             payload["intermediates"] = [
                 _waypoint(coordinate) for coordinate in intermediate_coordinates
             ]
+        if avoid_ferries:
+            payload["routeModifiers"] = {"avoidFerries": True}
 
         response_payload = self._post(
             COMPUTE_ROUTES_URL,
@@ -568,6 +758,7 @@ class GoogleRoutesClient:
                 ComputedRouteLeg(
                     distance_km=float(leg["distanceMeters"]) / 1000,
                     duration_minutes=_duration_minutes(leg["duration"]),
+                    steps=_route_steps(leg.get("steps")),
                 )
                 for leg in raw_legs
             )

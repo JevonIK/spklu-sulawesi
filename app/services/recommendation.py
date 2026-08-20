@@ -19,7 +19,7 @@ from .dataset import (
     parse_connectors,
 )
 from .energy import EnergyParameters, SOC_TOLERANCE
-from .graph import build_travel_graph
+from .graph import FerryProgressInterval, build_travel_graph
 from .google_routes import (
     MAX_INTERMEDIATE_WAYPOINTS,
     GoogleRoutesError,
@@ -45,6 +45,35 @@ class RecommendationQuotaError(RuntimeError):
     """Budget lokal tidak mengizinkan request rekomendasi baru."""
 
 
+def _ferry_progress_intervals(route_geometry, computed_route):
+    """Memproyeksikan langkah feri Google ke progres polyline rute dasar."""
+
+    intervals = []
+    for leg in computed_route.legs:
+        for step in leg.ferry_steps:
+            start = route_geometry.project(step.start_coordinate).progress_km
+            end = route_geometry.project(step.end_coordinate).progress_km
+            start, end = sorted((start, end))
+            if end - start <= 1e-3:
+                raise GoogleRoutesError(
+                    "ferry_geometry_invalid",
+                    (
+                        "Segmen feri terdeteksi tetapi terminalnya tidak dapat "
+                        "dipetakan secara aman pada rute."
+                    ),
+                )
+            intervals.append(
+                FerryProgressInterval(
+                    start_progress_km=start,
+                    end_progress_km=end,
+                    distance_km=step.distance_km,
+                    duration_minutes=step.duration_minutes,
+                    maneuver=step.maneuver,
+                )
+            )
+    return tuple(sorted(intervals, key=lambda item: item.start_progress_km))
+
+
 def _mapping(value, field):
     if not isinstance(value, dict):
         raise RecommendationValidationError(field, f"{field} harus berupa objek.")
@@ -66,6 +95,16 @@ def _number(mapping, key, field, *, default=None):
             field, f"{field} harus berupa angka finite."
         )
     return value
+
+
+def _boolean(mapping, key, field, *, default):
+    raw_value = mapping.get(key, default)
+    if not isinstance(raw_value, bool):
+        raise RecommendationValidationError(
+            field,
+            f"{field} harus berupa boolean.",
+        )
+    return raw_value
 
 
 def _coordinate(payload, field):
@@ -105,6 +144,7 @@ class RecommendationInput:
     additional_charging_networks: tuple[str, ...]
     corridor_radius_km: float
     route_sample_step_km: float
+    allow_ferries: bool
 
     @classmethod
     def from_payload(cls, payload, *, defaults):
@@ -190,6 +230,12 @@ class RecommendationInput:
             "options.route_sample_step_km",
             default=defaults["route_sample_step_km"],
         )
+        allow_ferries = _boolean(
+            options,
+            "allow_ferries",
+            "options.allow_ferries",
+            default=True,
+        )
 
         if maximum_range > 2000:
             raise RecommendationValidationError(
@@ -235,6 +281,7 @@ class RecommendationInput:
             additional_charging_networks=additional_charging_networks,
             corridor_radius_km=corridor_radius,
             route_sample_step_km=route_sample_step,
+            allow_ferries=allow_ferries,
         )
 
     def to_dict(self):
@@ -256,6 +303,7 @@ class RecommendationInput:
             ),
             "corridor_radius_km": self.corridor_radius_km,
             "route_sample_step_km": self.route_sample_step_km,
+            "allow_ferries": self.allow_ferries,
         }
 
     @property
@@ -351,6 +399,10 @@ class RecommendationService:
         matrix_distance_km = sum(
             float(leg["road_distance_km"]) for leg in legs
         )
+        matrix_energy_distance_km = sum(
+            float(leg.get("energy_distance_km", leg["road_distance_km"]))
+            for leg in legs
+        )
         for leg, final_leg in zip(legs, final_route.legs):
             stop = stops_by_node.get(leg["source_id"])
             if stop is not None:
@@ -376,7 +428,7 @@ class RecommendationService:
 
             arrival_soc = parameters.arrival_soc_percent(
                 departure_soc,
-                final_leg.distance_km,
+                final_leg.energy_distance_km,
             )
             if arrival_soc + SOC_TOLERANCE < parameters.minimum_soc_percent:
                 raise GoogleRoutesError(
@@ -394,10 +446,18 @@ class RecommendationService:
                     ],
                     "road_distance_km": final_leg.distance_km,
                     "road_duration_minutes": final_leg.duration_minutes,
+                    "energy_distance_km": final_leg.energy_distance_km,
+                    "ferry_distance_km": final_leg.ferry_distance_km,
+                    "ferry_duration_minutes": (
+                        final_leg.ferry_duration_minutes
+                    ),
+                    "contains_ferry": bool(final_leg.ferry_steps),
                     "departure_soc_percent": departure_soc,
                     "arrival_soc_percent": arrival_soc,
                     "consumption_soc_percent": (
-                        parameters.consumption_percent(final_leg.distance_km)
+                        parameters.consumption_percent(
+                            final_leg.energy_distance_km
+                        )
                     ),
                 }
             )
@@ -408,7 +468,22 @@ class RecommendationService:
             leg.distance_km for leg in final_route.legs
         )
         itinerary["total_driving_duration_minutes"] = sum(
+            leg.driving_duration_minutes for leg in final_route.legs
+        )
+        itinerary["total_travel_duration_minutes"] = sum(
             leg.duration_minutes for leg in final_route.legs
+        )
+        itinerary["total_energy_distance_km"] = sum(
+            leg.energy_distance_km for leg in final_route.legs
+        )
+        itinerary["total_ferry_distance_km"] = sum(
+            leg.ferry_distance_km for leg in final_route.legs
+        )
+        itinerary["total_ferry_duration_minutes"] = sum(
+            leg.ferry_duration_minutes for leg in final_route.legs
+        )
+        itinerary["contains_ferry"] = any(
+            leg.ferry_steps for leg in final_route.legs
         )
         itinerary["total_detour_km"] = max(
             0.0,
@@ -420,7 +495,14 @@ class RecommendationService:
             "status": "passed",
             "leg_count": len(final_route.legs),
             "matrix_distance_km": matrix_distance_km,
+            "matrix_energy_distance_km": matrix_energy_distance_km,
             "final_route_distance_km": final_route.distance_km,
+            "final_route_energy_distance_km": sum(
+                leg.energy_distance_km for leg in final_route.legs
+            ),
+            "ferry_segment_count": sum(
+                len(leg.ferry_steps) for leg in final_route.legs
+            ),
             "distance_delta_km": final_route.distance_km - matrix_distance_km,
             "minimum_soc_percent": parameters.minimum_soc_percent,
             "minimum_observed_soc_percent": minimum_observed_soc,
@@ -431,14 +513,23 @@ class RecommendationService:
         optimization_payload,
         graph,
         recommendation_input,
+        route,
     ):
+        ferry_summary = route.to_dict()["ferry_summary"]
         if not optimization_payload.get("feasible"):
             return {
                 "status": "not_applicable",
-                "conditional": False,
+                "conditional": ferry_summary["contains_ferry"],
                 "conditional_stop_count": 0,
                 "conditional_stops": [],
-                "notice": "Status akses tidak berlaku karena rute belum feasible.",
+                "ferry": ferry_summary,
+                "notice": (
+                    "Rute dasar memuat penyeberangan feri, tetapi itinerary "
+                    "belum feasible. Konfirmasi layanan kendaraan kepada "
+                    "operator sebelum berangkat."
+                    if ferry_summary["contains_ferry"]
+                    else "Status akses tidak berlaku karena rute belum feasible."
+                ),
             }
 
         itinerary = optimization_payload.get("itinerary")
@@ -492,33 +583,61 @@ class RecommendationService:
                     }
                 )
 
-        conditional = bool(conditional_stops)
+        ferry_conditional = ferry_summary["contains_ferry"]
+        conditional = bool(conditional_stops) or ferry_conditional
+        notices = []
+        if conditional_stops:
+            notices.append(
+                "Rute menggunakan charger dealer; konfirmasi izin dan "
+                "ketersediaannya kepada pengelola."
+            )
+        if ferry_conditional:
+            notices.append(
+                "Rute menggunakan feri. SOC tidak dikurangi untuk jarak "
+                "pelayaran; konfirmasi jadwal, operasional, antrean, dan "
+                "kemampuan kapal mengangkut mobil kepada operator."
+            )
+        if not notices:
+            notices.append(
+                "Seluruh pemberhentian pengisian pada rute menggunakan "
+                "SPKLU publik."
+            )
         return {
             "status": "conditional" if conditional else "public",
             "conditional": conditional,
             "conditional_stop_count": len(conditional_stops),
             "conditional_stops": conditional_stops,
-            "notice": (
-                "Rute ini menggunakan charger dealer. Ketersediaan dan izin "
-                "penggunaan belum dijamin; konfirmasi kepada pengelola sebelum "
-                "berangkat."
-                if conditional
-                else (
-                    "Seluruh pemberhentian pengisian pada rute menggunakan "
-                    "SPKLU publik."
-                )
-            ),
+            "ferry": ferry_summary,
+            "notice": " ".join(notices),
         }
 
     def recommend(self, recommendation_input):
         if not isinstance(recommendation_input, RecommendationInput):
             raise TypeError("Pipeline memerlukan RecommendationInput.")
 
+        route_options = (
+            {"avoid_ferries": True}
+            if not recommendation_input.allow_ferries
+            else {}
+        )
         base_route = self.routes_client.compute_route(
             recommendation_input.origin,
             recommendation_input.destination,
+            **route_options,
         )
         route_geometry = RouteGeometry(base_route.coordinates)
+        ferry_intervals = _ferry_progress_intervals(
+            route_geometry,
+            base_route,
+        )
+        if ferry_intervals and not recommendation_input.allow_ferries:
+            raise RecommendationValidationError(
+                "options.allow_ferries",
+                (
+                    "Rute tetap memerlukan feri meskipun opsi feri "
+                    "dinonaktifkan. Pilih tujuan darat lain atau izinkan feri."
+                ),
+            )
         connector_candidates = find_corridor_candidates(
             self.spatial_index,
             route_geometry,
@@ -550,6 +669,7 @@ class RecommendationService:
                 parameters.target_soc_percent
             ),
             road_metric_provider=self.routes_client,
+            ferry_intervals=ferry_intervals,
         )
         optimization = optimize_itinerary(
             graph,
@@ -577,10 +697,24 @@ class RecommendationService:
                     recommendation_input.origin,
                     recommendation_input.destination,
                     intermediates=stop_coordinates,
+                    **route_options,
                 )
                 compute_routes_requests += 1
             else:
                 recommended_route = base_route
+
+        if (
+            recommended_route is not None
+            and not recommendation_input.allow_ferries
+            and any(leg.ferry_steps for leg in recommended_route.legs)
+        ):
+            raise RecommendationValidationError(
+                "options.allow_ferries",
+                (
+                    "Rute rekomendasi final tetap memerlukan feri meskipun "
+                    "opsi feri dinonaktifkan."
+                ),
+            )
 
         optimization_payload = optimization.to_dict()
         if recommended_route is not None:
@@ -594,6 +728,7 @@ class RecommendationService:
             optimization_payload,
             graph,
             recommendation_input,
+            recommended_route or base_route,
         )
 
         return {
@@ -725,6 +860,7 @@ class QuotaProtectedRecommendationService:
                 "minimum_soc_percent",
                 "target_soc_percent",
                 "additional_charging_networks",
+                "allow_ferries",
             }
             unknown_options = sorted(set(options) - allowed_options)
             if unknown_options:

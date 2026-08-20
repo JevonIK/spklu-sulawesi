@@ -27,6 +27,8 @@ dibaca oleh CI.
 - empat konektor aplikasi, konektor eksperimen CCS2, dan ketiadaan estimasi
   waktu pengisian;
 - `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY`, dan margin lower bound geodesik 1%;
+- manuver feri yang didukung, ketiadaan konsumsi SOC selama pelayaran, dan
+  status akses kendaraan yang tidak dijamin;
 - path, jumlah, dan checksum definisi skenario baseline/sensitivitas;
 - checksum manifest penelitian yang menghubungkan snapshot ke run historis; dan
 - hard limit harian, per menit, serta per request untuk Google Routes.

@@ -25,6 +25,8 @@ pengambilan data penelitian tambahan.
   sensitivitas 0.10.0, bukan kandidat analisis 0.15.0.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
+- [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,
+  kapasitas, atau akses kendaraan tanpa konfirmasi operator.
 - [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario penelitian
   tetap memakai CCS2.
 

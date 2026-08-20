@@ -58,6 +58,7 @@
     "Baseline berasal dari aplikasi 0.9.2 dan sensitivitas dari aplikasi 0.10.0; versi analisis tidak boleh dianggap sebagai versi penghasil hasil live.",
     "Versi lama tidak merekam hash dataset maupun langkah sampling rute di dalam laporan; keterbatasan ini tidak boleh diisi dengan tebakan.",
     "Snapshot tidak memuat polyline, API key, atau koordinat origin-destination hasil Google.",
-    "Notebook tidak menjalankan Google Maps API dan tidak mengestimasi waktu pengisian."
+    "Notebook tidak menjalankan Google Maps API dan tidak mengestimasi waktu pengisian.",
+    "Model feri kandidat tidak mengurangi SOC untuk jarak pelayaran, tetapi fitur ini tidak terdapat pada hasil live historis 0.9.2/0.10.0."
   ]
 }

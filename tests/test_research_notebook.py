@@ -46,6 +46,7 @@ def test_research_notebook_runs_all_code_cells_offline(monkeypatch):
     assert validation["baseline_error_count"] == 0
     assert validation["sensitivity_error_count"] == 0
     assert validation["charging_time_included"] is False
+    assert validation["ferry_distance_consumes_soc"] is False
     assert validation["analysis_application_version"] == "0.15.0"
     assert validation["baseline_source_application_version"] == "0.9.2"
     assert validation["sensitivity_source_application_version"] == "0.10.0"

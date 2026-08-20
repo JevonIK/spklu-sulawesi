@@ -77,6 +77,9 @@ class ItineraryLeg:
     departure_soc_percent: float
     arrival_soc_percent: float
     consumption_soc_percent: float
+    energy_distance_km: float
+    ferry_distance_km: float
+    ferry_duration_minutes: float
 
     def to_dict(self):
         return {
@@ -91,6 +94,10 @@ class ItineraryLeg:
             "departure_soc_percent": self.departure_soc_percent,
             "arrival_soc_percent": self.arrival_soc_percent,
             "consumption_soc_percent": self.consumption_soc_percent,
+            "energy_distance_km": self.energy_distance_km,
+            "ferry_distance_km": self.ferry_distance_km,
+            "ferry_duration_minutes": self.ferry_duration_minutes,
+            "contains_ferry": self.ferry_distance_km > 0,
         }
 
 
@@ -127,6 +134,10 @@ class Itinerary:
     minimum_observed_soc_percent: float
     objective_mode: str
     objective_value: float
+    total_energy_distance_km: float
+    total_ferry_distance_km: float
+    total_ferry_duration_minutes: float
+    total_travel_duration_minutes: float | None
 
     def to_dict(self):
         return {
@@ -140,6 +151,11 @@ class Itinerary:
             "minimum_observed_soc_percent": self.minimum_observed_soc_percent,
             "objective_mode": self.objective_mode,
             "objective_value": self.objective_value,
+            "total_energy_distance_km": self.total_energy_distance_km,
+            "total_ferry_distance_km": self.total_ferry_distance_km,
+            "total_ferry_duration_minutes": self.total_ferry_duration_minutes,
+            "total_travel_duration_minutes": self.total_travel_duration_minutes,
+            "contains_ferry": self.total_ferry_distance_km > 0,
         }
 
 
@@ -276,7 +292,7 @@ def simulate_itinerary(
             departure_soc = current_soc
 
         consumption = parameters.consumption_percent(
-            transition.edge.road_distance_km
+            transition.edge.energy_distance_km
         )
         arrival_soc = departure_soc - consumption
         if arrival_soc + SOC_TOLERANCE < parameters.minimum_soc_percent:
@@ -300,6 +316,11 @@ def simulate_itinerary(
                 departure_soc_percent=departure_soc,
                 arrival_soc_percent=arrival_soc,
                 consumption_soc_percent=consumption,
+                energy_distance_km=transition.edge.energy_distance_km,
+                ferry_distance_km=transition.edge.ferry_distance_km,
+                ferry_duration_minutes=(
+                    transition.edge.ferry_duration_minutes
+                ),
             )
         )
         current_soc = arrival_soc
@@ -309,7 +330,14 @@ def simulate_itinerary(
         charging_stops=tuple(stops),
         total_road_distance_km=sum(leg.road_distance_km for leg in legs),
         total_driving_duration_minutes=(
-            sum(float(leg.road_duration_minutes) for leg in legs)
+            sum(
+                max(
+                    0.0,
+                    float(leg.road_duration_minutes)
+                    - leg.ferry_duration_minutes,
+                )
+                for leg in legs
+            )
             if all_durations_available
             else None
         ),
@@ -318,6 +346,20 @@ def simulate_itinerary(
         minimum_observed_soc_percent=minimum_observed_soc,
         objective_mode=objective_mode,
         objective_value=objective_value,
+        total_energy_distance_km=sum(
+            leg.energy_distance_km for leg in legs
+        ),
+        total_ferry_distance_km=sum(
+            leg.ferry_distance_km for leg in legs
+        ),
+        total_ferry_duration_minutes=sum(
+            leg.ferry_duration_minutes for leg in legs
+        ),
+        total_travel_duration_minutes=(
+            sum(float(leg.road_duration_minutes) for leg in legs)
+            if all_durations_available
+            else None
+        ),
     )
 
 
@@ -400,7 +442,7 @@ def optimize_itinerary(
                 for edge in graph.outgoing_edges(node.node_id):
                     evaluated_transitions += 1
                     continuous_arrival = parameters.arrival_soc_percent(
-                        departure_level, edge.road_distance_km
+                        departure_level, edge.energy_distance_km
                     )
                     if (
                         continuous_arrival + SOC_TOLERANCE

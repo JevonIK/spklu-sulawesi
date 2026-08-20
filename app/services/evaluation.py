@@ -56,7 +56,12 @@ CSV_COLUMNS = (
     "final_route_validation_status",
     "final_route_distance_delta_km",
     "total_road_distance_km",
+    "total_energy_distance_km",
+    "total_ferry_distance_km",
+    "total_ferry_duration_minutes",
+    "ferry_segment_count",
     "total_driving_duration_minutes",
+    "total_travel_duration_minutes",
     "total_detour_km",
     "final_soc_percent",
     "minimum_observed_soc_percent",
@@ -405,7 +410,12 @@ def _result_template(scenario):
         "final_route_validation_status": None,
         "final_route_distance_delta_km": None,
         "total_road_distance_km": None,
+        "total_energy_distance_km": None,
+        "total_ferry_distance_km": None,
+        "total_ferry_duration_minutes": None,
+        "ferry_segment_count": None,
         "total_driving_duration_minutes": None,
+        "total_travel_duration_minutes": None,
         "total_detour_km": None,
         "final_soc_percent": None,
         "minimum_observed_soc_percent": None,
@@ -450,6 +460,10 @@ def _completed_result(scenario, pipeline_result):
     graph = pipeline_result["graph"]
     base_route = pipeline_result["base_route"]
     recommended_route = pipeline_result.get("recommended_route")
+    route_access = pipeline_result.get("route_access") or {}
+    ferry_summary = route_access.get("ferry") or (
+        (recommended_route or base_route).get("ferry_summary") or {}
+    )
     final_route_validation = optimization.get("final_route_validation") or {}
     charging_stops = itinerary.get("charging_stops", []) if itinerary else []
     itinerary_legs = itinerary.get("legs", []) if itinerary else []
@@ -491,8 +505,35 @@ def _completed_result(scenario, pipeline_result):
             "total_road_distance_km": (
                 itinerary["total_road_distance_km"] if itinerary else None
             ),
+            "total_energy_distance_km": (
+                itinerary.get(
+                    "total_energy_distance_km",
+                    itinerary["total_road_distance_km"],
+                )
+                if itinerary
+                else None
+            ),
+            "total_ferry_distance_km": (
+                itinerary.get("total_ferry_distance_km", 0)
+                if itinerary
+                else None
+            ),
+            "total_ferry_duration_minutes": (
+                itinerary.get("total_ferry_duration_minutes", 0)
+                if itinerary
+                else None
+            ),
+            "ferry_segment_count": ferry_summary.get("segment_count", 0),
             "total_driving_duration_minutes": (
                 itinerary["total_driving_duration_minutes"]
+                if itinerary
+                else None
+            ),
+            "total_travel_duration_minutes": (
+                itinerary.get(
+                    "total_travel_duration_minutes",
+                    itinerary["total_driving_duration_minutes"],
+                )
                 if itinerary
                 else None
             ),

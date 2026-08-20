@@ -87,6 +87,28 @@ def route_payload(
     }
 
 
+def route_step(
+    distance_meters,
+    duration,
+    start,
+    end,
+    *,
+    maneuver="STRAIGHT",
+):
+    return {
+        "distanceMeters": distance_meters,
+        "staticDuration": duration,
+        "startLocation": {
+            "latLng": {"latitude": start[0], "longitude": start[1]}
+        },
+        "endLocation": {
+            "latLng": {"latitude": end[0], "longitude": end[1]}
+        },
+        "navigationInstruction": {"maneuver": maneuver},
+        "travelMode": "DRIVE",
+    }
+
+
 def road_request(request_id, origin, destination):
     return RoadMetricRequest(
         request_id=request_id,
@@ -145,6 +167,98 @@ def test_compute_route_uses_safe_headers_and_expected_options():
     assert request["json"]["travelMode"] == "DRIVE"
     assert request["json"]["routingPreference"] == "TRAFFIC_UNAWARE"
     assert len(request["json"]["intermediates"]) == 1
+
+
+def test_compute_route_can_request_ferry_avoidance():
+    session = RecordingSession([FakeResponse(route_payload())])
+    client = GoogleRoutesClient("key", session=session)
+
+    client.compute_route((0, 0), (0, 1), avoid_ferries=True)
+
+    assert session.calls[0][1]["json"]["routeModifiers"] == {
+        "avoidFerries": True
+    }
+
+
+def test_compute_route_separates_ferry_from_energy_distance():
+    session = RecordingSession(
+        [
+            FakeResponse(
+                route_payload(
+                    distance_meters=100_000,
+                    duration="5400s",
+                    legs=[
+                        {
+                            "distanceMeters": 100_000,
+                            "duration": "5400s",
+                            "steps": [
+                                route_step(
+                                    30_000,
+                                    "1800s",
+                                    (0, 0),
+                                    (0, 0.3),
+                                ),
+                                route_step(
+                                    60_000,
+                                    "3000s",
+                                    (0, 0.3),
+                                    (0, 0.7),
+                                    maneuver="FERRY",
+                                ),
+                                route_step(
+                                    10_000,
+                                    "600s",
+                                    (0, 0.7),
+                                    (0, 1),
+                                ),
+                            ],
+                        }
+                    ],
+                )
+            )
+        ]
+    )
+    route = GoogleRoutesClient("key", session=session).compute_route(
+        (0, 0),
+        (0, 1),
+    )
+
+    leg = route.legs[0]
+    assert leg.ferry_distance_km == pytest.approx(60)
+    assert leg.energy_distance_km == pytest.approx(40)
+    assert leg.ferry_duration_minutes == pytest.approx(50)
+    assert leg.driving_duration_minutes == pytest.approx(40)
+    assert len(leg.ferry_steps) == 1
+    assert route.to_dict()["ferry_summary"] == {
+        "contains_ferry": True,
+        "segment_count": 1,
+        "distance_km": 60,
+        "duration_minutes": 50,
+        "vehicle_access_status": "requires_operator_confirmation",
+    }
+
+
+def test_compute_route_rejects_incomplete_ferry_step():
+    payload = route_payload(
+        legs=[
+            {
+                "distanceMeters": 100_000,
+                "duration": "5400s",
+                "steps": [
+                    {"navigationInstruction": {"maneuver": "FERRY"}}
+                ],
+            }
+        ]
+    )
+    client = GoogleRoutesClient(
+        "key",
+        session=RecordingSession([FakeResponse(payload)]),
+    )
+
+    with pytest.raises(GoogleRoutesError) as captured:
+        client.compute_route((0, 0), (0, 1))
+
+    assert captured.value.code == "invalid_response"
 
 
 def test_compute_route_reports_missing_route_and_invalid_payload():
