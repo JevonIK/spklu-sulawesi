@@ -124,7 +124,7 @@ jobs:
             --cap-drop ALL \
             --security-opt no-new-privileges \
             --tmpfs /tmp:rw,noexec,nosuid,size=16m \
-            --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m \
+            --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m,mode=1777 \
             --name "${CONTAINER_NAME}" \
             --env SECRET_KEY=dummy-production-secret-key-32-chars-minimum \
             --env GOOGLE_MAPS_BROWSER_API_KEY=dummy-browser-key \

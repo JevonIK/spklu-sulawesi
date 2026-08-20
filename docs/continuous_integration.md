@@ -34,8 +34,11 @@ Setelah ketiga job Python lulus, job **Container smoke test**:
 
 Dockerfile menyalin source sebagai milik root. User `spklu` hanya memperoleh
 direktori tulis untuk ledger/laporan. Pada CI, root filesystem dibuat read-only;
-`/tmp` dan `/app/reports/generated` disediakan melalui tmpfs. Deployment yang
-memerlukan ledger persisten harus mengganti tmpfs laporan dengan volume yang
+`/tmp` dan `/app/reports/generated` disediakan melalui tmpfs. Mount laporan
+memakai `mode=1777` agar user non-root tetap dapat menulis setelah ownership
+direktori image tertutup oleh mount, dengan sticky bit untuk membatasi
+penghapusan lintas-user. Deployment yang memerlukan ledger persisten harus
+mengganti tmpfs laporan dengan volume yang
 ownership-nya sesuai, tanpa menjadikan source writable.
 
 Fixture test menggunakan dummy API key dan ledger pada direktori sementara.

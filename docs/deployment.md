@@ -72,7 +72,7 @@ docker run --rm -p 8080:8080 \
   --cap-drop ALL \
   --security-opt no-new-privileges \
   --tmpfs /tmp:rw,noexec,nosuid,size=16m \
-  --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m \
+  --tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m,mode=1777 \
   --env-file .env.production \
   spklu-sulawesi:0.15.0
 ```
@@ -87,10 +87,13 @@ Build kandidat rilis dapat memakai suffix sementara, misalnya
 secret produksi siap, dan target registry disetujui.
 
 Contoh di atas memakai tmpfs untuk smoke test sehingga ledger hilang ketika
-container berhenti. Untuk layanan atau eksperimen yang harus mempertahankan
-quota, ganti tmpfs `/app/reports/generated` dengan volume persisten. Verifikasi
-volume dapat ditulis UID runtime `spklu`, tetapi jangan mengubah ownership atau
-permission source `/app/app`. Root filesystem tetap read-only.
+container berhenti. Opsi `mode=1777` diperlukan karena mount tmpfs menutupi
+ownership direktori dari image; sticky bit tetap mencegah user lain menghapus
+berkas yang bukan miliknya. Untuk layanan atau eksperimen yang harus
+mempertahankan quota, ganti tmpfs `/app/reports/generated` dengan volume
+persisten. Verifikasi volume dapat ditulis UID runtime `spklu`, tetapi jangan
+mengubah ownership atau permission source `/app/app`. Root filesystem tetap
+read-only.
 
 Jangan memakai `.env` development sebagai `.env.production`. Pastikan file
 produksi tidak dilacak Git. Healthcheck container mengakses

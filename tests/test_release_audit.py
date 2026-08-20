@@ -140,6 +140,15 @@ def test_docker_context_keeps_v2_integrity_inputs():
     assert ".github" not in patterns
 
 
+def test_container_tmpfs_keeps_runtime_report_directory_accessible():
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert (
+        "--tmpfs /app/reports/generated:rw,noexec,nosuid,size=16m,mode=1777"
+        in workflow
+    )
+
+
 def test_release_manifest_rejects_unknown_schema(tmp_path):
     manifest_path = tmp_path / "release_manifest.json"
     manifest_path.write_text(
