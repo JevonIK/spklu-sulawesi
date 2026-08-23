@@ -10,8 +10,8 @@ diunduh serta diperiksa.
 | Komponen | Nilai kandidat |
 |---|---|
 | Versi aplikasi/analisis | 0.15.0 |
-| Dataset | 150 baris, 149 node logis |
-| SHA-256 dataset | `24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85` |
+| Dataset | 150 baris, 146 node logis |
+| SHA-256 dataset | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
 | Provenance/lisensi dataset | `incomplete` / `unknown` |
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
 | Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |

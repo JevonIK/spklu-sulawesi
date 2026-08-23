@@ -18,10 +18,10 @@
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
     "source_rows": 150,
-    "logical_nodes": 149,
-    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "logical_nodes": 146,
+    "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "metadata_path": "dataset_metadata.json",
-    "metadata_sha256": "3305e40d74b8fea45c9f8e56ed53b01dfc58faf5c9e3da5dfe49bb628ff985d2"
+    "metadata_sha256": "7e6442e5d840f2105dbbc8ac597df1d3022b5cd46330ba2b3a28288d14920e24"
   },
   "algorithm": {
     "supported_connectors": [
@@ -58,7 +58,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "676978eb1dd2eaa59321e1e320237f01e18d97628dd0631c98ad2cb8b71c3fe9"
+    "sha256": "26b7f889b651631d583cb0cc1aae3e24634982ee24712861fcc043c73d96fcf7"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

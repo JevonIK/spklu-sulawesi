@@ -12,7 +12,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Kebutuhan penelitian | Implementasi/bukti |
 |---|---|
 | Dataset enam wilayah Sulawesi | `dataset_spklu_sulawesi.csv` dan validasi `app/services/dataset.py` |
-| Dua unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf |
+| Beberapa unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf untuk setiap koordinat identik |
 | Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline/sensitivitas memakai CCS2 |
 | Akses jaringan dealer | metadata jaringan per unit, pilihan jaringan tambahan, dan status rute kondisional |
 | Kandidat berbasis Ball Tree | `app/services/spatial.py` |

@@ -94,13 +94,13 @@ def test_health_endpoint_reports_dataset(client):
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["sha256"] == (
-        "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+        "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454"
     )
     assert payload["data"]["dataset"]["source_rows"] == 150
-    assert payload["data"]["dataset"]["logical_nodes"] == 149
+    assert payload["data"]["dataset"]["logical_nodes"] == 146
     assert payload["data"]["spatial_index"]["index_type"] == "BallTree"
     assert payload["data"]["spatial_index"]["metric"] == "haversine"
-    assert payload["data"]["spatial_index"]["indexed_nodes"] == 149
+    assert payload["data"]["spatial_index"]["indexed_nodes"] == 146
     assert payload["data"]["graph_builder"]["status"] == "ready"
     assert (
         payload["data"]["graph_builder"]["road_metric_provider"]
@@ -131,10 +131,10 @@ def test_station_summary_endpoint(client):
 
     assert response.status_code == 200
     assert payload["status"] == "ok"
-    assert payload["data"]["multi_unit_node_count"] == 1
+    assert payload["data"]["multi_unit_node_count"] == 4
     assert payload["data"]["connector_unit_counts"]["GB/T"] == 17
     assert payload["data"]["network_node_counts"] == {
-        "PUBLIC": 117,
+        "PUBLIC": 114,
         "HYUNDAI": 8,
         "WULING": 17,
         "TOYOTA": 7,
@@ -153,7 +153,7 @@ def test_dataset_summary_cli(app):
 
     assert result.exit_code == 0
     assert payload["source_rows"] == 150
-    assert payload["logical_nodes"] == 149
+    assert payload["logical_nodes"] == 146
 
 
 def test_app_separates_web_quota_guard_from_experiment_service(app):

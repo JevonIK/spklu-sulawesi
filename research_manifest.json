@@ -7,11 +7,11 @@
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
-    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "metadata_path": "dataset_metadata.json",
-    "metadata_sha256": "3305e40d74b8fea45c9f8e56ed53b01dfc58faf5c9e3da5dfe49bb628ff985d2",
+    "metadata_sha256": "7e6442e5d840f2105dbbc8ac597df1d3022b5cd46330ba2b3a28288d14920e24",
     "source_rows": 150,
-    "logical_nodes": 149,
+    "logical_nodes": 146,
     "provenance_status": "incomplete",
     "license_status": "unknown"
   },
@@ -20,13 +20,13 @@
       "id": "analysis_notebook",
       "kind": "jupyter_notebook",
       "path": "notebooks/analisis_sistem_spklu_sulawesi.ipynb",
-      "sha256": "e3e4fc8738adf14847043326793065340c0da798e08f28b70a0a0f15dbb1502f"
+      "sha256": "20e50e1edb6b5d2d8234a1105bd2a8979ee20612efa757d243644104d9e6f974"
     },
     {
       "id": "notebook_provenance",
       "kind": "provenance_metadata",
       "path": "notebooks/data/provenance.json",
-      "sha256": "974d5d7c9886ad0f88c0ccb354fb406592ff2fb3b57839a45d87171e0d581bd9"
+      "sha256": "efac40180e396a601cfd8f13ed977402089bc3975b7ec7a74fd3fbf9edbc018c"
     },
     {
       "id": "snapshot_builder",
@@ -116,6 +116,7 @@
     "Laporan historis tidak merekam hash dataset maupun route_sample_step_km, sehingga kedua nilai tersebut sengaja dibiarkan null.",
     "Laporan JSON sumber masih bersifat lokal dan diabaikan Git; clone baru hanya memperoleh snapshot, checksum, metadata, dan script transformasi.",
     "Sumber asli, tanggal pengumpulan, metode pengumpulan, lisensi, dan hak redistribusi dataset belum dikonfirmasi.",
-    "Dukungan feri kandidat saat ini belum dievaluasi oleh eksperimen live historis dan tidak boleh dianggap tervalidasi secara empiris oleh snapshot 0.9.2/0.10.0."
+    "Dukungan feri kandidat saat ini belum dievaluasi oleh eksperimen live historis dan tidak boleh dianggap tervalidasi secara empiris oleh snapshot 0.9.2/0.10.0.",
+    "Dataset kandidat direvisi menjadi 150 baris dan 146 node logis setelah run historis; dataset ini tidak boleh diatribusikan sebagai input laporan live 0.9.2/0.10.0 yang tidak merekam hash dataset."
   ]
 }

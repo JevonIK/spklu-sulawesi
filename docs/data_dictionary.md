@@ -10,7 +10,7 @@ Dataset yang berada pada kandidat 0.15.0 dan dipakai analisis notebook offline
 memiliki SHA-256:
 
 ```text
-24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85
+9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454
 ```
 
 Hash harus dihitung ulang dan perubahan dataset harus dijelaskan apabila baris,
@@ -66,9 +66,14 @@ yang sama sampai enam angka desimal dikonsolidasikan menjadi satu `StationNode`
 untuk kebutuhan algoritma rute. Seluruh nama unit, konektor, alamat, tautan, dan
 nomor baris sumber tetap tersedia di dalam node tersebut.
 
-Dengan cara ini, dua unit `SPKLU PLN KANTOR ULP BOLMUT 1` dan `SPKLU PLN KANTOR
-ULP BOLMUT 2` tetap tercatat sebagai dua unit, tetapi hanya menjadi satu titik
-tujuan pada graf perjalanan.
+Kandidat saat ini mempunyai empat node multi-unit: Tolitoli, Bolmut,
+Kotamobagu, dan Manado. Setiap node mempertahankan dua baris/unit sumber, tetapi
+hanya menjadi satu titik tujuan pada graf perjalanan. Unit Manado juga
+menunjukkan bahwa konektor AC Type 2 dan CCS2 dari dua unit tetap dipertahankan
+sebagai union konektor node tanpa mencampur identitas unit.
+
+Seluruh 150 tautan kandidat saat ini memakai short link `maps.app.goo.gl` untuk
+pin lokasi. Tidak ada satu short link yang dipakai oleh koordinat berbeda.
 
 ## Metadata jaringan dan akses
 

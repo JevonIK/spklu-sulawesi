@@ -145,7 +145,11 @@ def test_reachable_search_applies_usable_range_and_forward_progress():
 def test_real_catalog_indexes_logical_nodes_not_duplicate_units():
     catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
     index = StationSpatialIndex(catalog.nodes)
-    bolmut = catalog.multi_unit_nodes[0]
+    bolmut = next(
+        node
+        for node in catalog.multi_unit_nodes
+        if node.name == "SPKLU PLN KANTOR ULP BOLMUT"
+    )
 
     matches = index.query_radius(
         (bolmut.latitude, bolmut.longitude),
@@ -153,7 +157,7 @@ def test_real_catalog_indexes_logical_nodes_not_duplicate_units():
         connector="AC TYPE 2",
     )
 
-    assert len(index.nodes) == 149
+    assert len(index.nodes) == 146
     assert [match.node.node_id for match in matches] == [bolmut.node_id]
 
 

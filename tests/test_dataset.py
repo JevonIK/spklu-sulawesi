@@ -1,4 +1,6 @@
+import csv
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -18,7 +20,7 @@ CSV_HEADER = (
     "google maps,Jenis Konektor\n"
 )
 EXPECTED_DATASET_SHA256 = (
-    "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85"
+    "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454"
 )
 
 
@@ -69,16 +71,48 @@ def test_charging_network_is_inferred_from_explicit_station_name(
     assert infer_charging_network(name) == expected
 
 
-def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
+def test_real_dataset_is_valid_and_consolidates_multi_unit_locations():
     catalog = load_station_catalog(BASE_DIR / "dataset_spklu_sulawesi.csv")
 
     assert catalog.source_row_count == 150
-    assert catalog.logical_node_count == 149
-    assert len(catalog.multi_unit_nodes) == 1
+    assert catalog.logical_node_count == 146
+    assert len(catalog.multi_unit_nodes) == 4
     assert catalog.source_sha256 == EXPECTED_DATASET_SHA256
     assert catalog.summary()["source_sha256"] == EXPECTED_DATASET_SHA256
 
-    bolmut = catalog.multi_unit_nodes[0]
+    groups = {
+        node.name: {unit.name for unit in node.units}
+        for node in catalog.multi_unit_nodes
+    }
+    assert groups == {
+        "SPKLU PLN UP3 TOLITOLI": {
+            "SPKLU PLN UP3 TOLITOLI",
+            "SPKLU PLN ULP TOLITOLI 2",
+        },
+        "SPKLU PLN KANTOR ULP BOLMUT": {
+            "SPKLU PLN KANTOR ULP BOLMUT 1",
+            "SPKLU PLN KANTOR ULP BOLMUT 2",
+        },
+        "SPKLU PLN UP3 KOTAMOBAGU": {
+            "SPKLU PLN UP3 KOTAMOBAGU",
+            "SPKLU KANTOR PLN UP3 KOTAMOBAGU 2",
+        },
+        "SPKLU PLN ULP MANADO SELATAN": {
+            "SPKLU PLN ULP MANADO SELATAN",
+            "SPKLU KANTOR PLN UP3 MANADO",
+        },
+    }
+    assert all(node.unit_count == 2 for node in catalog.multi_unit_nodes)
+    assert all(
+        len({unit.maps_url for unit in node.units}) == 1
+        for node in catalog.multi_unit_nodes
+    )
+
+    bolmut = next(
+        node
+        for node in catalog.multi_unit_nodes
+        if node.name == "SPKLU PLN KANTOR ULP BOLMUT"
+    )
     assert bolmut.name == "SPKLU PLN KANTOR ULP BOLMUT"
     assert bolmut.unit_count == 2
     assert {unit.name for unit in bolmut.units} == {
@@ -86,14 +120,60 @@ def test_real_dataset_is_valid_and_consolidates_multi_unit_location():
         "SPKLU PLN KANTOR ULP BOLMUT 2",
     }
     assert bolmut.connectors == ("AC TYPE 2",)
+    manado = next(
+        node
+        for node in catalog.multi_unit_nodes
+        if node.name == "SPKLU PLN ULP MANADO SELATAN"
+    )
+    assert manado.connectors == ("AC TYPE 2", "CCS2")
 
     summary = catalog.summary()
+    assert summary["connector_node_counts"] == {
+        "AC TYPE 2": 107,
+        "CCS2": 42,
+        "CHADEMO": 17,
+        "GB/T": 17,
+    }
+    assert summary["connector_unit_counts"] == {
+        "AC TYPE 2": 110,
+        "CCS2": 42,
+        "CHADEMO": 17,
+        "GB/T": 17,
+    }
     assert summary["network_node_counts"] == {
-        "PUBLIC": 117,
+        "PUBLIC": 114,
         "HYUNDAI": 8,
         "WULING": 17,
         "TOYOTA": 7,
     }
+    assert summary["network_connector_node_counts"]["PUBLIC"] == {
+        "AC TYPE 2": 92,
+        "CCS2": 42,
+        "CHADEMO": 17,
+        "GB/T": 0,
+    }
+
+
+def test_real_dataset_maps_links_are_consistent_pin_shortlinks():
+    dataset_path = BASE_DIR / "dataset_spklu_sulawesi.csv"
+    with dataset_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+
+    assert len(rows) == 150
+    assert {
+        urlparse(row["google maps"]).hostname for row in rows
+    } == {"maps.app.goo.gl"}
+
+    coordinates_by_link = {}
+    for row in rows:
+        coordinate = (float(row["Latitude"]), float(row["Longitude"]))
+        coordinates_by_link.setdefault(row["google maps"], set()).add(
+            coordinate
+        )
+    assert all(
+        len(coordinates) == 1
+        for coordinates in coordinates_by_link.values()
+    )
 
 
 def test_dealer_network_and_connector_must_both_match_same_unit():

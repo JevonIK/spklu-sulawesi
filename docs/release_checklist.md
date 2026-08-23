@@ -7,7 +7,7 @@ pengambilan data penelitian tambahan.
 ## Source code dan data
 
 - [ ] Dataset yang digunakan adalah `dataset_spklu_sulawesi.csv` dengan 150
-  baris sumber dan 149 node logis.
+  baris sumber dan 146 node logis.
 - [ ] SHA-256 dataset cocok dengan hash pada `docs/data_dictionary.md`.
 - [ ] `dataset_metadata.json` cocok dengan hash manifest dan masih jujur menandai
   provenance `incomplete` serta lisensi `unknown` bila bukti belum tersedia.

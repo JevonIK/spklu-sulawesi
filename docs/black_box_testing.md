@@ -104,3 +104,6 @@ dan tidak muncul lagi pesan error otorisasi pada canvas.
 Catatan tersebut adalah bukti historis 0.9.0/0.9.2, bukan verifikasi UI kandidat
 0.15.0. Smoke test baru harus mencatat revision dan hasilnya sendiri tanpa
 menjalankan rekomendasi live kecuali ada izin serta budget API terpisah.
+Angka 149 node pada tabel dipertahankan sebagai fakta smoke test historis;
+dataset kandidat terbaru mempunyai 146 node logis dan memerlukan bukti smoke
+test baru untuk revision yang sama.

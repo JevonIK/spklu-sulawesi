@@ -44,15 +44,16 @@ def test_dynamic_connector_counts_follow_selected_networks(client):
     config = _frontend_config(response)
     availability = config["connectorAvailability"]
 
-    assert availability["AC TYPE 2"]["PUBLIC_ONLY"] == 94
-    assert availability["AC TYPE 2"]["HYUNDAI,WULING,TOYOTA"] == 109
+    assert availability["AC TYPE 2"]["PUBLIC_ONLY"] == 92
+    assert availability["AC TYPE 2"]["HYUNDAI,WULING,TOYOTA"] == 107
     assert availability["GB/T"]["PUBLIC_ONLY"] == 0
     assert availability["GB/T"]["WULING"] == 17
     assert availability["CCS2"]["WULING"] == 42
 
     html = response.get_data(as_text=True)
-    assert 'data-connector-count="AC TYPE 2">94 lokasi tersedia' in html
+    assert 'data-connector-count="AC TYPE 2">92 lokasi tersedia' in html
     assert 'data-connector-count="GB/T">0 lokasi tersedia' in html
+    assert "114 lokasi · selalu disertakan" in html
     assert 'id="allowFerries"' in html
     assert "Izinkan feri kendaraan" in html
     assert "allow_ferries: Boolean(elements.allowFerries?.checked)" in _javascript()

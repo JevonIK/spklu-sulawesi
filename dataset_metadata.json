@@ -2,9 +2,9 @@
   "schema_version": 1,
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
-    "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+    "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "source_rows": 150,
-    "logical_nodes": 149,
+    "logical_nodes": 146,
     "geographic_scope": "Enam provinsi di Pulau Sulawesi, Indonesia"
   },
   "provenance": {
@@ -20,9 +20,18 @@
   },
   "known_transformations": [
     "Normalisasi label konektor hanya dilakukan di memori.",
-    "Dua unit pada koordinat identik dipertahankan sebagai unit terpisah dan dikonsolidasikan menjadi satu node algoritma.",
+    "Empat pasangan unit pada koordinat identik dipertahankan sebagai unit terpisah dan masing-masing dikonsolidasikan menjadi satu node algoritma.",
+    "Tautan Google Maps pada revisi kandidat dinormalisasi oleh pemilik penelitian ke short link maps.app.goo.gl yang membuka pin lokasi.",
+    "Koordinat unit yang diketahui berada pada lokasi fisik yang sama diselaraskan menjadi identik oleh pemilik penelitian.",
     "Jaringan Hyundai, Wuling, dan Toyota/Lexus diturunkan dari penanda eksplisit pada nama lokasi."
   ],
+  "current_revision": {
+    "source_rows": 150,
+    "logical_nodes": 146,
+    "multi_unit_nodes": 4,
+    "maps_link_host": "maps.app.goo.gl",
+    "same_link_different_coordinate_count": 0
+  },
   "known_limitations": [
     "Tanggal snapshot dan metode pengumpulan belum didokumentasikan.",
     "Status lisensi dan hak redistribusi belum dikonfirmasi.",

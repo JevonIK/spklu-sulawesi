@@ -10,8 +10,8 @@ apakah data boleh didistribusikan.
 | Atribut | Status |
 |---|---|
 | Berkas kandidat saat ini | `dataset_spklu_sulawesi.csv` |
-| SHA-256 | `24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85` |
-| Ukuran logis | 150 baris sumber; 149 node lokasi setelah konsolidasi |
+| SHA-256 | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
+| Ukuran logis | 150 baris sumber; 146 node lokasi setelah konsolidasi |
 | Cakupan yang dinyatakan | Enam provinsi di Pulau Sulawesi |
 | Cara diperoleh proyek | Disediakan oleh pemilik penelitian (`user_supplied`) |
 | Penyedia/pembuat asli | Belum diketahui |
@@ -49,6 +49,9 @@ laporan lama, termasuk langkah sampling rute, tetap ditandai tidak tercatat dan
 tidak direkonstruksi dari default versi baru.
 Kedua laporan lama juga tidak merekam hash dataset; kecocokan jumlah baris/node
 tidak membuktikan bahwa byte datasetnya identik dengan kandidat sekarang.
+Dataset kandidat sekarang bahkan mempunyai 146 node logis setelah penyelarasan
+koordinat, sedangkan konteks run lama mencatat 149 node. Karena itu, dataset
+kandidat terbaru secara eksplisit bukan bukti input kedua run historis.
 
 Laporan mentah historis disimpan lokal dan diabaikan Git. Checksum yang dicatat
 memungkinkan pemeriksaan bila berkas itu tersedia, tetapi clone repository saja
@@ -80,8 +83,10 @@ Jangan menyebut data lengkap, resmi, terkini, atau bebas digunakan.
 CSV tidak ditulis ulang oleh aplikasi. Pada saat dibaca, sistem:
 
 - menormalisasi label konektor di memori;
-- mempertahankan dua unit pada koordinat identik sebagai unit terpisah, tetapi
-  mengonsolidasikannya menjadi satu node algoritma; dan
+- mempertahankan empat pasangan unit pada koordinat identik sebagai unit
+  terpisah, tetapi mengonsolidasikan setiap pasangan menjadi satu node algoritma;
+- memakai revisi link pin `maps.app.goo.gl` dan penyelarasan koordinat
+  co-located yang dilakukan pemilik penelitian; dan
 - menurunkan label jaringan Hyundai, Wuling, dan Toyota/Lexus dari penanda
   eksplisit pada nama lokasi.
 

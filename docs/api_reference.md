@@ -20,9 +20,9 @@ Contoh bagian penting respons:
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
-      "sha256": "24992e1225209ed5a2833b8722be6bfabfc94cdc55f795acdf5edf10c21ffa85",
+      "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
       "source_rows": 150,
-      "logical_nodes": 149
+      "logical_nodes": 146
     },
     "google_maps": {
       "browser_key_configured": true,

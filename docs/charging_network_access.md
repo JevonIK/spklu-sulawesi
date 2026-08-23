@@ -23,13 +23,14 @@ pengelola.
 
 | Jaringan | Node lokasi | Konektor pada dataset | Perlakuan default |
 |---|---:|---|---|
-| SPKLU publik | 117 | AC Type 2, CCS2, CHAdeMO | Selalu disertakan |
+| SPKLU publik | 114 | AC Type 2, CCS2, CHAdeMO | Selalu disertakan |
 | Hyundai | 8 | AC Type 2 | Opsional dan kondisional |
 | Wuling | 17 | GB/T | Opsional dan kondisional |
 | Toyota/Lexus | 7 | AC Type 2 | Opsional dan kondisional |
 
-Jumlah node berbeda dari jumlah baris karena dua unit SPKLU PLN ULP Bolmut
-dikonsolidasikan menjadi satu node lokasi.
+Jumlah node berbeda dari jumlah baris karena empat pasangan unit di Tolitoli,
+Bolmut, Kotamobagu, dan Manado masing-masing dikonsolidasikan menjadi satu node
+lokasi.
 
 ## Bukti kebijakan merek
 

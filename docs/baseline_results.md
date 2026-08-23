@@ -15,6 +15,10 @@ jangkauan maksimum kendaraan 300 km, SOC awal 80%, SOC minimum 20%, target SOC
 Jumlah data tersebut adalah konteks dokumentasi proyek; laporan mentah tidak
 merekam checksum dataset. Karena itu, kesamaan byte dengan dataset kandidat
 0.15.0 tidak dapat dibuktikan hanya dari laporan historis.
+Dataset kandidat terbaru kini tetap memiliki 150 baris tetapi terkonsolidasi
+menjadi 146 node setelah revisi koordinat/link. Perbedaan jumlah node ini
+menegaskan bahwa dataset terbaru tidak boleh dipakai sebagai pengganti input run
+historis atau untuk mengubah angka hasil baseline tanpa eksperimen live baru.
 
 Usable range awal dan setelah pengisian sampai target sama-sama 162 km:
 
