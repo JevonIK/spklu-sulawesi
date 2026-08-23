@@ -220,6 +220,8 @@ pemakaian API tersedia pada
 Notebook pendamping jurnal yang menjalankan analisis dataset, demonstrasi DP,
 baseline, sensitivitas, serta visualisasi secara offline tersedia pada
 [`notebooks/analisis_sistem_spklu_sulawesi.ipynb`](notebooks/analisis_sistem_spklu_sulawesi.ipynb).
+Seluruh narasi, tabel, grafik, dan pesan output notebook disajikan dalam bahasa
+Inggris agar dapat digunakan langsung sebagai pendamping jurnal berbahasa Inggris.
 Snapshot metrik yang dilacak beserta provenance-nya berada di
 `notebooks/data/`; notebook tidak memanggil Google Maps API. Baseline tersebut
 dihasilkan aplikasi 0.9.2 dan sensitivitas oleh aplikasi 0.10.0 dengan schema

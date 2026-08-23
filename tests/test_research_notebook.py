@@ -59,6 +59,31 @@ def test_research_notebook_runs_all_code_cells_offline(monkeypatch):
     assert ET.fromstring(sample_svg).tag.endswith("svg")
 
 
+def test_research_notebook_presentation_language_is_english():
+    notebook = json.loads(NOTEBOOK_PATH.read_text(encoding="utf-8"))
+    content = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"]
+    )
+
+    assert "# Reproducible Analysis" in content
+    assert "## 7. Key Discussion Points for the Journal" in content
+    assert "## 8. Threats to Validity" in content
+    for obsolete_indonesian_phrase in (
+        "Analisis Reproduktif",
+        "Cara membaca hasil",
+        "Karakteristik dataset",
+        "Model energi dan diskretisasi",
+        "Hasil eksperimen baseline",
+        "Analisis sensitivitas",
+        "Pokok pembahasan",
+        "Ancaman validitas",
+        "Indikator siap dilaporkan",
+        "Pemeriksaan akhir",
+        "Notebook selesai",
+    ):
+        assert obsolete_indonesian_phrase not in content
+
+
 def test_research_snapshots_are_deterministically_derived(tmp_path):
     baseline_source = (
         PROJECT_ROOT

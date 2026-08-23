@@ -58,7 +58,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "3ba098750b322a307fc558883786b30407d9ce625e7bd315d7a2a991a69ff5be"
+    "sha256": "676978eb1dd2eaa59321e1e320237f01e18d97628dd0631c98ad2cb8b71c3fe9"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,
