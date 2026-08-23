@@ -30,7 +30,7 @@ def scenario(scenario_id="skenario-uji"):
         "vehicle": {
             "maximum_range_km": 300,
             "current_soc_percent": 80,
-            "connector": "CCS2",
+            "connectors": ["AC TYPE 2", "CCS2"],
         },
         "options": {
             "minimum_soc_percent": 20,
@@ -46,7 +46,7 @@ def scenario(scenario_id="skenario-uji"):
 
 def definition(*scenarios):
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "experiment_id": "eksperimen-uji",
         "description": "Definisi eksperimen untuk pengujian.",
         "scenarios": list(scenarios or (scenario(),)),
@@ -66,7 +66,10 @@ class FakeEvaluationService:
     def recommend(self, recommendation_input):
         if self.error:
             raise self.error
-        assert recommendation_input["vehicle"]["connector"] == "CCS2"
+        assert recommendation_input["vehicle"]["connectors"] == [
+            "AC TYPE 2",
+            "CCS2",
+        ]
         return {
             "parameters": {"minimum_soc_percent": 20},
             "candidate_summary": {"corridor_candidate_count": 3},
@@ -155,7 +158,8 @@ def test_baseline_file_covers_all_six_research_regions():
         "Gorontalo",
     }
     assert all(
-        item["vehicle"]["connector"] == "CCS2"
+        item["vehicle"]["connectors"] == ["AC TYPE 2", "CCS2"]
+        and item["vehicle"]["maximum_range_km"] == 430
         for item in loaded["scenarios"]
     )
     catalog = load_station_catalog("dataset_spklu_sulawesi.csv")
@@ -180,9 +184,25 @@ def test_sensitivity_file_changes_one_parameter_at_a_time():
     )
     options = [item["options"] for item in loaded["scenarios"]]
 
-    assert len(options) == 7
+    assert len(options) == 11
     assert {item["safety_factor"] for item in options} == {0.8, 0.9, 1.0}
     assert {item["soc_step_percent"] for item in options} == {2.5, 5, 10}
+    assert {
+        item["vehicle"]["maximum_range_km"]
+        for item in loaded["scenarios"]
+    } == {200, 300, 400, 430, 500}
+
+
+def test_connector_sensitivity_changes_only_connector_set():
+    loaded = load_experiment_definition(
+        "experiments/scenarios_connector_sensitivity.json"
+    )
+
+    assert len(loaded["scenarios"]) == 2
+    assert {
+        tuple(item["vehicle"]["connectors"])
+        for item in loaded["scenarios"]
+    } == {("CCS2",), ("AC TYPE 2", "CCS2")}
 
 
 def test_definition_rejects_duplicate_scenario_id():
@@ -260,7 +280,7 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
     assert rows[0]["minimum_soc_percent"] == "20"
     assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"
-    assert report["schema_version"] == 3
+    assert report["schema_version"] == 4
 
     with pytest.raises(FileExistsError, match="sudah ada"):
         write_experiment_report(report, tmp_path, "hasil-uji")
@@ -342,7 +362,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-            "app_version": "0.15.0",
+            "app_version": "0.16.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,

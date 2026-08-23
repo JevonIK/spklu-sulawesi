@@ -1,7 +1,7 @@
-# Kandidat rilis 0.15.0
+# Kandidat rilis 0.16.0
 
 Dokumen ini adalah identitas kandidat, bukan pernyataan bahwa deployment sudah
-produksi. Status lulus hanya boleh diberikan setelah manifest 0.15.0 sinkron,
+produksi. Status lulus hanya boleh diberikan setelah manifest 0.16.0 sinkron,
 audit offline lulus, seluruh job GitHub Actions hijau, dan artefak run tersebut
 diunduh serta diperiksa.
 
@@ -9,15 +9,16 @@ diunduh serta diperiksa.
 
 | Komponen | Nilai kandidat |
 |---|---|
-| Versi aplikasi/analisis | 0.15.0 |
+| Versi aplikasi/analisis | 0.16.0 |
 | Dataset | 150 baris, 146 node logis |
 | SHA-256 dataset | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
 | Provenance/lisensi dataset | `incomplete` / `unknown` |
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
 | Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |
 | SPKLU publik | Selalu disertakan |
-| Konektor eksperimen | CCS2 |
-| Schema skenario / laporan baru | 2 / 3 |
+| Konektor eksperimen kandidat | CCS2 diprioritaskan; AC Type 2 fallback |
+| Jangkauan referensi kandidat | 430 km (median WLTP 433 km dibulatkan ke 10 km) |
+| Schema skenario / laporan baru | 3 / 4 |
 | Mode rute | `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY` |
 | Margin lower bound geodesik | 1% |
 | Estimasi waktu pengisian | Tidak termasuk |
@@ -27,7 +28,7 @@ diunduh serta diperiksa.
 
 ## Perubahan yang perlu diverifikasi
 
-- laporan schema 3 merekam provenance source, data, skenario, dependency,
+- laporan schema 4 merekam provenance source, data, skenario, dependency,
   manifest, parameter algoritma, dan lingkungan eksekusi;
 - manifest rilis mengunci hash source scope `application-runtime-v2`, metadata
   dataset, definisi skenario, manifest penelitian, dependency, konstanta rute,
@@ -45,7 +46,7 @@ diunduh serta diperiksa.
 
 Jangan menyalin angka jumlah test, coverage, atau check audit dari rilis lama.
 Nilai final harus diambil dari artefak GitHub Actions untuk revision kandidat
-0.15.0 yang sama. Keberhasilan versi sebelumnya tidak membuktikan image 0.15.0.
+0.16.0 yang sama. Keberhasilan versi sebelumnya tidak membuktikan image 0.16.0.
 
 ## Hard limit aktif
 
@@ -65,20 +66,24 @@ pada [`google_maps_api_limits.md`](google_maps_api_limits.md).
 
 ## Provenance bukti penelitian
 
-Hasil penelitian yang tersedia tidak dibuat oleh 0.15.0:
+Hasil penelitian yang tersedia tidak dibuat oleh 0.16.0:
 
 | Artefak | Versi penghasil | Schema laporan | Ruang lingkup |
 |---|---:|---:|---|
 | Baseline enam wilayah | 0.9.2 | 2 | 6 skenario; 3 feasible |
 | Sensitivitas Makassar–Rantepao | 0.10.0 | 2 | 7 skenario feasible |
 
-Versi 0.15.0 adalah versi analisis dan kandidat untuk run berikutnya. Notebook
+Versi 0.16.0 adalah versi analisis dan kandidat untuk run berikutnya. Notebook
 membaca snapshot historis secara offline. Klaim nol pelanggaran SOC pada hasil
 lama berasal dari simulasi versi penghasilnya; fitur rekonsiliasi leg final
-0.15.0 tidak dijalankan secara retroaktif. Laporan lama juga tidak merekam
+0.16.0 tidak dijalankan secara retroaktif. Laporan lama juga tidak merekam
 langkah sampling rute atau checksum dataset, dan definisi skenario tertanamnya
 masih schema 1. Nilai yang hilang tidak boleh ditebak dari default atau file
-skenario schema 2 yang sekarang.
+skenario schema 3 yang sekarang.
+
+Konfigurasi Combo 2/430 km dan sensitivitas baru belum menghasilkan data live.
+Artefak `research/vehicle_range_reference.json` mengunci sampel, sumber URL,
+median, aturan pembulatan, dan keterbatasan pemilihan baseline tersebut.
 
 Sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan hak redistribusi
 dataset belum dikonfirmasi. Sebelum paper atau CSV dipublikasikan, pemilik
@@ -89,9 +94,9 @@ penelitian harus melengkapi bukti tersebut sebagaimana dijelaskan pada
 
 Kandidat baru dapat disebut terverifikasi setelah:
 
-1. audit offline berjalan terhadap manifest 0.15.0 tanpa mismatch;
+1. audit offline berjalan terhadap manifest 0.16.0 tanpa mismatch;
 2. test dan coverage lulus pada Python 3.11, 3.12, 3.13, dan 3.14;
-3. job container 0.15.0 lulus dalam mode read-only dan tanpa jaringan;
+3. job container 0.16.0 lulus dalam mode read-only dan tanpa jaringan;
 4. artefak kualitas/container dari run yang sama berhasil diunduh dan diperiksa;
 5. tidak ada secret atau laporan live mentah dalam commit;
 6. data provenance/lisensi ditangani atau batas publikasinya dinyatakan jelas;

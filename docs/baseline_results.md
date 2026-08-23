@@ -2,7 +2,7 @@
 
 > **Batas provenance:** dokumen ini merangkum laporan live historis schema 2
 > dengan definisi skenario schema 1 tertanam, dibuat aplikasi 0.9.2. Kandidat
-> analisis 0.15.0 tidak menjalankan ulang request tersebut dan tidak boleh
+> analisis 0.16.0 tidak menjalankan ulang request tersebut dan tidak boleh
 > dicantumkan sebagai versi penghasil hasil.
 
 ## Identitas eksperimen
@@ -14,7 +14,7 @@ jangkauan maksimum kendaraan 300 km, SOC awal 80%, SOC minimum 20%, target SOC
 
 Jumlah data tersebut adalah konteks dokumentasi proyek; laporan mentah tidak
 merekam checksum dataset. Karena itu, kesamaan byte dengan dataset kandidat
-0.15.0 tidak dapat dibuktikan hanya dari laporan historis.
+0.16.0 tidak dapat dibuktikan hanya dari laporan historis.
 Dataset kandidat terbaru kini tetap memiliki 150 baris tetapi terkonsolidasi
 menjadi 146 node setelah revisi koordinat/link. Perbedaan jumlah node ini
 menegaskan bahwa dataset terbaru tidak boleh dipakai sebagai pengganti input run
@@ -133,7 +133,7 @@ Indonesia. Perbedaan tanggal ini mengikuti reset quota Google pada tengah malam
 Pacific Time.
 
 Nilai 30 dan 625 per menit pada tabel adalah batas yang berlaku ketika baseline
-historis dijalankan. Kebijakan kandidat 0.15.0 saat ini memakai 100 Compute
+historis dijalankan. Kebijakan kandidat 0.16.0 saat ini memakai 100 Compute
 Routes dan 2.000 elemen Matrix per menit, tetap dengan batas harian 100/2.000;
 perubahan tersebut tidak mengubah catatan pemakaian historis.
 
@@ -170,7 +170,7 @@ dataset, serta kondisi layanan dapat berubah.
 - Waktu yang dilaporkan hanya waktu berkendara, bukan waktu perjalanan termasuk
   pengisian.
 - Klaim nol pelanggaran SOC berasal dari simulasi itinerary pada implementasi
-  0.9.2. Validasi ulang per-leg Compute Routes final yang tersedia di 0.15.0
+  0.9.2. Validasi ulang per-leg Compute Routes final yang tersedia di 0.16.0
   belum dijalankan terhadap run historis ini, sehingga keduanya tidak boleh
   disamakan.
 - Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash

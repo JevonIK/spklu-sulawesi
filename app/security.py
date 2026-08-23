@@ -104,6 +104,10 @@ def _validate_common_config(app):
     numeric_config = {
         "DEFAULT_SOC_MIN": app.config.get("DEFAULT_SOC_MIN"),
         "DEFAULT_SOC_TARGET": app.config.get("DEFAULT_SOC_TARGET"),
+        "DEFAULT_CURRENT_SOC": app.config.get("DEFAULT_CURRENT_SOC"),
+        "DEFAULT_MAXIMUM_RANGE_KM": app.config.get(
+            "DEFAULT_MAXIMUM_RANGE_KM"
+        ),
         "DEFAULT_SAFETY_FACTOR": app.config.get("DEFAULT_SAFETY_FACTOR"),
         "DEFAULT_CORRIDOR_RADIUS_KM": app.config.get(
             "DEFAULT_CORRIDOR_RADIUS_KM"
@@ -136,6 +140,17 @@ def _validate_common_config(app):
         raise ProductionConfigurationError(
             "DEFAULT_SOC_TARGET harus lebih besar dari DEFAULT_SOC_MIN dan "
             "maksimal 100."
+        )
+    current_soc = float(numeric_config["DEFAULT_CURRENT_SOC"])
+    if not minimum_soc < current_soc <= 100:
+        raise ProductionConfigurationError(
+            "DEFAULT_CURRENT_SOC harus lebih besar dari DEFAULT_SOC_MIN dan "
+            "maksimal 100."
+        )
+    if not 0 < float(numeric_config["DEFAULT_MAXIMUM_RANGE_KM"]) <= 2000:
+        raise ProductionConfigurationError(
+            "DEFAULT_MAXIMUM_RANGE_KM harus berada pada rentang >0 sampai "
+            "2.000 km."
         )
     if not 0 < float(numeric_config["DEFAULT_SAFETY_FACTOR"]) <= 1:
         raise ProductionConfigurationError(

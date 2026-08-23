@@ -17,6 +17,8 @@ troubleshooting di bawah.
 1. Pilih lokasi awal dari hasil Place Autocomplete.
 2. Pilih lokasi tujuan yang berbeda.
 3. Masukkan SOC saat ini dan jangkauan maksimum kendaraan dalam kilometer.
+   Nilai awal 430 km adalah baseline penelitian, bukan nilai yang harus dipakai;
+   ganti dengan nilai WLTP atau estimasi nyata kendaraan Anda.
 4. Centang satu atau beberapa konektor yang benar-benar dapat digunakan
    kendaraan: AC Type 2, CCS2, CHAdeMO, atau GB/T. Angka pada pilihan
    menunjukkan jumlah lokasi pada dataset.
@@ -58,8 +60,14 @@ prediktif.
 
 Badge **Rute publik** berarti seluruh pemberhentian pengisian yang dipilih
 algoritma berasal dari SPKLU publik. Badge **Rute kondisional** berarti rute
-mengandalkan sedikitnya satu charger dealer. Untuk rute kondisional, pengguna
-wajib memastikan izin, jam operasional, dan ketersediaan kepada pengelola.
+mengandalkan sedikitnya satu charger dealer, fallback AC Type 2, atau feri.
+Untuk charger dealer, pengguna wajib memastikan izin, jam operasional, dan
+ketersediaan kepada pengelola.
+
+Badge **AC Type 2 fallback** berarti kendaraan Combo 2 tidak memperoleh
+itinerary CCS2 penuh dan sedikitnya satu stop memakai AC Type 2. Sistem
+memprioritaskan CCS2 sebelum fallback ini, tetapi tidak menghitung waktu
+pengisian; durasi berhenti dapat jauh lebih lama.
 
 Badge **Feri kondisional** berarti Google mendeteksi sedikitnya satu
 penyeberangan. Ringkasan memisahkan jarak darat dan jarak feri; SOC hanya
@@ -93,6 +101,10 @@ Sebagai contoh, memilih CCS2 dan jaringan Wuling tidak memasukkan charger
 Wuling karena seluruh lokasi Wuling pada dataset memakai GB/T. SPKLU publik
 CCS2 tetap dapat dipertimbangkan. Sistem tidak menambahkan GB/T secara otomatis.
 
+Untuk kendaraan dengan inlet Combo 2, pilihan awal CCS2 + AC Type 2 mencerminkan
+dukungan DC dan AC. Pada kombinasi ini, optimizer mendahulukan rute tanpa stop
+AC-only; AC Type 2 baru dipakai sebagai fallback dan ditandai pada hasil.
+
 Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
 5 km menjadi default backend. Nilai ini tidak ditampilkan pada formulir umum.
 Peneliti tetap dapat mengubahnya melalui skenario eksperimen, bukan melalui
@@ -106,6 +118,7 @@ interaksi pengguna harian.
 | Tombol pencarian tetap nonaktif | pilih lokasi awal dan tujuan dari daftar saran Google; teks yang hanya diketik belum menyimpan koordinat |
 | Tombol nonaktif setelah lokasi dipilih | pastikan sedikitnya satu checkbox konektor masih dicentang |
 | Wuling tidak masuk ketika CCS2 dipilih | lokasi Wuling pada dataset memakai GB/T; pilih GB/T hanya jika kendaraan benar-benar kompatibel |
+| Hasil menampilkan AC Type 2 fallback | tidak ada itinerary terpilih yang seluruh stop-nya memakai CCS2; konfirmasi daya/kabel dan siapkan waktu pengisian karena durasinya tidak dihitung |
 | Saran lokasi gelap/tidak terbaca | muat ulang aset aplikasi terbaru; widget dipaksa memakai skema warna terang |
 | Rute terlihat tetapi petunjuk awal masih menutupi peta | muat ulang aset JavaScript terbaru; overlay semestinya hilang saat rute tersedia |
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |

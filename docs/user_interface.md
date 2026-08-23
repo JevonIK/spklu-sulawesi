@@ -8,7 +8,8 @@ Antarmuka fase 6B terdiri dari:
 - peta Google dengan encoded polyline rute kualitas `HIGH_QUALITY`;
 - marker lokasi awal, tujuan, dan SPKLU terpilih;
 - formulir parameter kendaraan dengan checkbox AC Type 2, CCS2, CHAdeMO, dan
-  GB/T yang dapat dipilih lebih dari satu;
+  GB/T yang dapat dipilih lebih dari satu; CCS2 + AC Type 2 menjadi pilihan
+  awal kendaraan Combo 2;
 - SPKLU publik yang selalu aktif serta checkbox jaringan tambahan Hyundai,
   Wuling, dan Toyota/Lexus;
 - checkbox izin penggunaan feri kendaraan;
@@ -37,19 +38,24 @@ di luar ruang lingkup penelitian.
 8. Selama perhitungan, tombol dan peta menampilkan status loading.
 9. Filter jaringan hanya diterapkan setelah filter konektor. Kombinasi jaringan
    yang tidak mempunyai konektor cocok diberi penjelasan tanpa mengubah pilihan
-   konektor secara otomatis.
+   konektor secara otomatis. UI menghitung union node unik; pilihan awal
+   AC Type 2 + CCS2 menampilkan 114 lokasi publik, bukan hasil penjumlahan yang
+   menggandakan node dengan kedua konektor.
 10. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC; petunjuk awal
    di tengah peta disembunyikan segera setelah data rute tersedia. Jika rute
    feasible, SOC setiap leg rute yang ditampilkan harus lolos validasi ulang
    sebelum hasil ditampilkan.
 11. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
     peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
-12. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
+12. Untuk kombinasi Combo 2, optimizer meminimalkan jumlah stop AC-only sebelum
+    biaya perjalanan. Stop AC Type 2 hanya menjadi fallback, diberi badge dan
+    peringatan bahwa waktu pengisian tidak dihitung.
+13. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
-13. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,
+14. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,
     menghapus lokasi tersimpan, hasil, marker, serta polyline tanpa reload dan
     tanpa request Routes baru.
-14. Manuver feri dideteksi otomatis. Ringkasan dan itinerary memisahkan jarak
+15. Manuver feri dideteksi otomatis. Ringkasan dan itinerary memisahkan jarak
     darat dari jarak feri, mempertahankan SOC selama pelayaran, dan menandai
     seluruh rute feri sebagai kondisional.
 

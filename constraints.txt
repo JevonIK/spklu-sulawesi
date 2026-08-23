@@ -1,4 +1,4 @@
-# Dependency lock kandidat rilis 0.15.0 untuk Python 3.11, 3.12, 3.13, dan 3.14.
+# Dependency lock kandidat rilis 0.16.0 untuk Python 3.11, 3.12, 3.13, dan 3.14.
 # Perbarui secara sengaja, uji seluruh matrix, lalu perbarui hash manifest.
 blinker==1.9.0
 certifi==2026.7.22

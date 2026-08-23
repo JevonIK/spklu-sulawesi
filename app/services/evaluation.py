@@ -17,15 +17,15 @@ from pathlib import Path
 
 from .dataset import (
     EXPECTED_PROVINCES,
-    normalize_connector,
+    parse_connectors,
     parse_additional_charging_networks,
 )
 from .energy import EnergyParameters
 from .spatial import normalize_coordinate
 
 
-REPORT_SCHEMA_VERSION = 3
-SCENARIO_SCHEMA_VERSION = 2
+REPORT_SCHEMA_VERSION = 4
+SCENARIO_SCHEMA_VERSION = 3
 _SAFE_LABEL = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 CSV_COLUMNS = (
@@ -35,6 +35,8 @@ CSV_COLUMNS = (
     "maximum_range_km",
     "current_soc_percent",
     "connector",
+    "connectors",
+    "preferred_connector",
     "minimum_soc_percent",
     "target_soc_percent",
     "safety_factor",
@@ -48,6 +50,7 @@ CSV_COLUMNS = (
     "soc_violation_count",
     "itinerary_leg_count",
     "charging_stop_count",
+    "ac_fallback_stop_count",
     "charging_stop_names",
     "base_route_distance_km",
     "base_route_duration_minutes",
@@ -167,7 +170,7 @@ def _validate_vehicle_and_options(scenario, field):
     vehicle = _require_mapping(scenario.get("vehicle"), vehicle_field)
     _reject_unknown_fields(
         vehicle,
-        {"maximum_range_km", "current_soc_percent", "connector"},
+        {"maximum_range_km", "current_soc_percent", "connectors"},
         vehicle_field,
     )
     maximum_range = _finite_number(
@@ -184,10 +187,21 @@ def _validate_vehicle_and_options(scenario, field):
         raise ExperimentDefinitionError(
             f"{vehicle_field}.maximum_range_km harus berada pada rentang >0 sampai 2000."
         )
+    raw_connectors = vehicle.get("connectors")
+    if not isinstance(raw_connectors, list) or not raw_connectors:
+        raise ExperimentDefinitionError(
+            f"{vehicle_field}.connectors wajib berupa daftar tidak kosong."
+        )
     try:
-        normalize_connector(_require_text(vehicle, "connector", vehicle_field))
+        connectors = parse_connectors(raw_connectors)
     except ValueError as error:
-        raise ExperimentDefinitionError(f"{vehicle_field}.connector {error}.") from error
+        raise ExperimentDefinitionError(
+            f"{vehicle_field}.connectors {error}."
+        ) from error
+    if len(connectors) != len(raw_connectors):
+        raise ExperimentDefinitionError(
+            f"{vehicle_field}.connectors tidak boleh duplikat."
+        )
 
     options_field = f"{field}.options"
     options = _require_mapping(scenario.get("options"), options_field)
@@ -247,7 +261,10 @@ def _validate_vehicle_and_options(scenario, field):
 
 
 def _validate_sensitivity_oat(definition):
-    if not definition["experiment_id"].startswith("sensitivitas-"):
+    if (
+        not definition["experiment_id"].startswith("sensitivitas-")
+        or definition["experiment_id"] == "sensitivitas-konektor-combo2"
+    ):
         return
     scenarios = definition["scenarios"]
     baseline = next(
@@ -258,37 +275,102 @@ def _validate_sensitivity_oat(definition):
         raise ExperimentDefinitionError(
             "Eksperimen sensitivitas wajib memuat sensitivitas-baseline."
         )
-    factors = ("safety_factor", "corridor_radius_km", "soc_step_percent")
+    option_factors = (
+        "safety_factor",
+        "corridor_radius_km",
+        "soc_step_percent",
+    )
+    vehicle_factors = ("maximum_range_km",)
     fixed_options = {
         key: value
         for key, value in baseline["options"].items()
-        if key not in factors
+        if key not in option_factors
     }
     for scenario in scenarios:
         if scenario is baseline:
             continue
         if scenario["origin"] != baseline["origin"] or scenario[
             "destination"
-        ] != baseline["destination"] or scenario["vehicle"] != baseline["vehicle"]:
+        ] != baseline["destination"]:
             raise ExperimentDefinitionError(
                 f"{scenario['id']} mengubah variabel di luar faktor sensitivitas."
             )
         if {
             key: value
+            for key, value in scenario["vehicle"].items()
+            if key not in vehicle_factors
+        } != {
+            key: value
+            for key, value in baseline["vehicle"].items()
+            if key not in vehicle_factors
+        }:
+            raise ExperimentDefinitionError(
+                f"{scenario['id']} mengubah konfigurasi kendaraan tetap."
+            )
+        if {
+            key: value
             for key, value in scenario["options"].items()
-            if key not in factors
+            if key not in option_factors
         } != fixed_options:
             raise ExperimentDefinitionError(
                 f"{scenario['id']} mengubah parameter tetap sensitivitas."
             )
         changed_factors = [
             key
-            for key in factors
+            for key in option_factors
             if scenario["options"][key] != baseline["options"][key]
         ]
+        changed_factors.extend(
+            key
+            for key in vehicle_factors
+            if scenario["vehicle"][key] != baseline["vehicle"][key]
+        )
         if len(changed_factors) != 1:
             raise ExperimentDefinitionError(
                 f"{scenario['id']} harus mengubah tepat satu faktor sensitivitas."
+            )
+
+
+def _validate_connector_sensitivity(definition):
+    if definition["experiment_id"] != "sensitivitas-konektor-combo2":
+        return
+    scenarios = definition["scenarios"]
+    if len(scenarios) != 2:
+        raise ExperimentDefinitionError(
+            "Sensitivitas konektor wajib memuat dua skenario."
+        )
+    expected_sets = {
+        ("CCS2",),
+        ("AC TYPE 2", "CCS2"),
+    }
+    actual_sets = {
+        parse_connectors(scenario["vehicle"]["connectors"])
+        for scenario in scenarios
+    }
+    if actual_sets != expected_sets:
+        raise ExperimentDefinitionError(
+            "Sensitivitas konektor wajib membandingkan CCS2 dengan "
+            "AC Type 2 + CCS2."
+        )
+    baseline = scenarios[0]
+    for scenario in scenarios[1:]:
+        if (
+            scenario["origin"] != baseline["origin"]
+            or scenario["destination"] != baseline["destination"]
+            or scenario["options"] != baseline["options"]
+            or {
+                key: value
+                for key, value in scenario["vehicle"].items()
+                if key != "connectors"
+            }
+            != {
+                key: value
+                for key, value in baseline["vehicle"].items()
+                if key != "connectors"
+            }
+        ):
+            raise ExperimentDefinitionError(
+                "Sensitivitas konektor hanya boleh mengubah daftar konektor."
             )
 
 
@@ -342,6 +424,7 @@ def validate_experiment_definition(definition):
         _validate_vehicle_and_options(scenario, field)
 
     _validate_sensitivity_oat(definition)
+    _validate_connector_sensitivity(definition)
     return definition
 
 
@@ -378,6 +461,8 @@ def _service_payload(scenario):
 def _result_template(scenario):
     vehicle = scenario["vehicle"]
     options = scenario.get("options", {})
+    connectors = parse_connectors(vehicle.get("connectors"))
+    preferred_connector = "CCS2" if "CCS2" in connectors else connectors[0]
     return {
         "scenario_id": scenario["id"],
         "scenario_name": scenario["name"],
@@ -386,7 +471,9 @@ def _result_template(scenario):
         "destination_label": scenario["destination"].get("label"),
         "maximum_range_km": vehicle.get("maximum_range_km"),
         "current_soc_percent": vehicle.get("current_soc_percent"),
-        "connector": vehicle.get("connector"),
+        "connector": preferred_connector,
+        "connectors": " | ".join(connectors),
+        "preferred_connector": preferred_connector,
         "minimum_soc_percent": options.get("minimum_soc_percent"),
         "target_soc_percent": options.get("target_soc_percent"),
         "safety_factor": options.get("safety_factor"),
@@ -402,6 +489,7 @@ def _result_template(scenario):
         "soc_violation_count": None,
         "itinerary_leg_count": None,
         "charging_stop_count": None,
+        "ac_fallback_stop_count": None,
         "charging_stop_names": None,
         "base_route_distance_km": None,
         "base_route_duration_minutes": None,
@@ -480,6 +568,10 @@ def _completed_result(scenario, pipeline_result):
             "itinerary_leg_count": len(itinerary_legs),
             "charging_stop_count": (
                 itinerary["charging_stop_count"] if itinerary else 0
+            ),
+            "ac_fallback_stop_count": route_access.get(
+                "ac_fallback_stop_count",
+                0,
             ),
             "charging_stop_names": " | ".join(
                 stop["name"] for stop in charging_stops

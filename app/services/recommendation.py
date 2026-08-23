@@ -6,7 +6,11 @@ import math
 import uuid
 from dataclasses import dataclass
 
-from ..constants import DEFAULT_CONNECTOR
+from ..constants import (
+    DEFAULT_CONNECTORS,
+    FALLBACK_RESEARCH_CONNECTOR,
+    PREFERRED_RESEARCH_CONNECTOR,
+)
 from .dataset import (
     CHARGING_NETWORK_LABELS,
     CONNECTOR_ORDER,
@@ -168,7 +172,7 @@ class RecommendationInput:
         )
         raw_connectors = vehicle.get(
             "connectors",
-            vehicle.get("connector", DEFAULT_CONNECTOR),
+            vehicle.get("connector", DEFAULT_CONNECTORS),
         )
         try:
             connectors = parse_connectors(raw_connectors)
@@ -298,6 +302,8 @@ class RecommendationInput:
             # `connector` dipertahankan untuk kompatibilitas klien lama.
             "connector": self.connector,
             "connectors": list(self.connectors),
+            "preferred_connector": self.preferred_connector,
+            "fallback_connectors": list(self.fallback_connectors),
             "additional_charging_networks": list(
                 self.additional_charging_networks
             ),
@@ -310,7 +316,26 @@ class RecommendationInput:
     def connector(self):
         """Konektor utama untuk kompatibilitas integrasi versi lama."""
 
+        return self.preferred_connector
+
+    @property
+    def preferred_connector(self):
+        """Konektor yang didahulukan untuk pemberhentian pengisian."""
+
+        if PREFERRED_RESEARCH_CONNECTOR in self.connectors:
+            return PREFERRED_RESEARCH_CONNECTOR
         return self.connectors[0]
+
+    @property
+    def fallback_connectors(self):
+        """Konektor lambat yang hanya dipakai bila opsi utama tidak tersedia."""
+
+        if (
+            PREFERRED_RESEARCH_CONNECTOR in self.connectors
+            and FALLBACK_RESEARCH_CONNECTOR in self.connectors
+        ):
+            return (FALLBACK_RESEARCH_CONNECTOR,)
+        return ()
 
 
 class RecommendationService:
@@ -366,6 +391,64 @@ class RecommendationService:
                 }
             )
         return summaries
+
+    @staticmethod
+    def _station_connector_choice(station_node, recommendation_input):
+        """Pilih jaringan publik lebih dahulu, lalu konektor DC preferen."""
+
+        eligible_networks = matching_charging_networks(
+            station_node,
+            recommendation_input.connectors,
+            recommendation_input.additional_charging_networks,
+        )
+        if not eligible_networks:
+            raise RuntimeError("Station itinerary tidak lagi kompatibel.")
+        route_network = (
+            PUBLIC_CHARGING_NETWORK
+            if PUBLIC_CHARGING_NETWORK in eligible_networks
+            else eligible_networks[0]
+        )
+        compatible = {
+            connector
+            for unit in station_node.units
+            if unit.charging_network == route_network
+            for connector in unit.connectors
+            if connector in recommendation_input.connectors
+        }
+        ordered_compatible = tuple(
+            connector
+            for connector in CONNECTOR_ORDER
+            if connector in compatible
+        )
+        selected_connector = (
+            recommendation_input.preferred_connector
+            if recommendation_input.preferred_connector in compatible
+            else ordered_compatible[0]
+        )
+        is_fallback = (
+            selected_connector in recommendation_input.fallback_connectors
+        )
+        return {
+            "eligible_networks": eligible_networks,
+            "route_network": route_network,
+            "compatible_connectors": ordered_compatible,
+            "selected_connector": selected_connector,
+            "is_fallback": is_fallback,
+        }
+
+    def _station_preference_ranks(self, graph, recommendation_input):
+        """Rank 1 membuat AC Type 2 hanya dipilih jika rute CCS2 tak feasible."""
+
+        return {
+            node.node_id: int(
+                self._station_connector_choice(
+                    node.station,
+                    recommendation_input,
+                )["is_fallback"]
+            )
+            for node in graph.nodes
+            if node.kind == "station" and node.station is not None
+        }
 
     @staticmethod
     def _reconcile_final_route_itinerary(
@@ -522,6 +605,8 @@ class RecommendationService:
                 "conditional": ferry_summary["contains_ferry"],
                 "conditional_stop_count": 0,
                 "conditional_stops": [],
+                "ac_fallback_stop_count": 0,
+                "ac_fallback_stops": [],
                 "ferry": ferry_summary,
                 "notice": (
                     "Rute dasar memuat penyeberangan feri, tetapi itinerary "
@@ -535,25 +620,15 @@ class RecommendationService:
         itinerary = optimization_payload.get("itinerary")
         charging_stops = itinerary.get("charging_stops", []) if itinerary else []
         conditional_stops = []
+        ac_fallback_stops = []
         for stop in charging_stops:
             station_node = graph.node(stop["node_id"]).station
-            eligible_networks = matching_charging_networks(
+            choice = RecommendationService._station_connector_choice(
                 station_node,
-                recommendation_input.connectors,
-                recommendation_input.additional_charging_networks,
+                recommendation_input,
             )
-            route_network = (
-                PUBLIC_CHARGING_NETWORK
-                if PUBLIC_CHARGING_NETWORK in eligible_networks
-                else eligible_networks[0]
-            )
-            compatible_connectors = {
-                connector
-                for unit in station_node.units
-                if unit.charging_network == route_network
-                for connector in unit.connectors
-                if connector in recommendation_input.connectors
-            }
+            eligible_networks = choice["eligible_networks"]
+            route_network = choice["route_network"]
             is_conditional = route_network != PUBLIC_CHARGING_NETWORK
             station_payload = stop["station"]
             station_payload["eligible_charging_networks"] = list(
@@ -563,11 +638,15 @@ class RecommendationService:
             station_payload["route_charging_network_label"] = (
                 CHARGING_NETWORK_LABELS[route_network]
             )
-            station_payload["route_compatible_connectors"] = [
-                connector
-                for connector in CONNECTOR_ORDER
-                if connector in compatible_connectors
+            station_payload["route_compatible_connectors"] = list(
+                choice["compatible_connectors"]
+            )
+            station_payload["route_selected_connector"] = choice[
+                "selected_connector"
             ]
+            station_payload["route_connector_role"] = (
+                "ac_fallback" if choice["is_fallback"] else "preferred"
+            )
             station_payload["route_access_type"] = (
                 "dealer_conditional" if is_conditional else "public"
             )
@@ -582,14 +661,32 @@ class RecommendationService:
                         ],
                     }
                 )
+            if choice["is_fallback"]:
+                ac_fallback_stops.append(
+                    {
+                        "node_id": stop["node_id"],
+                        "name": station_node.name,
+                        "connector": choice["selected_connector"],
+                    }
+                )
 
         ferry_conditional = ferry_summary["contains_ferry"]
-        conditional = bool(conditional_stops) or ferry_conditional
+        conditional = (
+            bool(conditional_stops)
+            or bool(ac_fallback_stops)
+            or ferry_conditional
+        )
         notices = []
         if conditional_stops:
             notices.append(
                 "Rute menggunakan charger dealer; konfirmasi izin dan "
                 "ketersediaannya kepada pengelola."
+            )
+        if ac_fallback_stops:
+            notices.append(
+                "Rute memakai AC Type 2 sebagai fallback karena itinerary "
+                "CCS2 penuh tidak tersedia atau tidak terpilih; waktu "
+                "pengisian tidak dihitung dan dapat jauh lebih lama."
             )
         if ferry_conditional:
             notices.append(
@@ -607,6 +704,9 @@ class RecommendationService:
             "conditional": conditional,
             "conditional_stop_count": len(conditional_stops),
             "conditional_stops": conditional_stops,
+            "preferred_connector": recommendation_input.preferred_connector,
+            "ac_fallback_stop_count": len(ac_fallback_stops),
+            "ac_fallback_stops": ac_fallback_stops,
             "ferry": ferry_summary,
             "notice": " ".join(notices),
         }
@@ -675,6 +775,10 @@ class RecommendationService:
             graph,
             current_soc_percent=recommendation_input.current_soc_percent,
             parameters=parameters,
+            station_preference_ranks=self._station_preference_ranks(
+                graph,
+                recommendation_input,
+            ),
         )
 
         recommended_route = None
@@ -740,6 +844,15 @@ class RecommendationService:
                 "connector_candidate_count": len(connector_candidates),
                 "compatible_connector": recommendation_input.connector,
                 "compatible_connectors": list(recommendation_input.connectors),
+                "preferred_connector": recommendation_input.preferred_connector,
+                "fallback_connectors": list(
+                    recommendation_input.fallback_connectors
+                ),
+                "connector_preference_policy": (
+                    "minimize_ac_fallback_stops_before_travel_cost"
+                    if recommendation_input.fallback_connectors
+                    else "selected_connectors_equal"
+                ),
                 "additional_charging_networks": list(
                     recommendation_input.additional_charging_networks
                 ),

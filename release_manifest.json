@@ -1,9 +1,9 @@
 {
-  "schema_version": 3,
-  "application_version": "0.15.0",
+  "schema_version": 4,
+  "application_version": "0.16.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "cc555e1d109bf4002161391f0c213177fd14b04b6815eb2a576e533d1755fbc6"
+    "sha256": "d9f392cde3eb10232655dfee172cfcc81487ea64226ecb7a8382f11e4f409b4c"
   },
   "supported_python_versions": [
     "3.11",
@@ -13,7 +13,7 @@
   ],
   "dependencies": {
     "constraints_path": "constraints.txt",
-    "sha256": "fcf1b12358383555ab3420dbbb0f584b12a648489002d525397937fedc9280f0"
+    "sha256": "e1fa6dbb6058a07e68b2a8666d43253077eeb7965ea485c5799cd91621ce5c72"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -30,7 +30,17 @@
       "CHADEMO",
       "GB/T"
     ],
-    "research_connector": "CCS2",
+    "research_connectors": [
+      "AC TYPE 2",
+      "CCS2"
+    ],
+    "preferred_connector": "CCS2",
+    "fallback_connector": "AC TYPE 2",
+    "reference_maximum_range_km": 430,
+    "range_reference": {
+      "path": "research/vehicle_range_reference.json",
+      "sha256": "06c54ad7217c83aceffc99973b2a3c7ee083e3bb5440a0d3f852c511db615065"
+    },
     "charging_time_included": false,
     "travel_mode": "DRIVE",
     "routing_preference": "TRAFFIC_UNAWARE",
@@ -48,17 +58,25 @@
     {
       "path": "experiments/scenarios_baseline.json",
       "scenario_count": 6,
-      "sha256": "e3f7ffcd6d73c6fe4a590e570ec7d4cf9d13047e91aabbfcd2fb9aca9a1f2908"
+      "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "sha256": "4ae6a25095ecf1d6c96ab5f1eba49e6e8c51f4819a1e005c6e3c0f9b47c8ab14"
     },
     {
       "path": "experiments/scenarios_sensitivity.json",
-      "scenario_count": 7,
-      "sha256": "24ebc9e342deb79700e3ca25b87affbefff7bc1ba66d41dcb19ef5058dfa9871"
+      "scenario_count": 11,
+      "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "sha256": "6de127c6dd90aea44577f76af431860132771f4ad3ed8c6aa4d3bf42394237be"
+    },
+    {
+      "path": "experiments/scenarios_connector_sensitivity.json",
+      "scenario_count": 2,
+      "connector_sets": [["CCS2"], ["AC TYPE 2", "CCS2"]],
+      "sha256": "c0c677e6bdb484f3af361bfc6702922f6b4f98baa59425e769053819ca1b1a98"
     }
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "26b7f889b651631d583cb0cc1aae3e24634982ee24712861fcc043c73d96fcf7"
+    "sha256": "f87440d1007a9d8b58a1fc7d6c26f5eed8c694a60cc670bc92b1b44594ce1880"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

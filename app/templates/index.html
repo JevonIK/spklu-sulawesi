@@ -82,7 +82,7 @@
                                 min="1"
                                 max="100"
                                 step="1"
-                                value="80"
+                                value="{{ defaults.current_soc | int }}"
                                 aria-describedby="currentSocNote"
                                 required
                             >
@@ -97,11 +97,11 @@
                                 min="1"
                                 max="2000"
                                 step="1"
-                                value="300"
+                                value="{{ defaults.maximum_range_km | int }}"
                                 aria-describedby="maxRangeNote"
                                 required
                             >
-                            <small class="field-note" id="maxRangeNote">Jarak maksimum kendaraan saat baterai 100%.</small>
+                            <small class="field-note" id="maxRangeNote">Jarak WLTP atau estimasi nyata kendaraan saat baterai 100%. Nilai awal 430 km berasal dari median sampel BEV Indonesia yang sebanding.</small>
                         </div>
                         <div>
                             <label for="minimumSoc">SOC minimum (%)</label>
@@ -145,7 +145,7 @@
                                     name="connectors"
                                     type="checkbox"
                                     value="{{ connector.value }}"
-                                    {% if connector.value == "CCS2" %}checked{% endif %}
+                                    {% if connector.value in ("AC TYPE 2", "CCS2") %}checked{% endif %}
                                 >
                                 <span>
                                     <strong>{{ connector.label }}</strong>
@@ -157,8 +157,13 @@
                     </fieldset>
                     <small class="field-note" id="connectorNote">
                         Pilih satu atau beberapa konektor yang benar-benar dapat digunakan kendaraan Anda.
-                        Jumlah lokasi diperbarui sesuai merek jaringan yang Anda pilih.
+                        Untuk kendaraan Combo 2, CCS2 dan AC Type 2 dipilih secara awal:
+                        CCS2 diprioritaskan dan AC Type 2 digunakan sebagai fallback.
+                        Waktu pengisian tidak dihitung.
                     </small>
+                    <p class="network-compatibility-note" id="connectorCombinationNote" aria-live="polite">
+                        Menghitung jumlah lokasi unik untuk kombinasi konektor…
+                    </p>
 
                     <fieldset class="network-fieldset" aria-describedby="networkNote networkCompatibilityNote">
                         <legend>Merek charger tambahan (opsional)</legend>

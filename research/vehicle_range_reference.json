@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "title": "Baseline jangkauan kendaraan Combo 2 untuk penelitian SPKLU Sulawesi",
+  "accessed_at": "2026-08-23",
+  "scope": {
+    "market": "Indonesia",
+    "vehicle_type": "Battery electric passenger vehicle",
+    "required_connectors": [
+      "AC TYPE 2",
+      "CCS2"
+    ],
+    "range_standard": "WLTP",
+    "sampling_unit": "model family",
+    "inclusion_rule": "Model BEV penumpang yang dipasarkan resmi di Indonesia, memiliki bukti WLTP dari sumber resmi pabrikan, dan kompatibel dengan ekosistem AC Type 2/CCS2.",
+    "exclusion_rule": "Angka NEDC, CLTC, EPA, preliminary certification, PHEV, kendaraan komersial, dan model tanpa sumber resmi yang dapat diaudit tidak digabungkan ke estimasi utama.",
+    "weighting": "unweighted",
+    "limitations": [
+      "Sampel bukan sensus seluruh BEV Indonesia dan tidak dibobot menggunakan penjualan per model.",
+      "Data registrasi BEV per model khusus Sulawesi yang dapat diverifikasi tidak tersedia dalam proyek.",
+      "WLTP digunakan untuk perbandingan terkontrol; jangkauan aktual tetap dipengaruhi rute, cuaca, muatan, usia baterai, dan gaya mengemudi."
+    ]
+  },
+  "vehicles": [
+    {
+      "manufacturer": "Hyundai",
+      "model_family": "IONIQ 5",
+      "wltp_range_values_km": [384, 481, 384, 451],
+      "representative_rule": "median_of_official_variants",
+      "representative_range_km": 417.5,
+      "range_source_url": "https://www.hyundai.com/content/dam/hyundai/id/id/images/local/hyundai-indonesia/brochure/ioniq-5/agustus-2024/Hyundai_IONIQ_5_Brochure.pdf",
+      "connector_source_url": "https://www.hyundai.com/content/dam/hyundai/id/id/images/local/hyundai-indonesia/brochure/ioniq-5/agustus-2024/Hyundai_IONIQ_5_Brochure.pdf"
+    },
+    {
+      "manufacturer": "Hyundai",
+      "model_family": "IONIQ 6",
+      "wltp_range_values_km": [519],
+      "representative_rule": "single_official_variant",
+      "representative_range_km": 519,
+      "range_source_url": "https://www.hyundai.com/content/dam/hyundai/id/id/images/local/hyundai-indonesia/brochure/ioniq-6/agustus-2024/Hyundai_IONIQ_6_Brochure.pdf",
+      "connector_source_url": "https://www.hyundai.com/content/dam/hyundai/id/id/images/local/hyundai-indonesia/brochure/ioniq-6/agustus-2024/Hyundai_IONIQ_6_Brochure.pdf"
+    },
+    {
+      "manufacturer": "Chery",
+      "model_family": "OMODA E5",
+      "wltp_range_values_km": [430],
+      "representative_rule": "single_official_model_value",
+      "representative_range_km": 430,
+      "range_source_url": "https://chery.co.id/id/model/omoda/tipe/omoda-e5",
+      "connector_source_url": "https://cherymotor.com.au/models/chery-e5-electric-suv"
+    },
+    {
+      "manufacturer": "Kia",
+      "model_family": "EV9",
+      "wltp_range_values_km": [497],
+      "representative_rule": "single_official_model_value",
+      "representative_range_km": 497,
+      "range_source_url": "https://www.kia.com/id/id/showroom/ev9/features.html",
+      "connector_source_url": "https://www.kia.com/content/dam/kwcms/my/en/pdf/brochure/Kia_EV9_Digital_Brochure_V5.pdf"
+    },
+    {
+      "manufacturer": "BMW",
+      "model_family": "iX1 eDrive20",
+      "wltp_range_values_km": [417, 439],
+      "representative_rule": "midpoint_of_official_range_band",
+      "representative_range_km": 428,
+      "range_source_url": "https://www.bmw.co.id/en/all-models/bmw-i/ix1/bmw-ix1.html",
+      "connector_source_url": "https://www.bmw.com/en/innovation/how-to-charge-an-electric-car.html"
+    },
+    {
+      "manufacturer": "Mercedes-Benz",
+      "model_family": "EQB 250+",
+      "wltp_range_values_km": [535],
+      "representative_rule": "single_official_model_value",
+      "representative_range_km": 535,
+      "range_source_url": "https://mercedes-benz.co.id/en/vehicles/eqb/",
+      "connector_source_url": "https://mercedes-benz.co.id/en/vehicles/eqb/"
+    },
+    {
+      "manufacturer": "MINI",
+      "model_family": "All-Electric Countryman",
+      "wltp_range_values_km": [433],
+      "representative_rule": "single_official_model_value",
+      "representative_range_km": 433,
+      "range_source_url": "https://www.mini.co.id/en_ID/home/range/all-electric-mini-countryman.html",
+      "connector_source_url": "https://www.bmw.com/en/innovation/how-to-charge-an-electric-car.html"
+    }
+  ],
+  "calculation": {
+    "representative_ranges_km": [417.5, 519, 430, 497, 428, 535, 433],
+    "sample_size": 7,
+    "median_range_km": 433,
+    "rounding_rule": "nearest_10_km_half_up",
+    "selected_baseline_maximum_range_km": 430,
+    "sensitivity_levels_km": [200, 300, 400, 500]
+  }
+}

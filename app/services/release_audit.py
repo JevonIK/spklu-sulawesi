@@ -9,8 +9,14 @@ import re
 import sys
 from pathlib import Path
 
-from ..constants import CHARGING_TIME_INCLUDED, RESEARCH_CONNECTOR
-from .dataset import CONNECTOR_ORDER, normalize_connector
+from ..constants import (
+    CHARGING_TIME_INCLUDED,
+    FALLBACK_RESEARCH_CONNECTOR,
+    PREFERRED_RESEARCH_CONNECTOR,
+    REFERENCE_MAXIMUM_RANGE_KM,
+    RESEARCH_CONNECTORS,
+)
+from .dataset import CONNECTOR_ORDER, parse_connectors
 from .evaluation import ExperimentDefinitionError, load_experiment_definition
 from .google_routes import (
     FERRY_MANEUVERS,
@@ -19,9 +25,13 @@ from .google_routes import (
     TRAVEL_MODE,
 )
 from .graph import GEODESIC_LOWER_BOUND_MARGIN_RATIO
+from .vehicle_reference import (
+    VehicleRangeReferenceError,
+    load_vehicle_range_reference,
+)
 
 
-RELEASE_MANIFEST_SCHEMA_VERSION = 3
+RELEASE_MANIFEST_SCHEMA_VERSION = 4
 RESEARCH_MANIFEST_SCHEMA_VERSION = 1
 SOURCE_SCOPE = "application-runtime-v2"
 SOURCE_SUFFIXES = frozenset({".py", ".html", ".js", ".css", ".svg"})
@@ -194,7 +204,38 @@ def validate_release_manifest(manifest):
         raise ReleaseManifestError(
             "root.algorithm.supported_connectors wajib berupa daftar teks unik."
         )
-    _text(algorithm, "research_connector", "root.algorithm")
+    research_connectors = algorithm.get("research_connectors")
+    if (
+        not isinstance(research_connectors, list)
+        or not research_connectors
+        or tuple(research_connectors) != RESEARCH_CONNECTORS
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.research_connectors tidak sesuai konfigurasi "
+            "penelitian."
+        )
+    _text(algorithm, "preferred_connector", "root.algorithm")
+    _text(algorithm, "fallback_connector", "root.algorithm")
+    reference_range = algorithm.get("reference_maximum_range_km")
+    if (
+        isinstance(reference_range, bool)
+        or not isinstance(reference_range, (int, float))
+        or float(reference_range) <= 0
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.reference_maximum_range_km tidak valid."
+        )
+    range_reference = _mapping(
+        algorithm.get("range_reference"),
+        "root.algorithm.range_reference",
+    )
+    _relative_path(range_reference, "path", "root.algorithm.range_reference")
+    if not SHA256_PATTERN.fullmatch(
+        _text(range_reference, "sha256", "root.algorithm.range_reference")
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.range_reference.sha256 tidak valid."
+        )
     if not isinstance(algorithm.get("charging_time_included"), bool):
         raise ReleaseManifestError(
             "root.algorithm.charging_time_included wajib berupa boolean."
@@ -245,6 +286,18 @@ def validate_release_manifest(manifest):
             raise ReleaseManifestError(f"Path eksperimen duplikat: {path}.")
         known_paths.add(path)
         _positive_integer(experiment, "scenario_count", field)
+        connector_sets = experiment.get("connector_sets")
+        if (
+            not isinstance(connector_sets, list)
+            or not connector_sets
+            or any(
+                not isinstance(connector_set, list) or not connector_set
+                for connector_set in connector_sets
+            )
+        ):
+            raise ReleaseManifestError(
+                f"{field}.connector_sets wajib berupa daftar konfigurasi."
+            )
         if not SHA256_PATTERN.fullmatch(_text(experiment, "sha256", field)):
             raise ReleaseManifestError(f"{field}.sha256 tidak valid.")
 
@@ -568,9 +621,73 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
     )
     _add_check(
         checks,
-        "algorithm.research_connector",
-        algorithm["research_connector"],
-        RESEARCH_CONNECTOR,
+        "algorithm.research_connectors",
+        algorithm["research_connectors"],
+        list(RESEARCH_CONNECTORS),
+    )
+    _add_check(
+        checks,
+        "algorithm.preferred_connector",
+        algorithm["preferred_connector"],
+        PREFERRED_RESEARCH_CONNECTOR,
+    )
+    _add_check(
+        checks,
+        "algorithm.fallback_connector",
+        algorithm["fallback_connector"],
+        FALLBACK_RESEARCH_CONNECTOR,
+    )
+    _add_check(
+        checks,
+        "algorithm.reference_maximum_range_km",
+        algorithm["reference_maximum_range_km"],
+        REFERENCE_MAXIMUM_RANGE_KM,
+    )
+    range_reference = algorithm["range_reference"]
+    range_reference_path = project_root / range_reference["path"]
+    range_reference_exists = range_reference_path.is_file()
+    _add_check(
+        checks,
+        "algorithm.range_reference_exists",
+        True,
+        range_reference_exists,
+    )
+    _add_check(
+        checks,
+        "algorithm.range_reference_sha256",
+        range_reference["sha256"],
+        (
+            hashlib.sha256(range_reference_path.read_bytes()).hexdigest()
+            if range_reference_exists
+            else None
+        ),
+    )
+    try:
+        _, range_summary = load_vehicle_range_reference(range_reference_path)
+        range_validation = True
+        range_baseline = range_summary[
+            "selected_baseline_maximum_range_km"
+        ]
+    except (OSError, VehicleRangeReferenceError):
+        range_validation = False
+        range_baseline = None
+    _add_check(
+        checks,
+        "algorithm.range_reference_valid",
+        True,
+        range_validation,
+    )
+    _add_check(
+        checks,
+        "algorithm.range_reference_baseline",
+        REFERENCE_MAXIMUM_RANGE_KM,
+        range_baseline,
+    )
+    _add_check(
+        checks,
+        "algorithm.runtime_default_maximum_range",
+        REFERENCE_MAXIMUM_RANGE_KM,
+        config.get("DEFAULT_MAXIMUM_RANGE_KM"),
     )
     _add_check(
         checks,
@@ -656,19 +773,22 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
             len(scenarios),
         )
         try:
-            connectors = sorted(
+            connector_sets = sorted(
                 {
-                    normalize_connector(scenario["vehicle"].get("connector"))
+                    parse_connectors(scenario["vehicle"].get("connectors"))
                     for scenario in scenarios
                 }
             )
         except (KeyError, ValueError) as error:
-            connectors = [f"invalid: {error}"]
+            connector_sets = [f"invalid: {error}"]
         _add_check(
             checks,
-            f"{check_prefix}.connectors",
-            [algorithm["research_connector"]],
-            connectors,
+            f"{check_prefix}.connector_sets",
+            sorted(
+                parse_connectors(connector_set)
+                for connector_set in experiment["connector_sets"]
+            ),
+            connector_sets,
         )
         all_scenario_ids.extend(scenario["id"] for scenario in scenarios)
 

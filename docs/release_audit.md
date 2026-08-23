@@ -17,26 +17,30 @@ dibaca oleh CI.
 
 ## Sumber kebenaran
 
-`release_manifest.json` schema 3 mengunci identitas kandidat rilis berikut:
+`release_manifest.json` schema 4 mengunci identitas kandidat rilis berikut:
 
 - versi aplikasi, hash source scope `application-runtime-v2`, dan versi Python
   yang didukung;
 - keberadaan serta SHA-256 `constraints.txt`;
 - path, jumlah baris, jumlah node logis, SHA-256 dataset, serta checksum
   `dataset_metadata.json`;
-- empat konektor aplikasi, konektor eksperimen CCS2, dan ketiadaan estimasi
-  waktu pengisian;
+- empat konektor aplikasi, konfigurasi penelitian Combo 2, prioritas CCS2,
+  fallback AC Type 2, baseline 430 km, artefak sumber range, dan ketiadaan
+  estimasi waktu pengisian;
 - `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY`, dan margin lower bound geodesik 1%;
 - manuver feri yang didukung, ketiadaan konsumsi SOC selama pelayaran, dan
   status akses kendaraan yang tidak dijamin;
-- path, jumlah, dan checksum definisi skenario baseline/sensitivitas;
+- path, jumlah, konfigurasi konektor, dan checksum definisi skenario
+  baseline/sensitivitas;
 - checksum manifest penelitian yang menghubungkan snapshot ke run historis; dan
 - hard limit harian, per menit, serta per request untuk Google Routes.
 
-Audit memuat definisi eksperimen schema 2 melalui validator yang sama dengan
-command `experiment-run`. Selain jumlah skenario dan checksum, semua konektor
-skenario penelitian harus dinormalisasi menjadi CCS2 dan ID skenario harus unik
-lintas berkas. Laporan baru yang dihasilkan command memakai schema 3.
+Audit memuat definisi eksperimen schema 3 melalui validator yang sama dengan
+command `experiment-run`. Selain jumlah skenario dan checksum, konfigurasi
+konektor setiap berkas harus sama dengan manifest dan ID skenario harus unik
+lintas berkas. Laporan baru yang dihasilkan command memakai schema 4. Audit juga
+menghitung ulang median dan pembulatan pada referensi kendaraan sehingga 430 km
+tidak dapat diganti menjadi magic number tanpa mematahkan audit.
 
 Scope `application-runtime-v2` mencakup berkas `.py`, `.html`, `.js`, `.css`,
 dan `.svg` di bawah `app/`, ditambah `Dockerfile`, `.dockerignore`,
@@ -51,7 +55,7 @@ mengecualikan seluruh `.env` rahasia, tetapi memasukkan kembali `.env.example`;
 workflow `.github/workflows/ci.yml` juga ikut dalam konteks kandidat. Dummy atau
 nilai contoh tidak boleh diganti dengan key nyata pada berkas yang dilacak.
 
-Manifest penelitian schema 1 memisahkan versi analisis 0.15.0 dari versi
+Manifest penelitian schema 1 memisahkan versi analisis 0.16.0 dari versi
 penghasil data live: baseline 0.9.2 dan sensitivitas 0.10.0, keduanya laporan
 schema 2 dengan definisi skenario schema 1 tertanam. Ia mencatat artefak snapshot,
 checksum, jumlah baris, transformasi pembentuk snapshot, lokasi/hash laporan

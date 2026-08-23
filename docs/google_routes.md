@@ -88,9 +88,9 @@ menjalankan `pytest` tidak menggunakan kuota.
   "origin": {"latitude": -5.1477, "longitude": 119.4327},
   "destination": {"latitude": -0.8986, "longitude": 119.8506},
   "vehicle": {
-    "maximum_range_km": 300,
+    "maximum_range_km": 430,
     "current_soc_percent": 80,
-    "connectors": ["CCS2", "CHADEMO"]
+    "connectors": ["AC TYPE 2", "CCS2"]
   },
   "options": {
     "minimum_soc_percent": 20,
@@ -105,8 +105,9 @@ Aplikasi umum menerima satu atau beberapa konektor dataset dan mempertahankan
 node yang mendukung sedikitnya satu pilihan. Field tunggal `connector` tetap
 diterima untuk kompatibilitas. Safety factor, radius koridor, interval SOC, dan
 langkah sampling tetap menjadi konfigurasi backend pada endpoint publik;
-perangkat eksperimen dapat menetapkannya secara eksplisit. Baseline dan
-sensitivitas penelitian tetap dibatasi ke CCS2.
+perangkat eksperimen dapat menetapkannya secara eksplisit. Baseline kandidat
+memakai CCS2 dengan fallback AC Type 2; sensitivitas konektor membandingkannya
+dengan CCS2-only, sedangkan hasil historis tetap CCS2-only.
 
 Respons sukses berisi rute dasar, statistik kandidat dan graf, hasil optimasi,
 rute rekomendasi, serta statistik penggunaan API. Untuk setiap itinerary

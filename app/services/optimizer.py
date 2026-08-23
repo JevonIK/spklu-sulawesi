@@ -13,6 +13,7 @@ from .graph import DESTINATION_NODE_ID, ORIGIN_NODE_ID, GraphEdge, TravelGraph
 class OptimizationCost:
     """Biaya leksikografis sebuah state DP."""
 
+    fallback_charging_stop_count: int
     primary_travel_cost: float
     charging_stop_count: int
     total_detour_km: float
@@ -21,6 +22,7 @@ class OptimizationCost:
 
     def key(self):
         return (
+            self.fallback_charging_stop_count,
             round(self.primary_travel_cost, 8),
             self.charging_stop_count,
             round(self.total_detour_km, 8),
@@ -216,8 +218,13 @@ def _cost_after_transition(
     objective_mode,
     charged_soc_percent,
     is_charging_stop,
+    fallback_preference_rank,
 ):
     return OptimizationCost(
+        fallback_charging_stop_count=(
+            current_cost.fallback_charging_stop_count
+            + int(is_charging_stop and fallback_preference_rank > 0)
+        ),
         primary_travel_cost=(
             current_cost.primary_travel_cost
             + _edge_primary_cost(edge, objective_mode)
@@ -368,6 +375,7 @@ def optimize_itinerary(
     *,
     current_soc_percent,
     parameters: EnergyParameters,
+    station_preference_ranks=None,
 ):
     """Mencari itinerary feasible dan terbaik dengan DP state (node, SOC)."""
 
@@ -377,6 +385,14 @@ def optimize_itinerary(
         raise TypeError("Optimizer memerlukan EnergyParameters.")
 
     current_soc = parameters.validate_current_soc(current_soc_percent)
+    station_preference_ranks = dict(station_preference_ranks or {})
+    if any(
+        isinstance(rank, bool)
+        or not isinstance(rank, int)
+        or rank < 0
+        for rank in station_preference_ranks.values()
+    ):
+        raise ValueError("Peringkat preferensi station harus integer non-negatif.")
     initial_usable_range = parameters.usable_range_km(current_soc)
     post_charge_usable_range = parameters.usable_range_km(
         parameters.target_soc_percent
@@ -402,7 +418,7 @@ def optimize_itinerary(
     objective_mode = _objective_mode(graph)
     states = {
         (ORIGIN_NODE_ID, initial_level): _DpRecord(
-            cost=OptimizationCost(0.0, 0, 0.0, 0.0, 0.0),
+            cost=OptimizationCost(0, 0.0, 0, 0.0, 0.0, 0.0),
             predecessor=None,
         )
     }
@@ -461,6 +477,7 @@ def optimize_itinerary(
                         objective_mode,
                         charged_soc,
                         is_charging_stop,
+                        station_preference_ranks.get(node.node_id, 0),
                     )
                     existing = states.get(target_state)
                     if existing is not None and existing.cost.key() <= candidate_cost.key():

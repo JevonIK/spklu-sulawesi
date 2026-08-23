@@ -3,7 +3,8 @@
 Dokumen ini menjadi checklist agar implementasi, eksperimen, dan naskah tugas
 akhir memakai ruang lingkup yang sama. Instruksi terbaru pemilik penelitian
 menjadi acuan: aplikasi umum mendukung seluruh konektor pada dataset, sedangkan
-eksperimen penelitian terdokumentasi memakai CCS2; kapasitas kendaraan dinyatakan
+eksperimen kandidat memakai kendaraan Combo 2 dengan prioritas CCS2 dan fallback
+AC Type 2; kapasitas kendaraan dinyatakan
 dalam jangkauan maksimum (km), unit pada koordinat sama dipertahankan sebagai
 informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung.
 
@@ -13,12 +14,13 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 |---|---|
 | Dataset enam wilayah Sulawesi | `dataset_spklu_sulawesi.csv` dan validasi `app/services/dataset.py` |
 | Beberapa unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf untuk setiap koordinat identik |
-| Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline/sensitivitas memakai CCS2 |
+| Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline kandidat memakai CCS2 + AC Type 2 dengan prioritas CCS2 |
 | Akses jaringan dealer | metadata jaringan per unit, pilihan jaringan tambahan, dan status rute kondisional |
 | Kandidat berbasis Ball Tree | `app/services/spatial.py` |
 | Rute dan jarak jalan | `app/services/google_routes.py` |
 | Graf berarah | `app/services/graph.py` |
 | Model jangkauan dan SOC | `app/services/energy.py` |
+| Dasar jangkauan 430 km | `research/vehicle_range_reference.json` dan `app/services/vehicle_reference.py` |
 | Dynamic Programming state `(node, SOC)` | `app/services/optimizer.py` |
 | Rekomendasi multi-stop | `app/services/recommendation.py` |
 | Validasi SOC rute final | rekonsiliasi setiap leg Compute Routes final pada `app/services/recommendation.py` |
@@ -52,8 +54,9 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 5. Ubah metrik `total waktu perjalanan dan pengisian` menjadi `total waktu
    berkendara`.
 6. Pada luaran yang diharapkan, hapus komponen `waktu pengisian`.
-7. Jelaskan bahwa sistem dapat memfilter AC Type 2, CCS2, CHAdeMO, dan GB/T,
-   sedangkan eksperimen baseline dan sensitivitas memakai CCS2.
+7. Jelaskan bahwa sistem dapat memfilter AC Type 2, CCS2, CHAdeMO, dan GB/T.
+   Hasil historis memakai CCS2/300 km, sedangkan kandidat run berikutnya memakai
+   CCS2 dengan fallback AC Type 2 dan baseline 430 km.
 8. Gunakan satuan `km` untuk jangkauan maksimum kendaraan; GB/T adalah nama
    konektor dan bukan satuan atau parameter kapasitas.
 9. Hapus `jumlah kandidat SPKLU pada setiap segmen` dari daftar parameter
@@ -72,13 +75,18 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 13. Bedakan validasi SOC hasil DP/Route Matrix dari rekonsiliasi SOC pada setiap
     leg Compute Routes final.
 14. Atribusikan baseline kepada aplikasi 0.9.2 dan sensitivitas kepada 0.10.0;
-    0.15.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
+    0.16.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
 15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
     hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
     lengkap, terkini, atau open data tanpa bukti.
 16. Untuk rute yang memuat feri, pisahkan jarak pelayaran dari jarak energi.
     Nyatakan bahwa deteksi Google bukan bukti jadwal, kapasitas, atau izin
     kendaraan dan seluruh akses feri bersifat kondisional.
+17. Jelaskan bahwa 430 km berasal dari median tujuh model-family WLTP resmi
+    Indonesia sebesar 433 km yang dibulatkan ke 10 km. Nyatakan bahwa sampel
+    tidak dibobot penjualan dan bukan data registrasi khusus Sulawesi.
+18. Pisahkan sensitivitas konektor/range kandidat dari hasil live historis;
+    definisi baru belum boleh dilaporkan sebagai hasil sampai run berizin selesai.
 
 Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
 tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan

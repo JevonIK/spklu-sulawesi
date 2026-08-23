@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, g, render_template
 
 from ..services.dataset import (
     CHARGING_NETWORK_LABELS,
+    CONNECTOR_ORDER,
     DEALER_CHARGING_NETWORK_ORDER,
     PUBLIC_CHARGING_NETWORK,
 )
@@ -41,11 +42,46 @@ def _connector_availability(catalog):
     return availability
 
 
+def _connector_set_availability(catalog):
+    """Jumlah union node unik untuk setiap subset konektor dan jaringan."""
+
+    availability = {}
+    dealer_networks = tuple(DEALER_CHARGING_NETWORK_ORDER)
+    network_selections = [
+        selected
+        for size in range(len(dealer_networks) + 1)
+        for selected in combinations(dealer_networks, size)
+    ]
+    connector_selections = [
+        selected
+        for size in range(1, len(CONNECTOR_ORDER) + 1)
+        for selected in combinations(CONNECTOR_ORDER, size)
+    ]
+    for connectors in connector_selections:
+        connector_key = "|".join(connectors)
+        availability[connector_key] = {}
+        connector_set = frozenset(connectors)
+        for selected_networks in network_selections:
+            allowed = {PUBLIC_CHARGING_NETWORK, *selected_networks}
+            network_key = ",".join(selected_networks) or "PUBLIC_ONLY"
+            availability[connector_key][network_key] = sum(
+                1
+                for node in catalog.nodes
+                if any(
+                    unit.charging_network in allowed
+                    and not connector_set.isdisjoint(unit.connectors)
+                    for unit in node.units
+                )
+            )
+    return availability
+
+
 @web_bp.get("/")
 def index():
     catalog = current_app.extensions["station_catalog"]
     catalog_summary = catalog.summary()
     connector_availability = _connector_availability(catalog)
+    connector_set_availability = _connector_set_availability(catalog)
     connector_counts = catalog_summary["connector_node_counts"]
     connector_labels = {
         "AC TYPE 2": "AC Type 2",
@@ -87,6 +123,10 @@ def index():
             if catalog_summary["network_node_counts"][network] > 0
         ],
         defaults={
+            "current_soc": current_app.config["DEFAULT_CURRENT_SOC"],
+            "maximum_range_km": current_app.config[
+                "DEFAULT_MAXIMUM_RANGE_KM"
+            ],
             "soc_min": current_app.config["DEFAULT_SOC_MIN"],
             "soc_target": current_app.config["DEFAULT_SOC_TARGET"],
             "safety_factor": current_app.config["DEFAULT_SAFETY_FACTOR"],
@@ -104,6 +144,7 @@ def index():
                 current_app.config["GOOGLE_MAPS_BROWSER_API_KEY"]
             ),
             "connectorAvailability": connector_availability,
+            "connectorSetAvailability": connector_set_availability,
         },
     )
 

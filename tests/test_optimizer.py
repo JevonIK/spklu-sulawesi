@@ -47,6 +47,40 @@ def graph_node(node_id, kind, progress):
     )
 
 
+def station_graph_node(node_id, progress, connector):
+    unit = StationUnit(
+        source_row=2,
+        province="Sulawesi Selatan",
+        city="Kota Uji",
+        name=node_id,
+        address="Jalan Uji",
+        latitude=0,
+        longitude=progress / 100,
+        maps_url="https://maps.app.goo.gl/uji",
+        connectors=(connector,),
+    )
+    station = StationNode(
+        node_id=node_id,
+        name=node_id,
+        province=unit.province,
+        city=unit.city,
+        address=unit.address,
+        latitude=unit.latitude,
+        longitude=unit.longitude,
+        maps_url=unit.maps_url,
+        connectors=unit.connectors,
+        units=(unit,),
+    )
+    return GraphNode(
+        node_id=node_id,
+        kind="station",
+        name=node_id,
+        coordinate=(0, progress / 100),
+        route_progress_km=progress,
+        station=station,
+    )
+
+
 def graph_edge(
     source,
     target,
@@ -214,6 +248,35 @@ def test_direct_trip_requires_no_charging_stop():
     assert result.itinerary.final_soc_percent == pytest.approx(30)
     assert result.itinerary.objective_mode == "driving_duration_minutes"
     assert result.itinerary.objective_value == pytest.approx(75)
+
+
+def test_optimizer_uses_ac_only_station_as_fallback_after_ccs2():
+    graph = travel_graph(
+        (
+            graph_node(ORIGIN_NODE_ID, "origin", 0),
+            station_graph_node("station-ac", 50, "AC TYPE 2"),
+            station_graph_node("station-ccs", 60, "CCS2"),
+            graph_node(DESTINATION_NODE_ID, "destination", 120),
+        ),
+        (
+            graph_edge(ORIGIN_NODE_ID, "station-ac", 50, duration=45),
+            graph_edge("station-ac", DESTINATION_NODE_ID, 70, duration=45),
+            graph_edge(ORIGIN_NODE_ID, "station-ccs", 60, duration=60),
+            graph_edge("station-ccs", DESTINATION_NODE_ID, 60, duration=60),
+        ),
+    )
+
+    result = optimize_itinerary(
+        graph,
+        current_soc_percent=60,
+        parameters=default_parameters(),
+        station_preference_ranks={"station-ac": 1, "station-ccs": 0},
+    )
+
+    assert result.feasible is True
+    assert [stop.node_id for stop in result.itinerary.charging_stops] == [
+        "station-ccs"
+    ]
 
 
 def test_multistop_itinerary_charges_only_as_much_as_needed_for_tie():

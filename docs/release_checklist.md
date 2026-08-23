@@ -18,17 +18,19 @@ pengambilan data penelitian tambahan.
 - [ ] Berkas `.env` lokal memiliki permission `600`; secret produksi disimpan di
   secret manager platform, bukan di filesystem image.
 - [ ] Versi pada health endpoint sama dengan versi aplikasi yang dilaporkan.
-- [ ] Definisi baseline dan sensitivitas memakai schema 2, checksum cocok,
+- [ ] Definisi baseline dan sensitivitas memakai schema 3, checksum cocok,
   tervalidasi, dan ID skenario unik.
-- [ ] Laporan baru memakai schema 3 dan memuat provenance yang diwajibkan.
+- [ ] Laporan baru memakai schema 4 dan memuat provenance yang diwajibkan.
 - [ ] Hasil historis diatribusikan ke aplikasi penghasilnya: baseline 0.9.2 dan
-  sensitivitas 0.10.0, bukan kandidat analisis 0.15.0.
+  sensitivitas 0.10.0, bukan kandidat analisis 0.16.0.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
 - [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,
   kapasitas, atau akses kendaraan tanpa konfirmasi operator.
-- [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario penelitian
-  tetap memakai CCS2.
+- [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario kandidat
+  memakai Combo 2 dengan prioritas CCS2 dan fallback AC Type 2.
+- [ ] Referensi jangkauan dapat dihitung ulang menjadi median 433 km dan
+  baseline 430 km; sensitivitas 200/300/400/500 km tervalidasi.
 
 ## Verifikasi otomatis tanpa API live
 

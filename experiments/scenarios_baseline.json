@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "experiment_id": "baseline-enam-wilayah",
   "description": "Evaluasi baseline satu koridor pada masing-masing dari enam wilayah penelitian di Sulawesi.",
   "scenarios": [
@@ -18,9 +18,9 @@
         "longitude": 119.8979519
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,
@@ -47,9 +47,9 @@
         "longitude": 121.2261387
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,
@@ -76,9 +76,9 @@
         "longitude": 122.5028737
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,
@@ -105,9 +105,9 @@
         "longitude": 124.8338777
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,
@@ -134,9 +134,9 @@
         "longitude": 118.8951509
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,
@@ -163,9 +163,9 @@
         "longitude": 123.0540064
       },
       "vehicle": {
-        "maximum_range_km": 300,
+        "maximum_range_km": 430,
         "current_soc_percent": 80,
-        "connector": "CCS2"
+        "connectors": ["AC TYPE 2", "CCS2"]
       },
       "options": {
         "minimum_soc_percent": 20,

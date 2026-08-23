@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -54,9 +54,9 @@ Menyusun rekomendasi dari koordinat yang dipilih pengguna. Request body:
     "longitude": 119.8979519
   },
   "vehicle": {
-    "maximum_range_km": 300,
+    "maximum_range_km": 430,
     "current_soc_percent": 80,
-    "connectors": ["CCS2", "CHADEMO"]
+    "connectors": ["AC TYPE 2", "CCS2"]
   },
   "options": {
     "minimum_soc_percent": 20,
@@ -91,7 +91,8 @@ dipilih pada unit yang juga memenuhi aturan akses jaringan. Memilih suatu
 jaringan tidak membuat konektor yang tidak kompatibel menjadi valid. Field
 tunggal `vehicle.connector` tetap diterima untuk kompatibilitas dengan skenario
 eksperimen dan klien versi lama. Respons ternormalisasi memuat `connectors` serta
-`connector` sebagai konektor utama kompatibilitas lama.
+`connector` sebagai konektor utama kompatibilitas lama. Untuk pasangan Combo 2,
+`preferred_connector` bernilai CCS2 dan `fallback_connectors` memuat AC Type 2.
 
 Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
 `data.optimization.feasible`:
@@ -104,8 +105,9 @@ Objek `data` mencakup request ternormalisasi, parameter energi, rute dasar,
 jumlah kandidat sebelum/sesudah filter jaringan, statistik graf, hasil DP, rute
 rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
 `public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
-status kondisional berarti sedikitnya satu charger dealer atau penyeberangan
-feri dipakai dan aksesnya perlu dikonfirmasi. `route_access.ferry` memuat status,
+status kondisional berarti sedikitnya satu charger dealer, fallback AC Type 2,
+atau penyeberangan feri dipakai. `route_access.ac_fallback_stop_count` dan field
+station `route_selected_connector` menjelaskan fallback. `route_access.ferry` memuat status,
 jumlah segmen, jarak, durasi, serta penanda bahwa dukungan kendaraan harus
 dikonfirmasi kepada operator. Waktu pengisian tidak dilaporkan.
 

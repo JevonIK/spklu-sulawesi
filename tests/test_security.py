@@ -180,6 +180,9 @@ def test_web_reservation_cannot_exceed_lower_daily_limit():
     [
         ("DEFAULT_SOC_MIN", 100),
         ("DEFAULT_SOC_TARGET", 20),
+        ("DEFAULT_CURRENT_SOC", 20),
+        ("DEFAULT_MAXIMUM_RANGE_KM", 0),
+        ("DEFAULT_MAXIMUM_RANGE_KM", 2001),
         ("DEFAULT_SAFETY_FACTOR", 0),
         ("DEFAULT_CORRIDOR_RADIUS_KM", 101),
         ("DEFAULT_ROUTE_SAMPLE_STEP_KM", 0.01),

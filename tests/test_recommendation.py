@@ -244,14 +244,16 @@ def test_recommendation_input_supports_all_dataset_connectors(connector):
     assert parsed.route_sample_step_km == 5
 
 
-def test_recommendation_input_defaults_to_ccs2_when_connector_is_omitted():
+def test_recommendation_input_defaults_to_combo2_ac_and_dc_connectors():
     body = valid_payload()
     body["vehicle"].pop("connector")
 
     parsed = RecommendationInput.from_payload(body, defaults=DEFAULTS)
 
     assert parsed.connector == "CCS2"
-    assert parsed.connectors == ("CCS2",)
+    assert parsed.connectors == ("AC TYPE 2", "CCS2")
+    assert parsed.preferred_connector == "CCS2"
+    assert parsed.fallback_connectors == ("AC TYPE 2",)
 
 
 def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
@@ -465,6 +467,28 @@ def test_dealer_station_requires_network_selection_and_marks_conditional_route()
     assert stop["station"]["route_charging_network"] == "WULING"
     assert stop["station"]["route_access_type"] == "dealer_conditional"
     assert stop["station"]["route_compatible_connectors"] == ["GB/T"]
+
+
+def test_combo2_route_marks_ac_type2_only_stop_as_fallback():
+    routes_client = PipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (station_node("AC TYPE 2", "PUBLIC"),)
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+    body = valid_payload(connectors=["AC TYPE 2", "CCS2"])
+
+    result = service.recommend(service.parse_input(body))
+
+    assert result["optimization"]["feasible"] is True
+    assert result["route_access"]["conditional"] is True
+    assert result["route_access"]["ac_fallback_stop_count"] == 1
+    assert "waktu pengisian tidak dihitung" in result["route_access"]["notice"]
+    stop = result["optimization"]["itinerary"]["charging_stops"][0]
+    assert stop["station"]["route_selected_connector"] == "AC TYPE 2"
+    assert stop["station"]["route_connector_role"] == "ac_fallback"
 
 
 def test_ccs2_with_wuling_reports_zero_compatible_wuling_locations():

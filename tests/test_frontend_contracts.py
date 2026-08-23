@@ -43,12 +43,18 @@ def test_dynamic_connector_counts_follow_selected_networks(client):
     response = client.get("/")
     config = _frontend_config(response)
     availability = config["connectorAvailability"]
+    set_availability = config["connectorSetAvailability"]
 
     assert availability["AC TYPE 2"]["PUBLIC_ONLY"] == 92
     assert availability["AC TYPE 2"]["HYUNDAI,WULING,TOYOTA"] == 107
     assert availability["GB/T"]["PUBLIC_ONLY"] == 0
     assert availability["GB/T"]["WULING"] == 17
     assert availability["CCS2"]["WULING"] == 42
+    assert set_availability["AC TYPE 2|CCS2"]["PUBLIC_ONLY"] == 114
+    assert (
+        set_availability["AC TYPE 2|CCS2"]["HYUNDAI,WULING,TOYOTA"]
+        == 129
+    )
 
     html = response.get_data(as_text=True)
     assert 'data-connector-count="AC TYPE 2">92 lokasi tersedia' in html
@@ -57,6 +63,29 @@ def test_dynamic_connector_counts_follow_selected_networks(client):
     assert 'id="allowFerries"' in html
     assert "Izinkan feri kendaraan" in html
     assert "allow_ferries: Boolean(elements.allowFerries?.checked)" in _javascript()
+
+
+def test_combo2_defaults_and_ac_fallback_are_explained(client):
+    html = client.get("/").get_data(as_text=True)
+    source = _javascript()
+
+    ac_checkbox = re.search(
+        r'<input[^>]+name="connectors"[^>]+value="AC TYPE 2"[^>]*>',
+        html,
+    )
+    ccs_checkbox = re.search(
+        r'<input[^>]+name="connectors"[^>]+value="CCS2"[^>]*>',
+        html,
+    )
+    assert ac_checkbox is not None and "checked" in ac_checkbox.group(0)
+    assert ccs_checkbox is not None and "checked" in ccs_checkbox.group(0)
+    assert 'value="430"' in html
+    assert "CCS2 diprioritaskan" in html
+    assert 'id="connectorCombinationNote"' in html
+    assert "function updateConnectorCombinationNote" in source
+    assert '"AC Type 2 fallback"' in source
+    assert "route_selected_connector" in source
+    assert "waktu pengisian tidak dihitung" in source
 
 
 def test_stale_recommendation_is_invalidated_on_every_input_family():

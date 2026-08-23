@@ -30,6 +30,7 @@ const elements = {
     connectorInputs: Array.from(
         document.querySelectorAll('input[name="connectors"]'),
     ),
+    connectorCombinationNote: document.getElementById("connectorCombinationNote"),
     networkInputs: Array.from(
         document.querySelectorAll('input[name="additional_charging_networks"]'),
     ),
@@ -406,6 +407,24 @@ function updateConnectorAvailabilityCounts() {
     });
 }
 
+function updateConnectorCombinationNote() {
+    const note = elements.connectorCombinationNote;
+    if (!note) return;
+    const connectors = selectedConnectorValues();
+    if (!connectors.length) {
+        note.textContent = "Pilih sedikitnya satu konektor kendaraan.";
+        return;
+    }
+    const connectorKey = connectors.join("|");
+    const networkKey = chargingNetworkSelectionKey();
+    const count = state.config.connectorSetAvailability?.[connectorKey]?.[
+        networkKey
+    ];
+    note.textContent = Number.isInteger(count)
+        ? `${count} lokasi unik dapat dipertimbangkan untuk kombinasi ${connectors.join(" + ")}.`
+        : "Jumlah union lokasi untuk kombinasi ini tidak tersedia.";
+}
+
 function networkConnectorCounts(input) {
     try {
         return JSON.parse(input.dataset.connectorCounts || "{}");
@@ -510,6 +529,7 @@ function resetJourney() {
         "Rute dan SPKLU yang direkomendasikan akan muncul di sini.",
     );
     updateConnectorAvailabilityCounts();
+    updateConnectorCombinationNote();
     updateNetworkCompatibilityNote();
     updateSubmitAvailability();
     setFormStatus(
@@ -650,9 +670,14 @@ function stationInfoContent(stop) {
     content.append(address);
 
     const charging = document.createElement("span");
-    const compatibleConnectors = station.route_compatible_connectors
-        || station.connectors;
-    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${compatibleConnectors.join(", ")}`;
+    const selectedConnector = station.route_selected_connector
+        || station.route_compatible_connectors?.[0]
+        || station.connectors?.[0]
+        || "Konektor terpilih";
+    const connectorRole = station.route_connector_role === "ac_fallback"
+        ? "fallback; waktu pengisian tidak dihitung"
+        : "diprioritaskan";
+    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${selectedConnector} (${connectorRole})`;
     const access = document.createElement("span");
     access.className = station.route_access_type === "dealer_conditional"
         ? "is-conditional"
@@ -803,6 +828,16 @@ function renderSummary(data) {
                 ),
             );
         }
+        if (Number(data.route_access?.ac_fallback_stop_count || 0) > 0) {
+            items.splice(
+                items.length - 1,
+                0,
+                summaryItem(
+                    "Fallback AC Type 2",
+                    String(data.route_access.ac_fallback_stop_count),
+                ),
+            );
+        }
         elements.summaryGrid.append(...items);
     } else {
         const items = [
@@ -869,13 +904,21 @@ function renderItinerary(data) {
             if (station.route_access_type === "dealer_conditional") {
                 stopCard.classList.add("is-conditional");
             }
+            if (station.route_connector_role === "ac_fallback") {
+                stopCard.classList.add("is-conditional");
+            }
             const accessLabel = station.route_access_type === "dealer_conditional"
                 ? `${station.route_charging_network_label} · konfirmasi akses`
                 : "SPKLU publik";
-            const compatibleConnectors = station.route_compatible_connectors
-                || station.connectors;
+            const selectedConnector = station.route_selected_connector
+                || station.route_compatible_connectors?.[0]
+                || station.connectors?.[0]
+                || "Konektor terpilih";
+            const connectorLabel = station.route_connector_role === "ac_fallback"
+                ? `${selectedConnector} fallback · waktu pengisian tidak dihitung`
+                : `${selectedConnector} diprioritaskan`;
             const stopText = document.createElement("span");
-            stopText.textContent = `Setelah tiba, isi SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${compatibleConnectors.join(", ")} · ${accessLabel}`;
+            stopText.textContent = `Setelah tiba, isi SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${connectorLabel} · ${accessLabel}`;
             stopCard.append(stopText);
             if (station.maps_url) {
                 const mapsLink = document.createElement("a");
@@ -982,15 +1025,19 @@ function renderRecommendation(data) {
     const direct = feasible
         && Number(data.optimization.itinerary?.charging_stop_count || 0) === 0;
     const ferry = feasible && Boolean(data.route_access?.ferry?.contains_ferry);
+    const acFallback = feasible
+        && Number(data.route_access?.ac_fallback_stop_count || 0) > 0;
     elements.resultsPanel.hidden = false;
     elements.resultBadge.classList.toggle("is-infeasible", !feasible);
     elements.resultBadge.classList.toggle("is-conditional", conditional);
     elements.resultBadge.textContent = !feasible
         ? "Tidak feasible"
-        : direct
+            : direct
             ? ferry
                 ? "Feri kondisional"
                 : "Tanpa pengisian"
+            : acFallback
+                ? "AC Type 2 fallback"
             : conditional
                 ? "Rute kondisional"
                 : "Rute publik";
@@ -1095,6 +1142,7 @@ async function initializeApplication() {
         input.addEventListener("change", () => {
             invalidateRecommendation();
             updateSubmitAvailability();
+            updateConnectorCombinationNote();
             updateNetworkCompatibilityNote();
         });
     });
@@ -1102,6 +1150,7 @@ async function initializeApplication() {
         input.addEventListener("change", () => {
             invalidateRecommendation();
             updateConnectorAvailabilityCounts();
+            updateConnectorCombinationNote();
             updateNetworkCompatibilityNote();
         });
     });
@@ -1120,6 +1169,7 @@ async function initializeApplication() {
         });
     });
     updateConnectorAvailabilityCounts();
+    updateConnectorCombinationNote();
     updateSubmitAvailability();
     updateNetworkCompatibilityNote();
     try {
