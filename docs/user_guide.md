@@ -106,7 +106,8 @@ dukungan DC dan AC. Pada kombinasi ini, optimizer mendahulukan rute tanpa stop
 AC-only; AC Type 2 baru dipakai sebagai fallback dan ditandai pada hasil.
 
 Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
-5 km menjadi default backend. Nilai ini tidak ditampilkan pada formulir umum.
+5 km menjadi default backend. Batas total detour 20 km diturunkan dari dua kali
+radius koridor. Nilai penelitian ini tidak ditampilkan pada formulir umum.
 Peneliti tetap dapat mengubahnya melalui skenario eksperimen, bukan melalui
 interaksi pengguna harian.
 
@@ -129,6 +130,7 @@ interaksi pengguna harian.
 | Rute final ditolak karena SOC | jarak leg final berbeda dari matriks dan melanggar batas model; jangan memaksa hasil, periksa parameter kendaraan atau pilih rencana lain |
 | Rute memakai feri | baca kartu penyeberangan dan konfirmasi layanan kendaraan langsung kepada operator atau pelabuhan |
 | Rute tidak feasible | baca reason dan statistik graf; ini dapat menjadi hasil penelitian yang valid |
+| Reason `detour_infeasible` | semua itinerary yang mencapai tujuan melampaui hard cap total detour 20 km pada model graf |
 | Perhitungan lama | tunggu satu request selesai; kandidat/edge dan latensi Google memengaruhi waktu |
 
 Sebelum mencoba ulang error live, periksa quota Cloud dan jangan melakukan retry

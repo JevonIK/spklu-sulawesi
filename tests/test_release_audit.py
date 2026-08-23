@@ -9,6 +9,7 @@ from app.services.release_audit import (
     compute_source_tree_sha256,
     load_release_manifest,
     run_release_audit,
+    validate_release_manifest,
     validate_research_manifest,
 )
 
@@ -91,6 +92,17 @@ def test_release_audit_detects_ferry_energy_policy_mismatch(app):
         check["id"] for check in report["checks"] if not check["passed"]
     ]
     assert failed_ids == ["algorithm.ferry_distance_consumes_soc"]
+
+
+def test_release_manifest_rejects_unreviewed_detour_policy_change():
+    manifest = json.loads(Path("release_manifest.json").read_text())
+    manifest["algorithm"]["detour_policy"]["reference_max_km"] = 25
+
+    with pytest.raises(
+        ReleaseManifestError,
+        match="detour_policy.reference_max_km",
+    ):
+        validate_release_manifest(manifest)
 
 
 @pytest.mark.parametrize(

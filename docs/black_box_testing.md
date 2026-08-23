@@ -32,6 +32,8 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 | BB-22 | Wuling dipilih dengan CCS2 | Lokasi Wuling dilaporkan tidak kompatibel karena dataset memakai GB/T | `test_recommendation.py` |
 | BB-23 | Rute memakai charger dealer | Respons ditandai `conditional` dan lokasi dealer dicantumkan | `test_recommendation.py` |
 | BB-24 | Leg Compute Routes final melanggar SOC minimum | Rekomendasi ditolak dengan `final_route_soc_violation`, bukan ditampilkan feasible | `test_recommendation.py` |
+| BB-25 | Akumulasi detour DP melewati hard cap | Transisi dipangkas dan reason menjadi `detour_infeasible` | `test_optimizer.py` |
+| BB-26 | Detour rute final melewati hard cap | Rekomendasi ditolak dengan `final_route_detour_violation` | `test_recommendation.py` |
 
 ## Smoke test browser
 
@@ -102,7 +104,7 @@ kontrol kamera, data peta, attribution Google Maps, dan Places. Formulir aktif
 dan tidak muncul lagi pesan error otorisasi pada canvas.
 
 Catatan tersebut adalah bukti historis 0.9.0/0.9.2, bukan verifikasi UI kandidat
-0.16.0. Smoke test baru harus mencatat revision dan hasilnya sendiri tanpa
+0.17.0. Smoke test baru harus mencatat revision dan hasilnya sendiri tanpa
 menjalankan rekomendasi live kecuali ada izin serta budget API terpisah.
 Angka 149 node pada tabel dipertahankan sebagai fakta smoke test historis;
 dataset kandidat terbaru mempunyai 146 node logis dan memerlukan bukti smoke

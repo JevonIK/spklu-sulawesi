@@ -42,7 +42,7 @@ class Config:
     """Konfigurasi default untuk pengembangan lokal."""
 
     APP_NAME = "Sistem Rekomendasi SPKLU Sulawesi"
-    APP_VERSION = "0.16.0"
+    APP_VERSION = "0.17.0"
     APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
@@ -77,6 +77,10 @@ class Config:
     DEFAULT_SAFETY_FACTOR = _env_float("DEFAULT_SAFETY_FACTOR", 0.90)
     DEFAULT_CORRIDOR_RADIUS_KM = _env_float(
         "DEFAULT_CORRIDOR_RADIUS_KM", 10
+    )
+    DEFAULT_MAX_TOTAL_DETOUR_KM = _env_float(
+        "DEFAULT_MAX_TOTAL_DETOUR_KM",
+        2 * DEFAULT_CORRIDOR_RADIUS_KM,
     )
     DEFAULT_ROUTE_SAMPLE_STEP_KM = _env_float(
         "DEFAULT_ROUTE_SAMPLE_STEP_KM", 5

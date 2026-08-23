@@ -24,8 +24,8 @@ from .energy import EnergyParameters
 from .spatial import normalize_coordinate
 
 
-REPORT_SCHEMA_VERSION = 4
-SCENARIO_SCHEMA_VERSION = 3
+REPORT_SCHEMA_VERSION = 5
+SCENARIO_SCHEMA_VERSION = 4
 _SAFE_LABEL = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 CSV_COLUMNS = (
@@ -43,6 +43,7 @@ CSV_COLUMNS = (
     "soc_step_percent",
     "corridor_radius_km",
     "route_sample_step_km",
+    "max_total_detour_km",
     "additional_charging_networks",
     "status",
     "route_feasible",
@@ -212,6 +213,7 @@ def _validate_vehicle_and_options(scenario, field):
         "soc_step_percent",
         "corridor_radius_km",
         "route_sample_step_km",
+        "max_total_detour_km",
         "additional_charging_networks",
     }
     _reject_unknown_fields(options, expected_options, options_field)
@@ -228,6 +230,11 @@ def _validate_vehicle_and_options(scenario, field):
     route_sample_step = _finite_number(
         options,
         "route_sample_step_km",
+        options_field,
+    )
+    max_total_detour = _finite_number(
+        options,
+        "max_total_detour_km",
         options_field,
     )
     try:
@@ -258,6 +265,11 @@ def _validate_vehicle_and_options(scenario, field):
         raise ExperimentDefinitionError(
             f"{options_field}.route_sample_step_km harus berada pada rentang 0,1 sampai 100."
         )
+    if not 0 < max_total_detour <= 1000:
+        raise ExperimentDefinitionError(
+            f"{options_field}.max_total_detour_km harus berada pada rentang "
+            ">0 sampai 1000."
+        )
 
 
 def _validate_sensitivity_oat(definition):
@@ -279,6 +291,7 @@ def _validate_sensitivity_oat(definition):
         "safety_factor",
         "corridor_radius_km",
         "soc_step_percent",
+        "max_total_detour_km",
     )
     vehicle_factors = ("maximum_range_km",)
     fixed_options = {
@@ -480,6 +493,7 @@ def _result_template(scenario):
         "soc_step_percent": options.get("soc_step_percent"),
         "corridor_radius_km": options.get("corridor_radius_km"),
         "route_sample_step_km": options.get("route_sample_step_km"),
+        "max_total_detour_km": options.get("max_total_detour_km"),
         "additional_charging_networks": " | ".join(
             options.get("additional_charging_networks", [])
         ),

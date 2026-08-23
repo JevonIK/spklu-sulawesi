@@ -420,6 +420,50 @@ def test_lower_detour_wins_after_time_and_stop_count():
     assert result.itinerary.total_detour_km == pytest.approx(4)
 
 
+def test_total_detour_cap_prunes_otherwise_energy_feasible_itinerary():
+    graph = travel_graph(
+        (
+            graph_node(ORIGIN_NODE_ID, "origin", 0),
+            graph_node("station-a", "station", 50),
+            graph_node(DESTINATION_NODE_ID, "destination", 100),
+        ),
+        (
+            graph_edge(ORIGIN_NODE_ID, "station-a", 56, duration=50, detour=6),
+            graph_edge("station-a", DESTINATION_NODE_ID, 56, duration=50, detour=6),
+        ),
+    )
+
+    result = optimize_itinerary(
+        graph,
+        current_soc_percent=80,
+        parameters=default_parameters(maximum_range_km=100),
+        max_total_detour_km=10,
+    )
+
+    assert result.feasible is False
+    assert result.reason == "detour_infeasible"
+    assert result.stats.detour_pruned_transitions > 0
+
+
+@pytest.mark.parametrize("limit", [0, float("inf")])
+def test_total_detour_cap_must_be_positive_and_finite(limit):
+    graph = travel_graph(
+        (
+            graph_node(ORIGIN_NODE_ID, "origin", 0),
+            graph_node(DESTINATION_NODE_ID, "destination", 10),
+        ),
+        (graph_edge(ORIGIN_NODE_ID, DESTINATION_NODE_ID, 10),),
+    )
+
+    with pytest.raises(ValueError, match="Batas total detour"):
+        optimize_itinerary(
+            graph,
+            current_soc_percent=80,
+            parameters=default_parameters(),
+            max_total_detour_km=limit,
+        )
+
+
 def test_distance_is_used_when_duration_is_not_available():
     graph = travel_graph(
         (

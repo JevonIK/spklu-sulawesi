@@ -40,7 +40,7 @@ koridor serta visualisasi memakai bentuk rute yang lebih rinci.
 `HIGH_QUALITY` tidak menjamin akurasi lokasi SPKLU atau kondisi jalan aktual,
 sedangkan `TRAFFIC_UNAWARE` tidak boleh ditafsirkan sebagai estimasi waktu tiba
 di kondisi lalu lintas saat perjalanan. Kedua nilai dikunci dalam manifest
-kandidat dan direkam pada provenance laporan schema 3.
+kandidat dan direkam pada provenance laporan schema 5.
 
 ## Penyeberangan feri
 
@@ -105,6 +105,8 @@ Aplikasi umum menerima satu atau beberapa konektor dataset dan mempertahankan
 node yang mendukung sedikitnya satu pilihan. Field tunggal `connector` tetap
 diterima untuk kompatibilitas. Safety factor, radius koridor, interval SOC, dan
 langkah sampling tetap menjadi konfigurasi backend pada endpoint publik;
+hard cap total detour 20 km juga dikelola backend dan divalidasi ulang terhadap
+rute final;
 perangkat eksperimen dapat menetapkannya secara eksplisit. Baseline kandidat
 memakai CCS2 dengan fallback AC Type 2; sensitivitas konektor membandingkannya
 dengan CCS2-only, sedangkan hasil historis tetap CCS2-only.

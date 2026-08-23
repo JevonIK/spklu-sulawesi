@@ -185,6 +185,8 @@ def test_web_reservation_cannot_exceed_lower_daily_limit():
         ("DEFAULT_MAXIMUM_RANGE_KM", 2001),
         ("DEFAULT_SAFETY_FACTOR", 0),
         ("DEFAULT_CORRIDOR_RADIUS_KM", 101),
+        ("DEFAULT_MAX_TOTAL_DETOUR_KM", 0),
+        ("DEFAULT_MAX_TOTAL_DETOUR_KM", 1001),
         ("DEFAULT_ROUTE_SAMPLE_STEP_KM", 0.01),
         ("DEFAULT_SOC_STEP", 0),
         ("GOOGLE_ROUTES_TIMEOUT_SECONDS", 0),

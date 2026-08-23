@@ -5,7 +5,7 @@ Proyek memakai dua lapis spesifikasi dependency:
 - `requirements.txt` dan `requirements-dev.txt` menyatakan rentang kompatibilitas
   dependency langsung; dan
 - `constraints.txt` mengunci versi dependency langsung serta transitif yang
-  digunakan kandidat rilis 0.16.0.
+  digunakan kandidat rilis 0.17.0.
 
 Gunakan keduanya saat membuat environment pengembangan:
 

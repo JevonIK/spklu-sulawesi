@@ -53,6 +53,7 @@ class OptimizationStats:
     processed_states: int
     evaluated_transitions: int
     energy_pruned_transitions: int
+    detour_pruned_transitions: int
     accepted_state_updates: int
     destination_state_count: int
 
@@ -61,6 +62,7 @@ class OptimizationStats:
             "processed_states": self.processed_states,
             "evaluated_transitions": self.evaluated_transitions,
             "energy_pruned_transitions": self.energy_pruned_transitions,
+            "detour_pruned_transitions": self.detour_pruned_transitions,
             "accepted_state_updates": self.accepted_state_updates,
             "destination_state_count": self.destination_state_count,
         }
@@ -205,6 +207,7 @@ def _empty_stats(**overrides):
         "processed_states": 0,
         "evaluated_transitions": 0,
         "energy_pruned_transitions": 0,
+        "detour_pruned_transitions": 0,
         "accepted_state_updates": 0,
         "destination_state_count": 0,
     }
@@ -376,6 +379,7 @@ def optimize_itinerary(
     current_soc_percent,
     parameters: EnergyParameters,
     station_preference_ranks=None,
+    max_total_detour_km=None,
 ):
     """Mencari itinerary feasible dan terbaik dengan DP state (node, SOC)."""
 
@@ -393,6 +397,10 @@ def optimize_itinerary(
         for rank in station_preference_ranks.values()
     ):
         raise ValueError("Peringkat preferensi station harus integer non-negatif.")
+    if max_total_detour_km is not None:
+        max_total_detour_km = float(max_total_detour_km)
+        if not math.isfinite(max_total_detour_km) or max_total_detour_km <= 0:
+            raise ValueError("Batas total detour harus lebih besar dari nol.")
     initial_usable_range = parameters.usable_range_km(current_soc)
     post_charge_usable_range = parameters.usable_range_km(
         parameters.target_soc_percent
@@ -426,6 +434,7 @@ def optimize_itinerary(
     processed_states = 0
     evaluated_transitions = 0
     energy_pruned_transitions = 0
+    detour_pruned_transitions = 0
     accepted_state_updates = 0
 
     ordered_nodes = sorted(
@@ -479,6 +488,13 @@ def optimize_itinerary(
                         is_charging_stop,
                         station_preference_ranks.get(node.node_id, 0),
                     )
+                    if (
+                        max_total_detour_km is not None
+                        and candidate_cost.total_detour_km
+                        > max_total_detour_km
+                    ):
+                        detour_pruned_transitions += 1
+                        continue
                     existing = states.get(target_state)
                     if existing is not None and existing.cost.key() <= candidate_cost.key():
                         continue
@@ -504,16 +520,24 @@ def optimize_itinerary(
         processed_states=processed_states,
         evaluated_transitions=evaluated_transitions,
         energy_pruned_transitions=energy_pruned_transitions,
+        detour_pruned_transitions=detour_pruned_transitions,
         accepted_state_updates=accepted_state_updates,
         destination_state_count=len(destination_states),
     )
     if not destination_states:
+        reason = (
+            "detour_infeasible"
+            if detour_pruned_transitions > 0
+            else "soc_infeasible"
+        )
         return OptimizationResult(
             feasible=False,
-            reason="soc_infeasible",
+            reason=reason,
             message=(
-                "Tidak ada itinerary yang dapat mempertahankan SOC pada atau "
-                "di atas batas minimum."
+                "Tidak ada itinerary yang memenuhi batas total detour."
+                if reason == "detour_infeasible"
+                else "Tidak ada itinerary yang dapat mempertahankan SOC pada "
+                "atau di atas batas minimum."
             ),
             parameters=parameters,
             initial_usable_range_km=initial_usable_range,

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "analysis_release": {
-    "application_version": "0.16.0",
+    "application_version": "0.17.0",
     "source_scope": "application-runtime-v2",
-    "source_sha256": "d9f392cde3eb10232655dfee172cfcc81487ea64226ecb7a8382f11e4f409b4c"
+    "source_sha256": "779ceb1340760636f4d5c5f69395f25a99804096493bf78484d07ce6451fbb54"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -20,13 +20,13 @@
       "id": "analysis_notebook",
       "kind": "jupyter_notebook",
       "path": "notebooks/analisis_sistem_spklu_sulawesi.ipynb",
-      "sha256": "0386592df7b4b87a4e116a0c60f6d4b371987dd81f7524d2a3cf04f80b6a3e8c"
+      "sha256": "3be729b5c008f5dd6678f9d821c4fe8a798c41d5c3dacb82cc6bfb986f3b5dd1"
     },
     {
       "id": "notebook_provenance",
       "kind": "provenance_metadata",
       "path": "notebooks/data/provenance.json",
-      "sha256": "6715abf465f1ae57b31b6e5ed4983d449f31373d8a4d76e513fbfb395cf0315d"
+      "sha256": "12b58d2d1c014bf874c7d204c1ebedddea3d98648850f1f9800f6a27cba1d148"
     },
     {
       "id": "snapshot_builder",
@@ -38,19 +38,19 @@
       "id": "scenario_baseline_current",
       "kind": "scenario_definition_current",
       "path": "experiments/scenarios_baseline.json",
-      "sha256": "4ae6a25095ecf1d6c96ab5f1eba49e6e8c51f4819a1e005c6e3c0f9b47c8ab14"
+      "sha256": "bc695b451716b41bd3b1a110517ea4589580985b9c4d1f6cb78cbe76200a1135"
     },
     {
       "id": "scenario_sensitivity_current",
       "kind": "scenario_definition_current",
       "path": "experiments/scenarios_sensitivity.json",
-      "sha256": "6de127c6dd90aea44577f76af431860132771f4ad3ed8c6aa4d3bf42394237be"
+      "sha256": "d89bafcc720ab5867d96815c55b77dcd950f3d004f46378b4d283e2ea0425bbb"
     },
     {
       "id": "scenario_connector_sensitivity_current",
       "kind": "scenario_definition_current",
       "path": "experiments/scenarios_connector_sensitivity.json",
-      "sha256": "c0c677e6bdb484f3af361bfc6702922f6b4f98baa59425e769053819ca1b1a98"
+      "sha256": "237a5c4b48094640d32f66b0c6228b12b78771ff6589beedf459965176d7a5aa"
     },
     {
       "id": "vehicle_range_reference",
@@ -124,13 +124,13 @@
     }
   ],
   "limitations": [
-    "Baseline live dibuat oleh aplikasi 0.9.2 dan sensitivitas live oleh aplikasi 0.10.0; keduanya bukan hasil aplikasi 0.16.0.",
+    "Baseline live dibuat oleh aplikasi 0.9.2 dan sensitivitas live oleh aplikasi 0.10.0; keduanya bukan hasil aplikasi 0.17.0.",
     "Laporan historis tidak merekam hash dataset maupun route_sample_step_km, sehingga kedua nilai tersebut sengaja dibiarkan null.",
     "Laporan JSON sumber masih bersifat lokal dan diabaikan Git; clone baru hanya memperoleh snapshot, checksum, metadata, dan script transformasi.",
     "Sumber asli, tanggal pengumpulan, metode pengumpulan, lisensi, dan hak redistribusi dataset belum dikonfirmasi.",
     "Dukungan feri kandidat saat ini belum dievaluasi oleh eksperimen live historis dan tidak boleh dianggap tervalidasi secara empiris oleh snapshot 0.9.2/0.10.0.",
     "Dataset kandidat direvisi menjadi 150 baris dan 146 node logis setelah run historis; dataset ini tidak boleh diatribusikan sebagai input laporan live 0.9.2/0.10.0 yang tidak merekam hash dataset.",
     "Baseline 430 km berasal dari median tujuh model-family WLTP yang dibulatkan ke 10 km dan bukan estimasi distribusi penjualan atau registrasi khusus Sulawesi.",
-    "Skenario kandidat 0.16.0 memakai CCS2 dengan fallback AC Type 2, tetapi belum dijalankan live; snapshot historis tetap CCS2 dan 300 km."
+    "Skenario kandidat 0.17.0 memakai CCS2 dengan fallback AC Type 2 dan hard cap total detour 20 km, tetapi belum dijalankan live; snapshot historis tetap CCS2 dan 300 km tanpa metadata cap detour."
   ]
 }

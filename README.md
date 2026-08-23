@@ -54,8 +54,8 @@ Fase 14 memisahkan kompatibilitas konektor dari akses jaringan charger,
 menyertakan SPKLU publik secara default, menyediakan pilihan tambahan Hyundai,
 Wuling, dan Toyota/Lexus, serta menandai itinerary yang memakai charger dealer
 sebagai rute kondisional.
-Fase 15 menyiapkan kandidat 0.16.0 untuk pelaporan ilmiah: definisi skenario
-schema 3 dan laporan baru schema 4, provenance artefak historis, identitas source
+Fase 15 menyiapkan kandidat 0.17.0 untuk pelaporan ilmiah: definisi skenario
+schema 4 dan laporan baru schema 5, provenance artefak historis, identitas source
 dan dependency yang dapat diaudit, geometri rute `HIGH_QUALITY` dengan
 `TRAFFIC_UNAWARE`, margin konservatif 1% pada prapemangkasan geodesik, validasi
 ulang SOC dari setiap leg rute final, serta bukti CI yang dapat diunduh. Container
@@ -66,6 +66,9 @@ AC Type 2 menjadi fallback yang selalu ditandai karena waktu pengisian tidak
 dihitung. Jangkauan awal 430 km diturunkan secara deterministik dari median
 tujuh model-family WLTP resmi Indonesia (433 km, dibulatkan ke 10 km), dengan
 skenario sensitivitas 200/300/400/500 km dan konektor terpisah untuk run baru.
+Fase 17 menambahkan hard cap total detour 20 km yang diturunkan dari dua kali
+radius koridor 10 km. DP memangkas itinerary yang melampaui cap dan rute final
+Google divalidasi ulang; sensitivitas 10/20/30 km disiapkan untuk run baru.
 
 ## Ruang lingkup sistem
 
@@ -76,6 +79,7 @@ skenario sensitivitas 200/300/400/500 km dan konektor terpisah untuk run baru.
   konektor antarunit dalam satu node lokasi.
 - Pembentukan graf berarah dengan edge yang memenuhi batas jangkauan.
 - Dynamic Programming dengan state SOC diskret.
+- Hard cap total detour 20 km dengan pruning DP dan validasi rute final.
 - Rekomendasi urutan SPKLU, jarak setiap leg, SOC tiba/berangkat, dan detour.
 - Deteksi feri generik yang memisahkan jarak pelayaran dari konsumsi SOC dan
   menandai akses kendaraan sebagai kondisional.
@@ -230,12 +234,12 @@ Inggris agar dapat digunakan langsung sebagai pendamping jurnal berbahasa Inggri
 Snapshot metrik yang dilacak beserta provenance-nya berada di
 `notebooks/data/`; notebook tidak memanggil Google Maps API. Baseline tersebut
 dihasilkan aplikasi 0.9.2 dan sensitivitas oleh aplikasi 0.10.0 dengan schema
-laporan 2 serta definisi skenario schema 1 tertanam. Kandidat 0.16.0 menganalisis
+laporan 2 serta definisi skenario schema 1 tertanam. Kandidat 0.17.0 menganalisis
 snapshot itu secara offline dan tidak boleh disebut sebagai versi yang
 menghasilkan request live historis.
 
-Definisi skenario saat ini memakai schema 3 dan setiap laporan baru memakai
-schema 4. Laporan schema 4 merekam provenance versi aplikasi, source tree,
+Definisi skenario saat ini memakai schema 4 dan setiap laporan baru memakai
+schema 5. Laporan schema 5 merekam provenance versi aplikasi, source tree,
 dataset, skenario, dependency, manifest, parameter algoritma, dan lingkungan
 eksekusi. Ketentuan ini berlaku untuk run baru; metadata yang tidak direkam oleh
 laporan lama tidak diisi melalui tebakan.
@@ -244,6 +248,8 @@ Dasar numerik jangkauan kandidat dapat diaudit pada
 [`research/vehicle_range_reference.json`](research/vehicle_range_reference.json).
 Artefak tersebut hanya menentukan baseline model; pengguna aplikasi tetap harus
 mengisi SOC dan jangkauan aktual kendaraannya.
+Definisi, penerapan dua lapis, dan batas interpretasi hard cap detour dijelaskan
+pada [`docs/detour_policy.md`](docs/detour_policy.md).
 
 Asal penyedia, tanggal snapshot, metode pengumpulan, lisensi, dan hak
 redistribusi dataset belum dikonfirmasi. `dataset_metadata.json` mencatat status
@@ -270,7 +276,7 @@ Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.16.0 pada
+kandidat rilis 0.17.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

@@ -18,11 +18,11 @@ pengambilan data penelitian tambahan.
 - [ ] Berkas `.env` lokal memiliki permission `600`; secret produksi disimpan di
   secret manager platform, bukan di filesystem image.
 - [ ] Versi pada health endpoint sama dengan versi aplikasi yang dilaporkan.
-- [ ] Definisi baseline dan sensitivitas memakai schema 3, checksum cocok,
+- [ ] Definisi baseline dan sensitivitas memakai schema 4, checksum cocok,
   tervalidasi, dan ID skenario unik.
-- [ ] Laporan baru memakai schema 4 dan memuat provenance yang diwajibkan.
+- [ ] Laporan baru memakai schema 5 dan memuat provenance yang diwajibkan.
 - [ ] Hasil historis diatribusikan ke aplikasi penghasilnya: baseline 0.9.2 dan
-  sensitivitas 0.10.0, bukan kandidat analisis 0.16.0.
+  sensitivitas 0.10.0, bukan kandidat analisis 0.17.0.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
 - [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,
@@ -31,6 +31,8 @@ pengambilan data penelitian tambahan.
   memakai Combo 2 dengan prioritas CCS2 dan fallback AC Type 2.
 - [ ] Referensi jangkauan dapat dihitung ulang menjadi median 433 km dan
   baseline 430 km; sensitivitas 200/300/400/500 km tervalidasi.
+- [ ] Hard cap total detour 20 km sama dengan dua kali radius koridor baseline;
+  sensitivitas 10/20/30 km dan validasi rute final tersedia.
 
 ## Verifikasi otomatis tanpa API live
 
@@ -99,7 +101,7 @@ Google Cloud, atau bukti hukum tetap diperiksa manual. Lihat
 - [ ] Error atau rerun manual dijelaskan dan dihitung secara kumulatif.
 - [ ] `aggregate.error_count` nol sebelum hasil digunakan sebagai kesimpulan.
 - [ ] Tidak ada pelanggaran SOC pada itinerary feasible.
-- [ ] Untuk setiap hasil feasible schema 3, validasi rute final berstatus
+- [ ] Untuk setiap hasil feasible schema 5, validasi rute final berstatus
   `passed`.
 - [ ] Hash SHA-256 artefak mentah dicatat.
 - [ ] Laporan mentah tetap lokal dan hasil tervalidasi disalin ke dokumentasi.

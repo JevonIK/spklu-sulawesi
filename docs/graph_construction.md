@@ -45,7 +45,7 @@ diterima apabila:
 1. provider berhasil menemukan rute;
 2. jarak energi setelah mengeluarkan segmen feri tidak melebihi usable range
    sumber;
-3. estimasi detour tidak melampaui batas opsional.
+3. metrik jalan dan detour dapat dibentuk secara konsisten.
 
 Sebagai pemeriksaan integritas respons, jarak jalan yang lebih pendek daripada
 lower bound geodesik di luar toleransi absolut ditolak sebagai data tidak masuk
@@ -57,6 +57,10 @@ sebelum hasil ditampilkan.
 Estimasi detour edge dihitung sebagai selisih nonnegatif antara jarak jalan dan
 kenaikan progres pada polyline utama. Setelah itinerary terpilih, total detour
 rute akhir dihitung kembali dari Compute Routes final terhadap rute dasar.
+Pipeline kandidat tidak memakai hard cap per-edge. Sebaliknya, DP menjumlahkan
+detour seluruh edge dan menerapkan hard cap total 20 km. Dengan demikian,
+beberapa deviasi kecil tidak dapat secara kumulatif menghasilkan itinerary yang
+melampaui batas perjalanan.
 
 ## Statistik evaluasi
 

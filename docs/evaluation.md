@@ -5,8 +5,8 @@ tetapi menggunakan skenario terdokumentasi dan menghasilkan laporan JSON serta
 CSV. Eksekusi dilakukan berurutan agar jumlah panggilan API dan penggunaan
 sumber daya per skenario dapat diaudit.
 
-Definisi skenario kandidat 0.16.0 wajib memakai `schema_version: 3`. Laporan
-yang dibuat sekarang memakai `schema_version: 4`; angka schema skenario dan
+Definisi skenario kandidat 0.17.0 wajib memakai `schema_version: 4`. Laporan
+yang dibuat sekarang memakai `schema_version: 5`; angka schema skenario dan
 laporan sengaja berbeda karena keduanya memiliki kontrak data yang berbeda.
 
 ## Skenario penelitian
@@ -30,6 +30,12 @@ koridor 10 km. Nilai 430 km berasal dari median tujuh model-family WLTP resmi
 Indonesia sebesar 433 km yang dibulatkan ke 10 km; sumber dan perhitungan berada
 pada `research/vehicle_range_reference.json`. Ini adalah kendaraan referensi,
 bukan klaim spesifikasi seluruh kendaraan listrik.
+Baseline membatasi total detour sebesar 20 km, diturunkan dari `2 ×` radius
+koridor 10 km sebagai batas deviasi keluar–kembali ke koridor. Nilai ini
+merupakan kebijakan geometris yang diuji lagi melalui sensitivitas, bukan
+preferensi pengguna yang sudah tervalidasi.
+Rumus dan perbedaan estimator graf terhadap detour rute final dijelaskan pada
+[`detour_policy.md`](detour_policy.md).
 
 `experiments/scenarios_sensitivity.json` memakai koridor Makassar–Rantepao dan
 mengubah satu variabel pada satu waktu:
@@ -38,6 +44,7 @@ mengubah satu variabel pada satu waktu:
 - radius koridor: 5, 10, dan 15 km;
 - interval diskretisasi SOC: 2,5%; 5%; dan 10%.
 - jangkauan maksimum: 200, 300, 400, baseline 430, dan 500 km.
+- batas total detour: 10, baseline 20, dan 30 km.
 
 `experiments/scenarios_connector_sensitivity.json` membandingkan CCS2 publik
 saja dengan konfigurasi Combo 2 yang mengizinkan fallback AC Type 2. Semua
@@ -67,7 +74,7 @@ ketidaklayakan jaringan SPKLU.
 Skenario infeasible tidak memiliki leg dan mendapat nilai nol; status
 `route_feasible` dan `reason` tetap harus dibaca bersamanya.
 
-Untuk setiap itinerary feasible, versi 0.16.0 juga memvalidasi ulang SOC dari
+Untuk setiap itinerary feasible, versi 0.17.0 juga memvalidasi ulang SOC dari
 jarak setiap leg rute yang ditampilkan, bukan hanya edge Route Matrix yang
 dipakai DP.
 Mismatch jumlah leg atau pelanggaran SOC final dicatat sebagai error dan rute
@@ -116,7 +123,7 @@ Analisis sensitivitas:
 python -m flask --app run.py experiment-run \
   --scenarios experiments/scenarios_sensitivity.json \
   --label sensitivitas-live-YYYYMMDD \
-  --max-compute-routes 22 \
+  --max-compute-routes 26 \
   --max-compute-routes-per-minute 100 \
   --max-compute-routes-per-scenario 2 \
   --max-matrix-elements 1200 \
@@ -126,7 +133,7 @@ python -m flask --app run.py experiment-run \
   --confirm-live-api
 ```
 
-Batas Compute Routes contoh berasal dari sebelas skenario yang masing-masing
+Batas Compute Routes contoh berasal dari tiga belas skenario yang masing-masing
 memakai maksimal satu rute dasar dan satu rute rekomendasi. Batas Matrix tidak
 dapat diturunkan hanya dari jumlah skenario karena bergantung pada kandidat dan
 pasangan graf. Hitung estimasi elemen terlebih dahulu, periksa ledger dan Cloud
@@ -140,7 +147,8 @@ artefak laporan penelitian yang memang hendak dijadikan bukti versi.
 Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
-Schema laporan versi 4 menyimpan daftar konektor, konektor preferen, jumlah
+Schema laporan versi 5 menyimpan daftar konektor, konektor preferen, batas
+total detour, jumlah
 fallback AC, nama SPKLU terpilih, rincian leg dan SOC,
 jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
 statistik optimizer. Laporan juga merekam provenance kandidat: versi aplikasi,
@@ -153,9 +161,9 @@ Google tidak disalin ke laporan.
 Baseline dan sensitivitas yang sudah dipakai notebook adalah laporan historis
 schema 2, masing-masing dibuat aplikasi 0.9.2 dan 0.10.0. Definisi yang tertanam
 di kedua laporan lama memakai schema skenario 1; berkas skenario kandidat saat
-ini sudah schema 3. Perubahan tersebut dan schema laporan 4 tidak mengubah
+ini sudah schema 4. Perubahan tersebut dan schema laporan 5 tidak mengubah
 provenance run lama. Khususnya, langkah sampling rute tidak direkam di laporan
-lama dan tidak boleh diisi dengan mengasumsikan default 0.16.0.
+lama dan tidak boleh diisi dengan mengasumsikan default 0.17.0.
 Kedua laporan historis juga belum mempunyai metrik feri dan tidak dapat dipakai
 sebagai validasi empiris untuk fitur ferry-aware kandidat saat ini.
 
@@ -176,7 +184,7 @@ untuk batas kustom yang lebih rendah, tetapi konfigurasi default tidak memaksa
 jeda antarskenario.
 
 Default ukuran batch adalah 100 dengan jeda 0 detik, sehingga enam baseline dan
-sebelas sensitivitas berjalan berurutan tanpa jeda buatan. Opsi `--batch-size` dan
+tiga belas sensitivitas berjalan berurutan tanpa jeda buatan. Opsi `--batch-size` dan
 `--batch-interval-seconds` tetap dicatat di laporan dan dapat diberi jeda positif
 secara manual bila diperlukan.
 
@@ -282,7 +290,7 @@ Sebelum mengambil kesimpulan, periksa hal berikut:
    graf; jangan menyimpulkan bahwa implementasi gagal hanya dari infeasibility.
 5. Catat tanggal, label keluaran, parameter, dan kondisi eksperimen pada laporan.
 6. Catat versi aplikasi penghasil dan schema laporan; jangan mengatribusikan
-   hasil historis 0.9.2/0.10.0 kepada kandidat analisis 0.16.0.
+   hasil historis 0.9.2/0.10.0 kepada kandidat analisis 0.17.0.
 
 Hasil sensitivitas live yang telah divalidasi tersedia pada
 [`sensitivity_results.md`](sensitivity_results.md). Kebijakan seluruh layanan

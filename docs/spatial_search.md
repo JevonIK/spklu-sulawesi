@@ -55,5 +55,5 @@ jalan dan kelayakan edge akan divalidasi pada fase pembentukan graf.
 
 Kualitas polyline yang lebih tinggi mengurangi kehilangan bentuk jalan pada
 filter koridor, tetapi bukan bukti bahwa geometri, koordinat SPKLU, atau kondisi
-jalan selalu akurat. Run baru merekam langkah sampling pada skenario schema 3;
+jalan selalu akurat. Run baru merekam langkah sampling pada skenario schema 4;
 laporan historis 0.9.2/0.10.0 tidak merekam nilai tersebut.

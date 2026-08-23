@@ -92,7 +92,7 @@ def test_health_endpoint_reports_dataset(client):
     assert response.status_code == 200
     assert payload["status"] == "ok"
     assert payload["service"] == "spklu-sulawesi"
-    assert payload["version"] == "0.16.0"
+    assert payload["version"] == "0.17.0"
     assert payload["data"]["dataset"]["exists"] is True
     assert payload["data"]["dataset"]["filename"] == "dataset_spklu_sulawesi.csv"
     assert payload["data"]["dataset"]["sha256"] == (

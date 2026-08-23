@@ -23,7 +23,11 @@ from .dataset import (
     parse_connectors,
 )
 from .energy import EnergyParameters, SOC_TOLERANCE
-from .graph import FerryProgressInterval, build_travel_graph
+from .graph import (
+    ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM,
+    FerryProgressInterval,
+    build_travel_graph,
+)
 from .google_routes import (
     MAX_INTERMEDIATE_WAYPOINTS,
     GoogleRoutesError,
@@ -148,6 +152,7 @@ class RecommendationInput:
     additional_charging_networks: tuple[str, ...]
     corridor_radius_km: float
     route_sample_step_km: float
+    max_total_detour_km: float
     allow_ferries: bool
 
     @classmethod
@@ -234,6 +239,12 @@ class RecommendationInput:
             "options.route_sample_step_km",
             default=defaults["route_sample_step_km"],
         )
+        max_total_detour = _number(
+            options,
+            "max_total_detour_km",
+            "options.max_total_detour_km",
+            default=defaults["max_total_detour_km"],
+        )
         allow_ferries = _boolean(
             options,
             "allow_ferries",
@@ -255,6 +266,11 @@ class RecommendationInput:
             raise RecommendationValidationError(
                 "options.route_sample_step_km",
                 "Langkah sampling rute harus berada pada rentang 0,1 sampai 100 km.",
+            )
+        if not 0 < max_total_detour <= 1000:
+            raise RecommendationValidationError(
+                "options.max_total_detour_km",
+                "Batas total detour harus berada pada rentang >0 sampai 1.000 km.",
             )
         try:
             parameters = EnergyParameters(
@@ -285,6 +301,7 @@ class RecommendationInput:
             additional_charging_networks=additional_charging_networks,
             corridor_radius_km=corridor_radius,
             route_sample_step_km=route_sample_step,
+            max_total_detour_km=max_total_detour,
             allow_ferries=allow_ferries,
         )
 
@@ -309,6 +326,7 @@ class RecommendationInput:
             ),
             "corridor_radius_km": self.corridor_radius_km,
             "route_sample_step_km": self.route_sample_step_km,
+            "max_total_detour_km": self.max_total_detour_km,
             "allow_ferries": self.allow_ferries,
         }
 
@@ -456,6 +474,7 @@ class RecommendationService:
         final_route,
         base_route,
         parameters,
+        max_total_detour_km,
     ):
         """Memvalidasi ulang SOC memakai leg Compute Routes yang digambar."""
 
@@ -572,6 +591,17 @@ class RecommendationService:
             0.0,
             final_route.distance_km - base_route.distance_km,
         )
+        if (
+            itinerary["total_detour_km"]
+            > max_total_detour_km + ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM
+        ):
+            raise GoogleRoutesError(
+                "final_route_detour_violation",
+                (
+                    "Rute final Google melampaui batas total detour; "
+                    "rekomendasi tidak ditampilkan."
+                ),
+            )
         itinerary["final_soc_percent"] = current_soc
         itinerary["minimum_observed_soc_percent"] = minimum_observed_soc
         optimization_payload["final_route_validation"] = {
@@ -589,6 +619,8 @@ class RecommendationService:
             "distance_delta_km": final_route.distance_km - matrix_distance_km,
             "minimum_soc_percent": parameters.minimum_soc_percent,
             "minimum_observed_soc_percent": minimum_observed_soc,
+            "max_total_detour_km": max_total_detour_km,
+            "total_detour_km": itinerary["total_detour_km"],
         }
 
     @staticmethod
@@ -779,6 +811,7 @@ class RecommendationService:
                 graph,
                 recommendation_input,
             ),
+            max_total_detour_km=recommendation_input.max_total_detour_km,
         )
 
         recommended_route = None
@@ -827,6 +860,7 @@ class RecommendationService:
                 recommended_route,
                 base_route,
                 parameters,
+                recommendation_input.max_total_detour_km,
             )
         route_access = self._annotate_route_access(
             optimization_payload,

@@ -14,6 +14,7 @@ DEFAULTS = {
     "soc_step_percent": 5,
     "corridor_radius_km": 10,
     "route_sample_step_km": 5,
+    "max_total_detour_km": 20,
 }
 
 

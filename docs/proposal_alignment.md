@@ -22,6 +22,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Model jangkauan dan SOC | `app/services/energy.py` |
 | Dasar jangkauan 430 km | `research/vehicle_range_reference.json` dan `app/services/vehicle_reference.py` |
 | Dynamic Programming state `(node, SOC)` | `app/services/optimizer.py` |
+| Hard cap total detour | 20 km dari `2 ×` radius koridor; pruning DP dan validasi rute final |
 | Rekomendasi multi-stop | `app/services/recommendation.py` |
 | Validasi SOC rute final | rekonsiliasi setiap leg Compute Routes final pada `app/services/recommendation.py` |
 | Evaluasi enam wilayah dan sensitivitas | `experiments/`, `app/services/evaluation.py`, `docs/baseline_results.md`, dan `docs/sensitivity_results.md` |
@@ -75,7 +76,7 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 13. Bedakan validasi SOC hasil DP/Route Matrix dari rekonsiliasi SOC pada setiap
     leg Compute Routes final.
 14. Atribusikan baseline kepada aplikasi 0.9.2 dan sensitivitas kepada 0.10.0;
-    0.16.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
+    0.17.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
 15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
     hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
     lengkap, terkini, atau open data tanpa bukti.
@@ -87,6 +88,9 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
     tidak dibobot penjualan dan bukan data registrasi khusus Sulawesi.
 18. Pisahkan sensitivitas konektor/range kandidat dari hasil live historis;
     definisi baru belum boleh dilaporkan sebagai hasil sampai run berizin selesai.
+19. Jelaskan batas total detour 20 km sebagai kebijakan geometris `2 ×` radius
+    koridor, bukan preferensi pengguna tervalidasi; laporkan sensitivitas
+    10/20/30 km setelah run berizin tersedia.
 
 Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
 tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan

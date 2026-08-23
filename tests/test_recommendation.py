@@ -34,6 +34,7 @@ DEFAULTS = {
     "soc_step_percent": 5,
     "corridor_radius_km": 10,
     "route_sample_step_km": 5,
+    "max_total_detour_km": 20,
 }
 
 
@@ -291,6 +292,16 @@ def test_recommendation_input_accepts_explicit_route_sampling_step():
     assert parsed.route_sample_step_km == pytest.approx(2.5)
 
 
+def test_recommendation_input_uses_backend_total_detour_limit():
+    parsed = RecommendationInput.from_payload(
+        valid_payload(),
+        defaults=DEFAULTS,
+    )
+
+    assert parsed.max_total_detour_km == pytest.approx(20)
+    assert parsed.to_dict()["max_total_detour_km"] == pytest.approx(20)
+
+
 @pytest.mark.parametrize(
     "mutator, expected_field",
     [
@@ -330,6 +341,12 @@ def test_recommendation_input_accepts_explicit_route_sampling_step():
                 {"options": {"route_sample_step_km": 0.01}}
             ),
             "options.route_sample_step_km",
+        ),
+        (
+            lambda body: body.update(
+                {"options": {"max_total_detour_km": 0}}
+            ),
+            "options.max_total_detour_km",
         ),
         (
             lambda body: body.update(
@@ -589,6 +606,41 @@ def test_final_route_leg_that_violates_soc_is_not_returned_as_feasible():
         service.recommend(service.parse_input(valid_payload()))
 
     assert captured.value.code == "final_route_soc_violation"
+
+
+def test_final_route_exceeding_total_detour_cap_is_rejected():
+    class ExcessDetourFinalRouteClient(PipelineRoutesClient):
+        def compute_route(self, origin, destination, *, intermediates=()):
+            route = super().compute_route(
+                origin,
+                destination,
+                intermediates=intermediates,
+            )
+            if not intermediates:
+                return route
+            return ComputedRoute(
+                distance_km=120,
+                duration_minutes=120,
+                encoded_polyline=route.encoded_polyline,
+                coordinates=route.coordinates,
+                legs=(
+                    ComputedRouteLeg(60, 60),
+                    ComputedRouteLeg(60, 60),
+                ),
+            )
+
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex((station_node(),)),
+        routes_client=ExcessDetourFinalRouteClient(),
+        defaults=DEFAULTS,
+    )
+    body = valid_payload()
+    body["options"] = {"max_total_detour_km": 5}
+
+    with pytest.raises(GoogleRoutesError) as captured:
+        service.recommend(service.parse_input(body))
+
+    assert captured.value.code == "final_route_detour_violation"
 
 
 def test_final_route_stop_without_real_charge_is_rejected_fail_safe():

@@ -954,6 +954,14 @@ function renderDiagnostics(data) {
         ...diagnosticPair("Node graf", graph.node_count),
         ...diagnosticPair("Edge graf diterima", graph.edge_count),
         ...diagnosticPair(
+            "Batas total detour",
+            formatDistance(data.request.max_total_detour_km),
+        ),
+        ...diagnosticPair(
+            "Transisi dipangkas oleh batas detour",
+            stats.detour_pruned_transitions || 0,
+        ),
+        ...diagnosticPair(
             "Edge Matrix dengan penyesuaian feri",
             graph.stats.ferry_adjusted_pairs || 0,
         ),

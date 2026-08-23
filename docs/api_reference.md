@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",
@@ -72,6 +72,8 @@ selalu disertakan, sedangkan `additional_charging_networks` menerima nol atau
 lebih nilai `HYUNDAI`, `WULING`, dan `TOYOTA`. Endpoint web menerima pilihan SOC,
 konektor, dan jaringan tambahan dari pengguna. Safety factor, radius koridor,
 interval SOC, serta langkah sampling ditetapkan oleh konfigurasi backend.
+Hard cap total detour juga ditetapkan backend; baseline 20 km berasal dari dua
+kali radius koridor 10 km dan tidak dapat diubah melalui endpoint publik.
 Variasi parameter tersebut tetap dapat digunakan oleh perangkat eksperimen CLI
 yang terdokumentasi. Aturan input:
 
@@ -110,6 +112,9 @@ atau penyeberangan feri dipakai. `route_access.ac_fallback_stop_count` dan field
 station `route_selected_connector` menjelaskan fallback. `route_access.ferry` memuat status,
 jumlah segmen, jarak, durasi, serta penanda bahwa dukungan kendaraan harus
 dikonfirmasi kepada operator. Waktu pengisian tidak dilaporkan.
+Request ternormalisasi memuat `max_total_detour_km`. Statistik optimizer memuat
+`detour_pruned_transitions`; hasil yang kehilangan seluruh jalur karena cap
+menggunakan reason `detour_infeasible`.
 
 Itinerary memisahkan `total_road_distance_km` sebagai jarak perjalanan total,
 `total_energy_distance_km` sebagai jarak darat yang mengurangi SOC, serta
@@ -122,6 +127,8 @@ memasukkan lalu lintas real-time/prediktif. Untuk setiap rute feasible,
 setiap leg rute final divalidasi ulang. Objek tersebut juga memuat jumlah leg,
 jarak matriks, jarak rute final, selisih keduanya, dan SOC minimum teramati.
 Untuk rute feri, validasi juga mencatat jarak energi dan jumlah segmen feri.
+Validasi final mencatat `max_total_detour_km` dan `total_detour_km`. Rute yang
+melampaui cap ditolak dengan error aman `final_route_detour_violation`.
 
 `data.quota_guard` membedakan attempt aktual dari request logis yang berhasil.
 Objek ini memuat attempt Compute Routes/Matrix pada request tersebut, tanggal

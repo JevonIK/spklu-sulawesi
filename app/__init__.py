@@ -59,6 +59,9 @@ def create_app(config_object=None, config_overrides=None):
                 "corridor_radius_km": app.config[
                     "DEFAULT_CORRIDOR_RADIUS_KM"
                 ],
+                "max_total_detour_km": app.config[
+                    "DEFAULT_MAX_TOTAL_DETOUR_KM"
+                ],
                 "route_sample_step_km": app.config[
                     "DEFAULT_ROUTE_SAMPLE_STEP_KM"
                 ],

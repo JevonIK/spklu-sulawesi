@@ -36,6 +36,16 @@ Edge hanya feasible jika SOC saat tiba tetap berada pada atau di atas SOC minimu
 Safety factor `alpha` berada pada rentang lebih dari 0 sampai 1 dan menjadi margin
 ketidakpastian konsumsi energi.
 
+Total detour juga menjadi constraint wajib. Baseline memakai:
+
+```text
+maximum_total_detour = 2 × corridor_radius = 2 × 10 km = 20 km
+```
+
+Transisi yang membuat akumulasi detour melewati 20 km dipangkas dan dicatat pada
+`detour_pruned_transitions`. Sensitivitas kandidat membandingkan 10, 20, dan
+30 km; definisi tersebut belum merupakan hasil live.
+
 Jarak serta durasi feri tetap masuk informasi perjalanan, tetapi jarak feri tidak
 mengurangi SOC. Model tidak memperhitungkan pemakaian AC, sentry mode, atau beban
 aksesori ketika kendaraan berada di kapal.
@@ -57,12 +67,13 @@ urutan leg, lokasi pengisian, SOC tiba, dan SOC berangkat.
 Kelayakan SOC merupakan constraint wajib. Solusi feasible dibandingkan secara
 leksikografis berdasarkan:
 
-1. total waktu perjalanan Google (darat dan pelayaran, tanpa waktu tunggu
+1. jumlah pemberhentian AC Type 2 fallback;
+2. total waktu perjalanan Google (darat dan pelayaran, tanpa waktu tunggu
    jadwal feri);
-2. jumlah pemberhentian pengisian;
-3. total detour;
-4. jumlah SOC yang ditambahkan sebagai tie-breaker agar pengisian tidak berlebih;
-5. total jarak jalan sebagai tie-breaker terakhir.
+3. jumlah pemberhentian pengisian;
+4. total detour;
+5. jumlah SOC yang ditambahkan sebagai tie-breaker agar pengisian tidak berlebih;
+6. total jarak jalan sebagai tie-breaker terakhir.
 
 Jika data durasi belum tersedia pada graf, seluruh optimasi menggunakan total
 jarak jalan sebagai objective utama. Mode objective selalu dicantumkan pada hasil,
@@ -83,7 +94,7 @@ Jarak edge yang dipakai DP berasal dari Route Matrix. Jika itinerary memakai
 SPKLU, sistem kemudian meminta Compute Routes dengan SPKLU terpilih sebagai
 intermediate waypoint; rute langsung memakai kembali rute dasar. Jarak setiap
 leg rute yang ditampilkan dapat berbeda dari nilai matriks, sehingga versi
-0.16.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
+0.17.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
 pengguna.
 
 Jumlah leg harus sama dengan itinerary. Setiap leg diperbarui dengan jarak total,
@@ -94,6 +105,9 @@ minimum, sistem menghasilkan error aman `final_route_soc_violation` dan tidak
 menyajikan rekomendasi itu sebagai feasible. Objek
 `optimization.final_route_validation` mencatat status, jumlah leg, selisih jarak
 matriks terhadap rute final, dan SOC minimum yang teramati.
+Jika selisih jarak rute final terhadap rute dasar melampaui hard cap total,
+sistem menghasilkan `final_route_detour_violation`. Dengan demikian batas
+diterapkan pada estimasi DP sekaligus jarak final yang benar-benar ditampilkan.
 
 Validasi ini menjamin konsistensi terhadap model SOC linier dan respons Routes
 yang diterima saat request. Ia bukan validasi baterai dunia nyata dan tidak

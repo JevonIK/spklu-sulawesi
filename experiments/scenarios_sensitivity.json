@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "experiment_id": "sensitivitas-makassar-rantepao",
   "description": "Analisis sensitivitas satu-variabel-pada-satu-waktu untuk alpha, lebar koridor, diskretisasi SOC, dan jangkauan maksimum pada koridor Makassar-Rantepao.",
   "scenarios": [
@@ -10,7 +10,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-alpha-080",
@@ -19,7 +19,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.8, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.8, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-alpha-100",
@@ -28,7 +28,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 1.0, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 1.0, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-koridor-5",
@@ -37,7 +37,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 5, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 5, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-koridor-15",
@@ -46,7 +46,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 15, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 15, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-soc-2-5",
@@ -55,7 +55,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 2.5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 2.5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-soc-10",
@@ -64,7 +64,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 10, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 10, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-range-200",
@@ -73,7 +73,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 200, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-range-300",
@@ -82,7 +82,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 300, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-range-400",
@@ -91,7 +91,7 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 400, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
     },
     {
       "id": "sensitivitas-range-500",
@@ -100,7 +100,25 @@
       "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
       "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
       "vehicle": {"maximum_range_km": 500, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
-      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "additional_charging_networks": []}
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
+    },
+    {
+      "id": "sensitivitas-detour-10",
+      "name": "Batas total detour 10 km",
+      "region": "Sulawesi Selatan",
+      "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
+      "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 10, "additional_charging_networks": []}
+    },
+    {
+      "id": "sensitivitas-detour-30",
+      "name": "Batas total detour 30 km",
+      "region": "Sulawesi Selatan",
+      "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
+      "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 30, "additional_charging_networks": []}
     }
   ]
 }

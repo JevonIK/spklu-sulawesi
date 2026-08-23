@@ -1,9 +1,9 @@
 {
-  "schema_version": 4,
-  "application_version": "0.16.0",
+  "schema_version": 5,
+  "application_version": "0.17.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "d9f392cde3eb10232655dfee172cfcc81487ea64226ecb7a8382f11e4f409b4c"
+    "sha256": "779ceb1340760636f4d5c5f69395f25a99804096493bf78484d07ce6451fbb54"
   },
   "supported_python_versions": [
     "3.11",
@@ -13,7 +13,7 @@
   ],
   "dependencies": {
     "constraints_path": "constraints.txt",
-    "sha256": "e1fa6dbb6058a07e68b2a8666d43253077eeb7965ea485c5799cd91621ce5c72"
+    "sha256": "042952b91c79abc9c9f1cca286312fa10adface0722b8137ba94af2cb1f2cfa5"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -41,6 +41,12 @@
       "path": "research/vehicle_range_reference.json",
       "sha256": "06c54ad7217c83aceffc99973b2a3c7ee083e3bb5440a0d3f852c511db615065"
     },
+    "detour_policy": {
+      "scope": "total_itinerary",
+      "reference_max_km": 20,
+      "corridor_multiplier": 2,
+      "sensitivity_levels_km": [10, 20, 30]
+    },
     "charging_time_included": false,
     "travel_mode": "DRIVE",
     "routing_preference": "TRAFFIC_UNAWARE",
@@ -59,24 +65,27 @@
       "path": "experiments/scenarios_baseline.json",
       "scenario_count": 6,
       "connector_sets": [["AC TYPE 2", "CCS2"]],
-      "sha256": "4ae6a25095ecf1d6c96ab5f1eba49e6e8c51f4819a1e005c6e3c0f9b47c8ab14"
+      "max_total_detour_levels_km": [20],
+      "sha256": "bc695b451716b41bd3b1a110517ea4589580985b9c4d1f6cb78cbe76200a1135"
     },
     {
       "path": "experiments/scenarios_sensitivity.json",
-      "scenario_count": 11,
+      "scenario_count": 13,
       "connector_sets": [["AC TYPE 2", "CCS2"]],
-      "sha256": "6de127c6dd90aea44577f76af431860132771f4ad3ed8c6aa4d3bf42394237be"
+      "max_total_detour_levels_km": [10, 20, 30],
+      "sha256": "d89bafcc720ab5867d96815c55b77dcd950f3d004f46378b4d283e2ea0425bbb"
     },
     {
       "path": "experiments/scenarios_connector_sensitivity.json",
       "scenario_count": 2,
       "connector_sets": [["CCS2"], ["AC TYPE 2", "CCS2"]],
-      "sha256": "c0c677e6bdb484f3af361bfc6702922f6b4f98baa59425e769053819ca1b1a98"
+      "max_total_detour_levels_km": [20],
+      "sha256": "237a5c4b48094640d32f66b0c6228b12b78771ff6589beedf459965176d7a5aa"
     }
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "f87440d1007a9d8b58a1fc7d6c26f5eed8c694a60cc670bc92b1b44594ce1880"
+    "sha256": "452e9d072c0bcda4b08c1aa12ad66c03332f26db0a6b5f0f59cc243e0ea3cf0b"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

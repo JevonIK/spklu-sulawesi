@@ -12,8 +12,11 @@ from pathlib import Path
 from ..constants import (
     CHARGING_TIME_INCLUDED,
     FALLBACK_RESEARCH_CONNECTOR,
+    DETOUR_REFERENCE_MULTIPLIER,
+    DETOUR_SENSITIVITY_LEVELS_KM,
     PREFERRED_RESEARCH_CONNECTOR,
     REFERENCE_MAXIMUM_RANGE_KM,
+    REFERENCE_MAX_TOTAL_DETOUR_KM,
     RESEARCH_CONNECTORS,
 )
 from .dataset import CONNECTOR_ORDER, parse_connectors
@@ -31,7 +34,7 @@ from .vehicle_reference import (
 )
 
 
-RELEASE_MANIFEST_SCHEMA_VERSION = 4
+RELEASE_MANIFEST_SCHEMA_VERSION = 5
 RESEARCH_MANIFEST_SCHEMA_VERSION = 1
 SOURCE_SCOPE = "application-runtime-v2"
 SOURCE_SUFFIXES = frozenset({".py", ".html", ".js", ".css", ".svg"})
@@ -236,6 +239,30 @@ def validate_release_manifest(manifest):
         raise ReleaseManifestError(
             "root.algorithm.range_reference.sha256 tidak valid."
         )
+    detour_policy = _mapping(
+        algorithm.get("detour_policy"),
+        "root.algorithm.detour_policy",
+    )
+    if _text(detour_policy, "scope", "root.algorithm.detour_policy") != (
+        "total_itinerary"
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.detour_policy.scope tidak valid."
+        )
+    if detour_policy.get("reference_max_km") != REFERENCE_MAX_TOTAL_DETOUR_KM:
+        raise ReleaseManifestError(
+            "root.algorithm.detour_policy.reference_max_km tidak valid."
+        )
+    if detour_policy.get("corridor_multiplier") != DETOUR_REFERENCE_MULTIPLIER:
+        raise ReleaseManifestError(
+            "root.algorithm.detour_policy.corridor_multiplier tidak valid."
+        )
+    if detour_policy.get("sensitivity_levels_km") != list(
+        DETOUR_SENSITIVITY_LEVELS_KM
+    ):
+        raise ReleaseManifestError(
+            "root.algorithm.detour_policy.sensitivity_levels_km tidak valid."
+        )
     if not isinstance(algorithm.get("charging_time_included"), bool):
         raise ReleaseManifestError(
             "root.algorithm.charging_time_included wajib berupa boolean."
@@ -297,6 +324,21 @@ def validate_release_manifest(manifest):
         ):
             raise ReleaseManifestError(
                 f"{field}.connector_sets wajib berupa daftar konfigurasi."
+            )
+        detour_levels = experiment.get("max_total_detour_levels_km")
+        if (
+            not isinstance(detour_levels, list)
+            or not detour_levels
+            or detour_levels != sorted(set(detour_levels))
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or value <= 0
+                for value in detour_levels
+            )
+        ):
+            raise ReleaseManifestError(
+                f"{field}.max_total_detour_levels_km tidak valid."
             )
         if not SHA256_PATTERN.fullmatch(_text(experiment, "sha256", field)):
             raise ReleaseManifestError(f"{field}.sha256 tidak valid.")
@@ -689,6 +731,44 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         REFERENCE_MAXIMUM_RANGE_KM,
         config.get("DEFAULT_MAXIMUM_RANGE_KM"),
     )
+    detour_policy = algorithm["detour_policy"]
+    _add_check(
+        checks,
+        "algorithm.detour_scope",
+        "total_itinerary",
+        detour_policy["scope"],
+    )
+    _add_check(
+        checks,
+        "algorithm.detour_reference_max_km",
+        REFERENCE_MAX_TOTAL_DETOUR_KM,
+        detour_policy["reference_max_km"],
+    )
+    _add_check(
+        checks,
+        "algorithm.detour_corridor_multiplier",
+        DETOUR_REFERENCE_MULTIPLIER,
+        detour_policy["corridor_multiplier"],
+    )
+    _add_check(
+        checks,
+        "algorithm.detour_sensitivity_levels",
+        list(DETOUR_SENSITIVITY_LEVELS_KM),
+        detour_policy["sensitivity_levels_km"],
+    )
+    _add_check(
+        checks,
+        "algorithm.runtime_default_total_detour",
+        REFERENCE_MAX_TOTAL_DETOUR_KM,
+        config.get("DEFAULT_MAX_TOTAL_DETOUR_KM"),
+    )
+    _add_check(
+        checks,
+        "algorithm.runtime_detour_derivation",
+        config.get("DEFAULT_CORRIDOR_RADIUS_KM")
+        * DETOUR_REFERENCE_MULTIPLIER,
+        config.get("DEFAULT_MAX_TOTAL_DETOUR_KM"),
+    )
     _add_check(
         checks,
         "algorithm.charging_time_included",
@@ -789,6 +869,20 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
                 for connector_set in experiment["connector_sets"]
             ),
             connector_sets,
+        )
+        detour_levels = sorted(
+            {
+                float(scenario["options"]["max_total_detour_km"])
+                for scenario in scenarios
+            }
+        )
+        _add_check(
+            checks,
+            f"{check_prefix}.max_total_detour_levels_km",
+            [float(value) for value in experiment[
+                "max_total_detour_levels_km"
+            ]],
+            detour_levels,
         )
         all_scenario_ids.extend(scenario["id"] for scenario in scenarios)
 

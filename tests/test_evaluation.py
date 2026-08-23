@@ -39,6 +39,7 @@ def scenario(scenario_id="skenario-uji"):
             "soc_step_percent": 5,
             "corridor_radius_km": 10,
             "route_sample_step_km": 5,
+            "max_total_detour_km": 20,
             "additional_charging_networks": [],
         },
     }
@@ -46,7 +47,7 @@ def scenario(scenario_id="skenario-uji"):
 
 def definition(*scenarios):
     return {
-        "schema_version": 3,
+        "schema_version": 4,
         "experiment_id": "eksperimen-uji",
         "description": "Definisi eksperimen untuk pengujian.",
         "scenarios": list(scenarios or (scenario(),)),
@@ -184,13 +185,18 @@ def test_sensitivity_file_changes_one_parameter_at_a_time():
     )
     options = [item["options"] for item in loaded["scenarios"]]
 
-    assert len(options) == 11
+    assert len(options) == 13
     assert {item["safety_factor"] for item in options} == {0.8, 0.9, 1.0}
     assert {item["soc_step_percent"] for item in options} == {2.5, 5, 10}
     assert {
         item["vehicle"]["maximum_range_km"]
         for item in loaded["scenarios"]
     } == {200, 300, 400, 430, 500}
+    assert {item["max_total_detour_km"] for item in options} == {
+        10,
+        20,
+        30,
+    }
 
 
 def test_connector_sensitivity_changes_only_connector_set():
@@ -229,6 +235,7 @@ def test_scenario_records_metrics_and_soc_safety():
     assert result["graph_build_stats"]["accepted_edges"] == 6
     assert result["safety_factor"] == pytest.approx(0.9)
     assert result["route_sample_step_km"] == pytest.approx(5)
+    assert result["max_total_detour_km"] == pytest.approx(20)
     assert result["total_driving_duration_minutes"] == 300
     assert result["total_travel_duration_minutes"] == 300
     assert result["total_energy_distance_km"] == 250
@@ -278,9 +285,10 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
     assert rows[0]["total_energy_distance_km"] == "250"
     assert rows[0]["ferry_segment_count"] == "0"
     assert rows[0]["minimum_soc_percent"] == "20"
+    assert rows[0]["max_total_detour_km"] == "20"
     assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"
-    assert report["schema_version"] == 4
+    assert report["schema_version"] == 5
 
     with pytest.raises(FileExistsError, match="sudah ada"):
         write_experiment_report(report, tmp_path, "hasil-uji")
@@ -362,7 +370,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-            "app_version": "0.16.0",
+            "app_version": "0.17.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,

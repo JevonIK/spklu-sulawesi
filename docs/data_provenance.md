@@ -29,7 +29,7 @@ oleh pemilik penelitian dan dipakai oleh prototipe.
 
 ## Rantai artefak
 
-Rantai audit kandidat 0.16.0 memakai empat tingkat yang berbeda:
+Rantai audit kandidat 0.17.0 memakai empat tingkat yang berbeda:
 
 1. `dataset_metadata.json` mencatat identitas dataset, transformasi yang
    diketahui, status provenance, status lisensi, dan keterbatasan;
@@ -42,9 +42,10 @@ Rantai audit kandidat 0.16.0 memakai empat tingkat yang berbeda:
 
 Baseline live berasal dari aplikasi 0.9.2 dan sensitivitas dari aplikasi 0.10.0,
 keduanya memakai schema laporan 2 dengan definisi skenario schema 1 tertanam.
-Versi analisis 0.16.0 tidak boleh diatribusikan sebagai penghasil kedua run
-tersebut. Definisi skenario saat ini memakai schema 3 dan laporan live baru
-memakai schema 4. Konfigurasi kandidat Combo 2/430 km belum dijalankan live dan
+Versi analisis 0.17.0 tidak boleh diatribusikan sebagai penghasil kedua run
+tersebut. Definisi skenario saat ini memakai schema 4 dan laporan live baru
+memakai schema 5. Konfigurasi kandidat Combo 2/430 km/detour 20 km belum
+dijalankan live dan
 tidak mengubah provenance snapshot historis.
 Kekosongan metadata pada laporan lama, termasuk langkah sampling rute, tetap
 ditandai tidak tercatat dan tidak direkonstruksi dari default versi baru.

@@ -112,6 +112,9 @@ def _validate_common_config(app):
         "DEFAULT_CORRIDOR_RADIUS_KM": app.config.get(
             "DEFAULT_CORRIDOR_RADIUS_KM"
         ),
+        "DEFAULT_MAX_TOTAL_DETOUR_KM": app.config.get(
+            "DEFAULT_MAX_TOTAL_DETOUR_KM"
+        ),
         "DEFAULT_ROUTE_SAMPLE_STEP_KM": app.config.get(
             "DEFAULT_ROUTE_SAMPLE_STEP_KM"
         ),
@@ -159,6 +162,11 @@ def _validate_common_config(app):
     if not 0 < float(numeric_config["DEFAULT_CORRIDOR_RADIUS_KM"]) <= 100:
         raise ProductionConfigurationError(
             "DEFAULT_CORRIDOR_RADIUS_KM harus berada pada rentang >0 sampai 100."
+        )
+    if not 0 < float(numeric_config["DEFAULT_MAX_TOTAL_DETOUR_KM"]) <= 1000:
+        raise ProductionConfigurationError(
+            "DEFAULT_MAX_TOTAL_DETOUR_KM harus berada pada rentang >0 "
+            "sampai 1.000 km."
         )
     if not 0.1 <= float(
         numeric_config["DEFAULT_ROUTE_SAMPLE_STEP_KM"]
