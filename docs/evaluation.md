@@ -54,6 +54,8 @@ parameter lain identik. Pemberhentian AC-only direkam sebagai
 `experiments/scenarios_detour_multicorridor.json` dan hasilnya pada
 [`detour_sensitivity_results.md`](detour_sensitivity_results.md) membandingkan
 cap 10/20/30 km pada koridor pendek, menengah, dan panjang.
+Dasar, kekuatan bukti, dan batas klaim seluruh parameter baseline dirangkum pada
+[`parameter_rationale.md`](parameter_rationale.md).
 
 Jumlah kandidat tidak dipaksakan menjadi nilai tertentu. Sistem mencatat jumlah
 kandidat aktual hasil Ball Tree untuk menunjukkan dampak radius koridor.

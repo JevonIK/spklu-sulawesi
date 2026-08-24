@@ -256,6 +256,9 @@ Definisi, penerapan dua lapis, dan batas interpretasi hard cap detour dijelaskan
 pada [`docs/detour_policy.md`](docs/detour_policy.md).
 Hasil live 10/20/30 km pada tiga koridor tersedia pada
 [`docs/detour_sensitivity_results.md`](docs/detour_sensitivity_results.md).
+Rasionalisasi terpusat untuk leaf size, safety factor, SOC, range, konektor,
+detour, dan radius koridor tersedia pada
+[`docs/parameter_rationale.md`](docs/parameter_rationale.md).
 
 Asal penyedia, tanggal snapshot, metode pengumpulan, lisensi, dan hak
 redistribusi dataset belum dikonfirmasi. `dataset_metadata.json` mencatat status

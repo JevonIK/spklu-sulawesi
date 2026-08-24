@@ -59,6 +59,12 @@
       "sha256": "06c54ad7217c83aceffc99973b2a3c7ee083e3bb5440a0d3f852c511db615065"
     },
     {
+      "id": "parameter_rationale",
+      "kind": "methodology_documentation",
+      "path": "docs/parameter_rationale.md",
+      "sha256": "7c142fb0b769b78302b7b1faa460dd571bc5495fcd876557708a8e3300bcd9c4"
+    },
+    {
       "id": "scenario_detour_multicorridor_current",
       "kind": "scenario_definition_current",
       "path": "experiments/scenarios_detour_multicorridor.json",

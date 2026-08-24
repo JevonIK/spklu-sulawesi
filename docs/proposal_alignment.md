@@ -27,6 +27,7 @@ informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung
 | Validasi SOC rute final | rekonsiliasi setiap leg Compute Routes final pada `app/services/recommendation.py` |
 | Evaluasi enam wilayah dan sensitivitas | `experiments/`, `app/services/evaluation.py`, `docs/baseline_results.md`, dan `docs/sensitivity_results.md` |
 | Provenance data/hasil | `dataset_metadata.json`, manifest penelitian, dan `notebooks/data/provenance.json` |
+| Rasionalisasi parameter | `docs/parameter_rationale.md` memisahkan literatur, eksperimen, asumsi, dan batas klaim |
 | Pengujian otomatis | `tests/` |
 
 ## Metrik proposal

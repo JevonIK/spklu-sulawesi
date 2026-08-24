@@ -12,6 +12,12 @@ berada di dalam ambang jarak yang ditentukan.
    radius rata-rata bumi `6371,0088 km`.
 4. Jarak hasil query dikonversi kembali menjadi kilometer.
 
+Konstruktor tidak mengirim `leaf_size`, sehingga nilai 40 berasal dari default
+kelas BallTree scikit-learn. Parameter tersebut memengaruhi performa/memori,
+bukan hasil query radius, dan tidak diklaim sebagai hasil tuning. Lihat
+[`parameter_rationale.md`](parameter_rationale.md) dan
+[dokumentasi BallTree](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.BallTree.html).
+
 Filter konektor diterapkan setelah query radius. Label input dinormalisasi dengan
 aturan yang sama seperti dataset sehingga variasi penulisan tidak mengubah hasil.
 Jika kendaraan memiliki beberapa konektor, node dipertahankan ketika mendukung

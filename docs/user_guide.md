@@ -110,6 +110,8 @@ Safety factor 0,9, radius koridor 10 km, interval SOC 5%, dan langkah sampling
 radius koridor. Nilai penelitian ini tidak ditampilkan pada formulir umum.
 Peneliti tetap dapat mengubahnya melalui skenario eksperimen, bukan melalui
 interaksi pengguna harian.
+Dasar pemilihan dan batas interpretasinya tersedia di
+[`parameter_rationale.md`](parameter_rationale.md).
 
 ## Troubleshooting
 

@@ -33,6 +33,8 @@ pengambilan data penelitian tambahan.
   baseline 430 km; sensitivitas 200/300/400/500 km tervalidasi.
 - [ ] Hard cap total detour 20 km sama dengan dua kali radius koridor baseline;
   sensitivitas 10/20/30 km dan validasi rute final tersedia.
+- [ ] Delapan parameter utama mempunyai rasionalisasi, sumber eksternal/bukti
+  internal, tingkat kekuatan, dan batas klaim pada `parameter_rationale.md`.
 
 ## Verifikasi otomatis tanpa API live
 
