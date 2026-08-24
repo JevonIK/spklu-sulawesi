@@ -148,5 +148,6 @@ tanpa `rerun1`. Jangan mengubah artefak mentah setelah hash dicatat.
 - Klaim nol pelanggaran SOC berasal dari simulasi itinerary pada 0.10.0.
   Rekonsiliasi SOC berdasarkan setiap leg Compute Routes final pada 0.18.0 belum
   dijalankan terhadap run historis ini.
-- Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash
-  artefak tidak membuktikan izin redistribusi dataset.
+- Provenance, periode pengumpulan, metode kompilasi, dan quality assurance
+  dataset telah terdokumentasi; sumber dapat diakses publik, tetapi tidak
+  ditemukan lisensi open-data eksplisit atau pernyataan hak redistribusi sumber.

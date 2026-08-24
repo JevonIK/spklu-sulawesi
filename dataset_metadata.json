@@ -5,25 +5,88 @@
     "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "source_rows": 150,
     "logical_nodes": 146,
-    "geographic_scope": "Enam provinsi di Pulau Sulawesi, Indonesia"
+    "geographic_scope": "Enam provinsi di Pulau Sulawesi, Indonesia",
+    "scope_statement": "Kompilasi lokasi SPKLU yang teridentifikasi pada sumber operasional publik selama periode pengumpulan dan verifikasi."
   },
   "provenance": {
-    "source_type": "user_supplied",
-    "source_description": null,
-    "source_organization": null,
-    "source_url": null,
-    "acquired_at": null,
-    "collection_method": null,
-    "license_status": "unknown",
-    "redistribution_status": "not_confirmed",
-    "provenance_status": "incomplete"
+    "source_type": "researcher_compiled_multi_source",
+    "source_description": "Dataset penelitian dikompilasi secara manual per lokasi dari Peta SPKLU, kemudian diverifikasi silang menggunakan fitur SPKLU PLN Mobile dan pemeriksaan geografis Google Maps.",
+    "source_organization": "PT PLN (Persero) / Peta SPKLU",
+    "source_url": "https://petaspklu.id/",
+    "collector": "Jevon Ivander Kangsudarmanto",
+    "initial_collection_period": {
+      "start": "2026-07-27",
+      "end": "2026-08-11"
+    },
+    "revision_period": {
+      "start": "2026-08-22",
+      "end": "2026-08-23"
+    },
+    "acquired_at": "2026-07-27/2026-08-23",
+    "collection_method": "Manual row-by-row compilation and cross-source verification; no automated scraping or bulk export was used.",
+    "verification_method": "Nama lokasi dan informasi dasar diperiksa terhadap Peta SPKLU; konektor dan lokasi tambahan diperiksa melalui PLN Mobile; alamat, wilayah administratif, koordinat, dan tautan pin diperiksa secara manual melalui Google Maps.",
+    "coverage_intent": "Cakupan penelitian ditujukan pada seluruh lokasi SPKLU yang dapat diidentifikasi pada enam provinsi Sulawesi melalui sumber yang dikonsultasikan selama periode pengumpulan.",
+    "provenance_status": "documented_with_limitations",
+    "license_status": "public_sources_no_explicit_open_data_license_identified",
+    "redistribution_status": "research_compilation_attributed; source_redistribution_rights_not_expressly_stated",
+    "rights_note": "Sumber dapat diakses publik dan digunakan untuk kompilasi serta verifikasi akademik. Tidak ditemukan pernyataan lisensi open-data eksplisit pada Peta SPKLU; dataset tidak diklaim sebagai salinan resmi PLN atau sebagai open data berlisensi.",
+    "source_reviewed_at": "2026-08-24"
   },
+  "source_register": [
+    {
+      "name": "Peta SPKLU",
+      "organization": "PetaSPKLU.id, powered by PLN",
+      "url": "https://petaspklu.id/",
+      "role": "Sumber utama daftar lokasi, nama, alamat, koordinat, dan informasi geografis awal.",
+      "access_period": "2026-07-27/2026-08-23",
+      "access_type": "public_web_directory",
+      "license_observation": "Copyright notice tersedia; lisensi open-data eksplisit tidak ditemukan."
+    },
+    {
+      "name": "PLN Mobile",
+      "organization": "PT PLN (Persero)",
+      "url": "https://play.google.com/store/apps/details?id=com.icon.pln123",
+      "role": "Verifikasi silang konektor, keberadaan lokasi, dan penambahan lokasi yang belum tercakup pada sumber web utama.",
+      "access_period": "2026-07-27/2026-08-23",
+      "access_type": "official_mobile_application",
+      "license_observation": "Digunakan sebagai sumber verifikasi operasional; tidak diklaim sebagai dataset berlisensi terbuka."
+    },
+    {
+      "name": "Google Maps",
+      "organization": "Google LLC",
+      "url": "https://maps.google.com/",
+      "role": "Verifikasi geografis sekunder untuk alamat, wilayah administratif, koordinat, dan tautan keluar menuju pin lokasi.",
+      "access_period": "2026-07-27/2026-08-23",
+      "access_type": "manual_geographic_verification",
+      "license_observation": "Tidak ada map tiles, Street View imagery, review, foto, atau media Google yang disalin ke dataset; penggunaan tetap tunduk pada Google Maps End User Additional Terms."
+    }
+  ],
+  "column_lineage": {
+    "Provinsi": "Peta SPKLU; diverifikasi terhadap alamat dan lokasi administratif di Google Maps serta PLN Mobile.",
+    "Kota/Kabupaten": "Peta SPKLU; dikoreksi bila verifikasi geografis menunjukkan wilayah administratif berbeda.",
+    "Lokasi SPKLU": "Peta SPKLU; lokasi tambahan dapat berasal dari PLN Mobile.",
+    "Alamat": "Peta SPKLU; diverifikasi silang dengan Google Maps dan PLN Mobile.",
+    "Latitude": "Peta SPKLU; diverifikasi dan, bila diperlukan, dikoreksi manual berdasarkan lokasi pin.",
+    "Longitude": "Peta SPKLU; diverifikasi dan, bila diperlukan, dikoreksi manual berdasarkan lokasi pin.",
+    "google maps": "Tautan keluar menuju pin Google Maps yang diperiksa manual.",
+    "Jenis Konektor": "PLN Mobile, dengan normalisasi ejaan manual untuk konsistensi label."
+  },
+  "quality_assurance": [
+    "Kompilasi dan verifikasi dilakukan per lokasi, bukan melalui scraping atau bulk export.",
+    "Wilayah administratif, alamat, dan koordinat yang tidak konsisten diperiksa ulang sebelum revisi.",
+    "Konektor diperiksa melalui PLN Mobile dan ejaannya diseragamkan ke label kanonis.",
+    "Lokasi dengan lebih dari satu unit pada tempat fisik yang sama dipertahankan sebagai unit terpisah dan diselaraskan ke koordinat lokasi yang sama.",
+    "Seluruh tautan lokasi diperiksa agar membuka pin Google Maps, bukan tampilan Street View.",
+    "Validasi aplikasi memastikan 150 baris, 146 node logis, enam provinsi, konektor yang dikenal, koordinat dalam cakupan Sulawesi, dan tautan Google Maps HTTPS."
+  ],
   "known_transformations": [
-    "Normalisasi label konektor hanya dilakukan di memori.",
-    "Empat pasangan unit pada koordinat identik dipertahankan sebagai unit terpisah dan masing-masing dikonsolidasikan menjadi satu node algoritma.",
-    "Tautan Google Maps pada revisi kandidat dinormalisasi oleh pemilik penelitian ke short link maps.app.goo.gl yang membuka pin lokasi.",
-    "Koordinat unit yang diketahui berada pada lokasi fisik yang sama diselaraskan menjadi identik oleh pemilik penelitian.",
-    "Jaringan Hyundai, Wuling, dan Toyota/Lexus diturunkan dari penanda eksplisit pada nama lokasi."
+    "Pengelompokan provinsi dan kota/kabupaten diperbaiki berdasarkan verifikasi alamat dan lokasi administratif.",
+    "Koordinat yang melenceng diperbaiki secara manual berdasarkan verifikasi pin lokasi.",
+    "Koordinat beberapa unit pada tempat fisik yang sama diselaraskan menjadi identik agar terkonsolidasi sebagai satu node algoritma.",
+    "Ejaan dan label konektor diperbaiki secara manual dan dinormalisasi kembali di memori aplikasi.",
+    "Tautan Google Maps dinormalisasi menjadi short link maps.app.goo.gl yang membuka pin lokasi.",
+    "Tidak ada baris sumber yang dihapus; lokasi tambahan dimasukkan ketika teridentifikasi pada PLN Mobile tetapi belum tercakup pada Peta SPKLU.",
+    "Jaringan Hyundai, Wuling, dan Toyota/Lexus diturunkan oleh aplikasi dari penanda eksplisit pada nama lokasi."
   ],
   "current_revision": {
     "source_rows": 150,
@@ -33,10 +96,23 @@
     "same_link_different_coordinate_count": 0
   },
   "known_limitations": [
-    "Tanggal snapshot dan metode pengumpulan belum didokumentasikan.",
-    "Status lisensi dan hak redistribusi belum dikonfirmasi.",
-    "Ketersediaan operasional, akses dealer, daya, tarif, dan status real-time tidak tersedia.",
-    "Lokasi sangat berdekatan tidak digabung tanpa pengenal lokasi eksplisit."
+    "Status operasional real-time, daya charger, tarif, antrean, dan jam operasional tidak tersedia dalam snapshot.",
+    "Verifikasi dilakukan melalui sumber digital publik dan tidak mencakup inspeksi lapangan atau konfirmasi langsung kepada setiap operator.",
+    "Keberadaan charger dealer diverifikasi pada sumber digital, tetapi izin penggunaan oleh merek kendaraan lain tetap bersifat kondisional.",
+    "Cakupan dimaksudkan sebagai kompilasi menyeluruh dari sumber yang dikonsultasikan, bukan jaminan sensus resmi atau pembaruan real-time setelah 23 Agustus 2026.",
+    "Tidak ditemukan lisensi open-data eksplisit untuk mendeklarasikan dataset sebagai produk resmi atau open dataset milik PLN."
   ],
-  "publication_action_required": "Konfirmasi dan isi sumber, tanggal snapshot, metode pengumpulan, serta status lisensi sebelum publikasi atau distribusi dataset."
+  "citation": {
+    "dataset_title": "Dataset SPKLU Sulawesi",
+    "compiler": "Jevon Ivander Kangsudarmanto",
+    "year": 2026,
+    "primary_source": "Peta SPKLU, powered by PLN",
+    "primary_source_url": "https://petaspklu.id/",
+    "verification_sources": [
+      "PLN Mobile",
+      "Google Maps"
+    ],
+    "suggested_citation": "Kangsudarmanto, J. I. (2026). Dataset SPKLU Sulawesi [Research dataset compiled from Peta SPKLU and verified with PLN Mobile and Google Maps]."
+  },
+  "publication_action_required": "Untuk publikasi paper, sitasikan dataset sebagai kompilasi peneliti dan atribusikan Peta SPKLU/PLN serta sumber verifikasi. Jangan mendeklarasikan CSV sebagai dataset resmi PLN atau open data berlisensi. Jika penerbit meminta redistribusi raw dataset sebagai supplementary data, konfirmasi izin tertulis dari pemilik sumber terlebih dahulu."
 }

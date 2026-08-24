@@ -12,7 +12,7 @@ diunduh serta diperiksa.
 | Versi aplikasi/analisis | 0.18.0 |
 | Dataset | 150 baris, 146 node logis |
 | SHA-256 dataset | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
-| Provenance/lisensi dataset | `incomplete` / `unknown` |
+| Provenance/lisensi dataset | `documented_with_limitations` / sumber publik tanpa lisensi open-data eksplisit |
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
 | Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |
 | SPKLU publik | Selalu disertakan |
@@ -91,10 +91,13 @@ Konfigurasi Combo 2/430 km dan sensitivitas baru belum menghasilkan data live.
 Artefak `research/vehicle_range_reference.json` mengunci sampel, sumber URL,
 median, aturan pembulatan, dan keterbatasan pemilihan baseline tersebut.
 
-Sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan hak redistribusi
-dataset belum dikonfirmasi. Sebelum paper atau CSV dipublikasikan, pemilik
-penelitian harus melengkapi bukti tersebut sebagaimana dijelaskan pada
-[`data_provenance.md`](data_provenance.md).
+Sumber, periode pengumpulan, metode kompilasi, column lineage, transformasi, dan
+quality assurance dataset telah didokumentasikan pada
+[`data_provenance.md`](data_provenance.md). Dataset harus disitasi sebagai
+kompilasi peneliti yang bersumber dari Peta SPKLU dan diverifikasi silang melalui
+PLN Mobile serta Google Maps, bukan sebagai dataset resmi atau open data PLN.
+Jika raw CSV akan didistribusikan sebagai supplementary data, konfirmasi izin
+tertulis dari pemilik sumber terlebih dahulu.
 
 ## Gerbang penerimaan
 

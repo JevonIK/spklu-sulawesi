@@ -1,101 +1,163 @@
-# Provenance dan lisensi data
+# Provenance dan penggunaan dataset
 
-Dokumen ini membedakan identitas teknis dataset dari asal serta izin hukumnya.
-Checksum dapat membuktikan bahwa dua proses membaca byte yang sama, tetapi tidak
-membuktikan siapa pembuat data, kapan data dikumpulkan, apakah data lengkap, atau
-apakah data boleh didistribusikan.
+Dataset SPKLU Sulawesi merupakan **researcher-compiled dataset** yang disusun
+secara manual oleh Jevon Ivander Kangsudarmanto dari sumber operasional publik,
+kemudian melalui verifikasi silang per lokasi. Provenance ini membedakan dataset
+kompilasi penelitian dari sumber-sumber yang digunakan untuk menyusunnya.
 
-## Status yang dapat dinyatakan saat ini
+## Identitas dataset
 
-| Atribut | Status |
+| Atribut | Nilai |
 |---|---|
-| Berkas kandidat saat ini | `dataset_spklu_sulawesi.csv` |
+| Judul | Dataset SPKLU Sulawesi |
+| Compiler | Jevon Ivander Kangsudarmanto |
+| Tahun | 2026 |
+| Berkas | `dataset_spklu_sulawesi.csv` |
 | SHA-256 | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
-| Ukuran logis | 150 baris sumber; 146 node lokasi setelah konsolidasi |
-| Cakupan yang dinyatakan | Enam provinsi di Pulau Sulawesi |
-| Cara diperoleh proyek | Disediakan oleh pemilik penelitian (`user_supplied`) |
-| Penyedia/pembuat asli | Belum diketahui |
-| URL atau sitasi sumber | Belum diketahui |
-| Tanggal snapshot | Belum diketahui |
-| Metode pengumpulan/verifikasi | Belum diketahui |
-| Status lisensi | `unknown` |
-| Hak redistribusi | Belum dikonfirmasi |
-| Status provenance | `incomplete` |
+| Ukuran | 150 baris/unit; 146 node lokasi setelah konsolidasi |
+| Cakupan | Enam provinsi Sulawesi |
+| Pengumpulan awal | 27 Juli–11 Agustus 2026 |
+| Verifikasi/revisi | 22–23 Agustus 2026 |
+| Metode | Kompilasi manual per lokasi dan verifikasi silang multi-sumber |
+| Status provenance | `documented_with_limitations` |
 
-Nilai kosong tersebut disengaja. Jangan menggantinya dengan dugaan seperti
-“data resmi PLN”, “open data”, atau tanggal commit pertama tanpa bukti primer.
-Sampai bukti tersedia, dataset hanya dapat disebut sebagai dataset yang diberikan
-oleh pemilik penelitian dan dipakai oleh prototipe.
+## Sumber dan perannya
 
-## Rantai artefak
+### Peta SPKLU
 
-Rantai audit kandidat 0.18.0 memakai empat tingkat yang berbeda:
+[PetaSPKLU.id](https://petaspklu.id/) digunakan sebagai sumber utama daftar
+lokasi, nama, alamat, koordinat, dan informasi geografis awal. Situs menampilkan
+atribusi “powered by PLN” dan mengarahkan pengguna ke layanan PLN serta PLN
+Mobile.
 
-1. `dataset_metadata.json` mencatat identitas dataset, transformasi yang
-   diketahui, status provenance, status lisensi, dan keterbatasan;
-2. `release_manifest.json` mengunci checksum metadata, dataset, skenario,
-   dependency, source aplikasi, parameter algoritma, serta hard limit kandidat;
-3. manifest penelitian menghubungkan snapshot notebook yang dilacak ke laporan
-   live sumber dan versi aplikasi penghasilnya; dan
-4. `notebooks/data/provenance.json` mempertahankan checksum laporan historis dan
-   snapshot analisis offline.
+### PLN Mobile
 
-Baseline live berasal dari aplikasi 0.9.2 dan sensitivitas dari aplikasi 0.10.0,
-keduanya memakai schema laporan 2 dengan definisi skenario schema 1 tertanam.
-Versi analisis 0.18.0 tidak boleh diatribusikan sebagai penghasil kedua run
-tersebut. Definisi skenario saat ini memakai schema 4 dan laporan live baru
-memakai schema 5. Konfigurasi Combo 2/430 km/detour 10/20/30 km telah digunakan
-hanya pada eksperimen detour 0.18.0 dan tidak mengubah provenance snapshot lama.
-Kekosongan metadata pada laporan lama, termasuk langkah sampling rute, tetap
-ditandai tidak tercatat dan tidak direkonstruksi dari default versi baru.
-Kedua laporan lama juga tidak merekam hash dataset; kecocokan jumlah baris/node
-tidak membuktikan bahwa byte datasetnya identik dengan kandidat sekarang.
-Dataset kandidat sekarang bahkan mempunyai 146 node logis setelah penyelarasan
-koordinat, sedangkan konteks run lama mencatat 149 node. Karena itu, dataset
-kandidat terbaru secara eksplisit bukan bukti input kedua run historis.
+[PLN Mobile](https://play.google.com/store/apps/details?id=com.icon.pln123),
+yang dipublikasikan PT PLN (Persero), digunakan untuk memverifikasi jenis
+konektor, keberadaan lokasi, serta lokasi tambahan yang belum tercakup pada
+sumber web utama.
 
-Sensitivitas detour 0.18.0 terpisah dari dua run lama: laporannya merekam hash
-dataset kandidat 150 baris/146 node, langkah sampling 5 km, source tree, dan
-definisi sembilan skenario. Snapshot terlacaknya berada di
-`notebooks/data/detour_sensitivity_results.csv`.
+### Google Maps
 
-Laporan mentah historis disimpan lokal dan diabaikan Git. Checksum yang dicatat
-memungkinkan pemeriksaan bila berkas itu tersedia, tetapi clone repository saja
-tidak membuktikan keberadaan laporan mentah. Snapshot CSV yang dilacak adalah
-turunan terverifikasi, bukan pengganti arsip sumber.
+[Google Maps](https://maps.google.com/) digunakan sebagai alat verifikasi
+geografis sekunder untuk alamat, wilayah administratif, koordinat, dan tautan
+keluar menuju pin lokasi. Dataset tidak menyimpan map tiles, Street View
+imagery, foto, review, atau media Google.
 
-## Tindakan yang harus dilakukan pemilik penelitian
+## Prosedur kompilasi dan verifikasi
 
-Sebelum paper atau dataset dipublikasikan:
+1. Lokasi dibaca dan dicatat secara manual dari Peta SPKLU; tidak digunakan
+   scraping atau bulk export.
+2. Setiap lokasi diperiksa silang melalui PLN Mobile dan Google Maps.
+3. Wilayah administratif, alamat, atau koordinat yang tidak konsisten diperiksa
+   ulang sebelum direvisi.
+4. Konektor diverifikasi melalui PLN Mobile dan ejaannya diseragamkan ke label
+   kanonis aplikasi.
+5. Lokasi tambahan dimasukkan ketika ditemukan pada PLN Mobile tetapi belum
+   tercakup pada Peta SPKLU.
+6. Beberapa unit pada tempat fisik yang sama tetap dipertahankan sebagai baris
+   terpisah, tetapi koordinatnya diselaraskan agar menjadi satu node algoritma.
+7. Seluruh tautan diperiksa agar membuka pin Google Maps dan bukan tampilan
+   Street View.
 
-1. identifikasi pembuat atau penyedia asli dataset;
-2. simpan URL, surat, email, dokumen serah-terima, atau bukti primer lain;
-3. catat tanggal snapshot dan rentang waktu pengumpulan;
-4. jelaskan metode pengumpulan, pembersihan, geocoding, dan verifikasi;
-5. konfirmasi lisensi serta apakah CSV boleh dimasukkan ke repository publik;
-6. tentukan format sitasi dan versi dataset;
-7. perbarui field kosong pada `dataset_metadata.json` hanya berdasarkan bukti;
-8. hitung ulang checksum metadata dan manifest, lalu jalankan audit offline; dan
-9. jika izin redistribusi tidak diperoleh, keluarkan CSV dari distribusi publik
-   dan sediakan prosedur memperoleh data secara sah.
+## Quality assurance yang dapat diaudit
 
-Untuk naskah sebelum tindakan itu selesai, gunakan formulasi terbatas seperti:
-“Penelitian menggunakan dataset SPKLU Sulawesi yang disediakan oleh pemilik
-penelitian; sumber asli, tanggal snapshot, dan lisensinya belum terdokumentasi.”
-Jangan menyebut data lengkap, resmi, terkini, atau bebas digunakan.
+- Dataset hanya menerima enam provinsi yang ditetapkan dalam ruang lingkup.
+- Koordinat harus finite dan berada dalam bounding box konservatif Sulawesi.
+- Nama, wilayah, alamat, dan konektor wajib terisi.
+- Konektor harus dapat dinormalisasi menjadi AC Type 2, CCS2, CHAdeMO, atau
+  GB/T.
+- Seluruh 150 tautan menggunakan HTTPS dan host `maps.app.goo.gl`.
+- Tidak ada satu tautan yang dipakai oleh koordinat berbeda.
+- Empat lokasi multi-unit mempertahankan dua unit sumber dan menjadi empat node
+  terkonsolidasi.
+- SHA-256 mengunci byte dataset yang dipakai aplikasi dan eksperimen 0.18.0.
 
-## Transformasi yang diketahui
+Quality assurance tersebut membuktikan konsistensi dan reproduksibilitas versi
+data, sedangkan perubahan kondisi operasional setelah tanggal snapshot berada
+di luar cakupan dataset.
 
-CSV tidak ditulis ulang oleh aplikasi. Pada saat dibaca, sistem:
+## Status penggunaan dan atribusi
 
-- menormalisasi label konektor di memori;
-- mempertahankan empat pasangan unit pada koordinat identik sebagai unit
-  terpisah, tetapi mengonsolidasikan setiap pasangan menjadi satu node algoritma;
-- memakai revisi link pin `maps.app.goo.gl` dan penyelarasan koordinat
-  co-located yang dilakukan pemilik penelitian; dan
-- menurunkan label jaringan Hyundai, Wuling, dan Toyota/Lexus dari penanda
-  eksplisit pada nama lokasi.
+Sumber yang digunakan dapat diakses publik. Peta SPKLU menampilkan copyright,
+tetapi pada pemeriksaan 24 Agustus 2026 tidak ditemukan pernyataan lisensi
+open-data eksplisit. Karena itu dataset dideskripsikan sebagai kompilasi
+penelitian yang diatribusikan, bukan sebagai salinan resmi atau open dataset
+berlisensi milik PLN.
 
-Transformasi tersebut mendukung reproduksibilitas komputasi, tetapi tidak
-memvalidasi status operasional, akses dealer, daya, tarif, atau ketersediaan
-real-time setiap charger.
+Google Maps digunakan untuk verifikasi manual dan outbound pin. Penggunaan ini
+tetap tunduk pada
+[Google Maps End User Additional Terms](https://www.google.com/help/terms_maps/),
+yang antara lain mengatur atribusi serta pembatasan penyalinan dan bulk feed.
+Dataset tidak dimaksudkan sebagai pengganti layanan pemetaan Google.
+
+Penggunaan yang dinyatakan proyek:
+
+- analisis akademik non-komersial dan reproduksi hasil penelitian;
+- sitasi jelas kepada compiler, Peta SPKLU/PLN, PLN Mobile, dan Google Maps
+  sebagai sumber verifikasi;
+- publikasi metrik, metode, agregat, dan hasil penelitian; serta
+- tidak mengklaim afiliasi, endorsement, status data resmi PLN, atau lisensi
+  open-data yang tidak dinyatakan sumber.
+
+Jika penerbit meminta raw CSV sebagai supplementary data yang dapat
+didistribusikan ulang secara independen, konfirmasi tertulis dari pemilik sumber
+tetap merupakan langkah yang direkomendasikan.
+
+## Sitasi yang disarankan
+
+```text
+Kangsudarmanto, J. I. (2026). Dataset SPKLU Sulawesi
+[Research dataset compiled from Peta SPKLU and verified with PLN Mobile
+and Google Maps].
+```
+
+Dalam Methods/Data section, tambahkan:
+
+> The Sulawesi EV charging-station dataset was manually compiled by the
+> researcher from the publicly accessible Peta SPKLU directory and
+> cross-validated location by location using PLN Mobile and Google Maps during
+> July–August 2026. Administrative areas, coordinates, connector labels, and
+> co-located units were reviewed and normalized before computational use.
+
+Usulan **Data Availability Statement**:
+
+> The versioned research dataset, its SHA-256 checksum, provenance metadata,
+> column lineage, and transformation record are documented in the project
+> repository. The dataset is a researcher-compiled and attributed research
+> artifact derived from publicly accessible operational directories; it is not
+> represented as an official or openly licensed PLN dataset. Redistribution of
+> source-derived records remains subject to the respective providers' terms,
+> and source-owner confirmation will be obtained if required by the journal's
+> supplementary-data policy.
+
+## Keterbatasan yang relevan
+
+- Snapshot tidak memuat status operasional real-time, daya charger, tarif,
+  antrean, atau jam operasional.
+- Verifikasi menggunakan sumber digital dan tidak mencakup inspeksi lapangan
+  atau konfirmasi langsung kepada setiap operator.
+- Charger dealer teridentifikasi pada sumber, tetapi izin penggunaan oleh merek
+  kendaraan lain tetap kondisional.
+- Cakupan ditujukan pada seluruh lokasi yang dapat diidentifikasi dari sumber
+  yang dikonsultasikan, bukan jaminan sensus resmi atau pembaruan setelah
+  23 Agustus 2026.
+
+Keterbatasan tersebut menjelaskan scope temporal dan operasional tanpa
+mengurangi bukti bahwa dataset dikompilasi secara sistematis dan diverifikasi
+lintas sumber.
+
+## Rantai artefak penelitian
+
+1. `dataset_metadata.json` menyimpan source register, column lineage,
+   transformasi, quality assurance, dan status penggunaan.
+2. `release_manifest.json` mengunci checksum metadata dan dataset.
+3. `research_manifest.json` menghubungkan dataset dengan notebook, snapshot,
+   skenario, dan source run.
+4. `notebooks/data/provenance.json` mempertahankan checksum sumber dan snapshot
+   analisis offline.
+
+Baseline 0.9.2 dan sensitivitas 0.10.0 dibuat sebelum laporan merekam hash
+dataset. Eksperimen detour 0.18.0 merekam dataset kandidat 150 baris/146 node,
+SHA-256, langkah sampling, source tree, dan definisi sembilan skenario secara
+lengkap.

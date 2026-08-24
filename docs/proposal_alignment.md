@@ -78,9 +78,10 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
     leg Compute Routes final.
 14. Atribusikan baseline kepada aplikasi 0.9.2 dan sensitivitas kepada 0.10.0;
     0.18.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
-15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
-    hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
-    lengkap, terkini, atau open data tanpa bukti.
+15. Nyatakan bahwa dataset dikompilasi manual oleh peneliti dari Peta SPKLU dan
+    diverifikasi silang melalui PLN Mobile serta Google Maps selama Juli–Agustus
+    2026. Jangan menyebutnya data resmi PLN atau open data karena tidak ditemukan
+    lisensi open-data eksplisit maupun pernyataan hak redistribusi sumber.
 16. Untuk rute yang memuat feri, pisahkan jarak pelayaran dari jarak energi.
     Nyatakan bahwa deteksi Google bukan bukti jadwal, kapasitas, atau izin
     kendaraan dan seluruh akses feri bersifat kondisional.

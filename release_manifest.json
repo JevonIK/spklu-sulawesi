@@ -21,7 +21,7 @@
     "logical_nodes": 146,
     "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "metadata_path": "dataset_metadata.json",
-    "metadata_sha256": "7e6442e5d840f2105dbbc8ac597df1d3022b5cd46330ba2b3a28288d14920e24"
+    "metadata_sha256": "8a6bbc4c4e39c0495d94f64ede6cce666411087f0ea554949dfbc519b22a300c"
   },
   "algorithm": {
     "supported_connectors": [
@@ -92,7 +92,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "29d72fba6a12a985cc2c74f270193f249be2763fd570ae523daab0a1f7b0cfc4"
+    "sha256": "933c9193b000f368a9f52ed7cae556983d025176e438abcb39b277483ccdb9e5"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

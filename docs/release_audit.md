@@ -85,8 +85,8 @@ Audit offline tidak menggantikan pemeriksaan berikut:
 - memeriksa restriction API key, domain HTTPS, volume persisten, dan gateway;
 - mencocokkan pemakaian dengan Google Cloud Console;
 - melakukan smoke test UI yang secara eksplisit diizinkan;
-- membuktikan asal, tanggal snapshot, kelengkapan, lisensi, atau hak redistribusi
-  dataset; serta
+- menggantikan dokumentasi provenance, periode pengumpulan, atribusi, lisensi,
+  atau konfirmasi hak redistribusi dataset; serta
 - memvalidasi model SOC terhadap konsumsi kendaraan dunia nyata.
 
 Item tersebut tetap terdapat dalam `release_checklist.md` karena bergantung pada

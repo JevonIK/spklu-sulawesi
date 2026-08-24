@@ -185,9 +185,10 @@ wajib sebagai pengaman biaya utama.
    telah ditetapkan berdasarkan anggaran dan hasil evaluasi.
 5. Endpoint `/api/health` dipantau tanpa memanggil layanan Google eksternal.
 6. Dataset yang ter-deploy sama dengan versi yang dilaporkan dalam penelitian.
-7. Provenance sumber, tanggal snapshot, lisensi, dan hak redistribusi dataset
-   telah dikonfirmasi, atau dataset tidak didistribusikan dan keterbatasannya
-   dinyatakan sesuai [`data_provenance.md`](data_provenance.md).
+7. Provenance, periode pengumpulan, metode kompilasi, atribusi, dan quality
+   assurance dataset sesuai [`data_provenance.md`](data_provenance.md) telah
+   diperiksa; apabila raw CSV didistribusikan, izin yang diperlukan dari pemilik
+   sumber telah dikonfirmasi.
 8. Artefak CI untuk revision image yang sama telah diperiksa: coverage/audit pada
    empat Python serta health/audit container Python 3.14.
 9. Deployment rollback menggunakan image/tag versi sebelumnya sudah disiapkan.

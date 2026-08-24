@@ -9,11 +9,11 @@
     "path": "dataset_spklu_sulawesi.csv",
     "sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
     "metadata_path": "dataset_metadata.json",
-    "metadata_sha256": "7e6442e5d840f2105dbbc8ac597df1d3022b5cd46330ba2b3a28288d14920e24",
+    "metadata_sha256": "8a6bbc4c4e39c0495d94f64ede6cce666411087f0ea554949dfbc519b22a300c",
     "source_rows": 150,
     "logical_nodes": 146,
-    "provenance_status": "incomplete",
-    "license_status": "unknown"
+    "provenance_status": "documented_with_limitations",
+    "license_status": "public_sources_no_explicit_open_data_license_identified"
   },
   "source_reports": {
     "baseline": {

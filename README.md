@@ -260,11 +260,12 @@ Rasionalisasi terpusat untuk leaf size, safety factor, SOC, range, konektor,
 detour, dan radius koridor tersedia pada
 [`docs/parameter_rationale.md`](docs/parameter_rationale.md).
 
-Asal penyedia, tanggal snapshot, metode pengumpulan, lisensi, dan hak
-redistribusi dataset belum dikonfirmasi. `dataset_metadata.json` mencatat status
-tersebut sebagai `incomplete`/`unknown`, bukan sebagai lisensi terbuka. Pemilik
-penelitian perlu melengkapi bukti sumber dan izin sebelum dataset dipublikasikan
-atau didistribusikan. Rincian dan checklist tindak lanjut tersedia pada
+Dataset dikompilasi manual oleh Jevon Ivander Kangsudarmanto dari Peta SPKLU,
+kemudian diverifikasi silang per lokasi melalui PLN Mobile dan Google Maps pada
+Juli–Agustus 2026. Provenance berstatus `documented_with_limitations`. Sumber
+dapat diakses publik, tetapi tidak ditemukan lisensi open-data eksplisit;
+dataset disebut sebagai kompilasi penelitian yang diatribusikan, bukan dataset
+resmi atau open dataset PLN. Rincian metode, sitasi, dan status penggunaan ada pada
 [`docs/data_provenance.md`](docs/data_provenance.md).
 
 Hard limit seluruh layanan Google Maps dan daftar API yang dilarang tersedia

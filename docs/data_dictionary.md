@@ -2,9 +2,9 @@
 
 Dokumen ini menjelaskan dataset yang diterima proyek dan transformasi yang
 dilakukan aplikasi. CSV tidak diubah oleh proses normalisasi sehingga identitas
-byte dan transformasi komputasinya dapat diaudit. Hal itu tidak sama dengan
-provenance sumber yang lengkap: penyedia asli, tanggal snapshot, metode
-pengumpulan, lisensi, dan hak redistribusi saat ini belum diketahui.
+byte dan transformasi komputasinya dapat diaudit. Dataset dikompilasi manual
+oleh Jevon Ivander Kangsudarmanto dari Peta SPKLU, diverifikasi silang melalui
+PLN Mobile dan Google Maps, dengan periode pengumpulan/revisi Juli–Agustus 2026.
 
 Dataset yang berada pada kandidat 0.18.0 dan dipakai analisis notebook offline
 memiliki SHA-256:
@@ -23,12 +23,13 @@ tidak boleh dinyatakan hanya berdasarkan kecocokan jumlah baris/node.
 
 ## Status provenance
 
-`dataset_metadata.json` mencatat dataset sebagai `user_supplied`, dengan
-`provenance_status: incomplete`, `license_status: unknown`, dan hak redistribusi
-yang belum dikonfirmasi. Nilai kosong tidak boleh diisi dengan dugaan. Sebelum
-publikasi atau redistribusi, pemilik penelitian harus memberikan sumber primer,
-tanggal snapshot, metode pengumpulan, lisensi/izin, dan format sitasi. Checklist
-dan batas klaim tersedia pada [`data_provenance.md`](data_provenance.md).
+`dataset_metadata.json` mencatat dataset sebagai
+`researcher_compiled_multi_source` dengan provenance
+`documented_with_limitations`. Sumber operasional dapat diakses publik, tetapi
+tidak ditemukan lisensi open-data eksplisit; proyek karena itu tidak menyebut
+CSV sebagai dataset resmi atau open dataset PLN. Metode, column lineage,
+quality assurance, sitasi, dan status penggunaan tersedia pada
+[`data_provenance.md`](data_provenance.md).
 
 Hash di atas membuktikan versi file yang dipakai komputasi, bukan bahwa dataset
 resmi, lengkap, terkini, atau berlisensi terbuka.

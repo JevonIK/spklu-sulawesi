@@ -173,5 +173,6 @@ dataset, serta kondisi layanan dapat berubah.
   0.9.2. Validasi ulang per-leg Compute Routes final yang tersedia di 0.18.0
   belum dijalankan terhadap run historis ini, sehingga keduanya tidak boleh
   disamakan.
-- Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash
-  hanya mengidentifikasi file yang digunakan, bukan legalitas redistribusinya.
+- Provenance, periode pengumpulan, metode kompilasi, dan quality assurance
+  dataset telah terdokumentasi; checksum mengidentifikasi file yang digunakan,
+  tetapi tidak menggantikan izin redistribusi dari pemilik sumber.

@@ -9,11 +9,14 @@ pengambilan data penelitian tambahan.
 - [ ] Dataset yang digunakan adalah `dataset_spklu_sulawesi.csv` dengan 150
   baris sumber dan 146 node logis.
 - [ ] SHA-256 dataset cocok dengan hash pada `docs/data_dictionary.md`.
-- [ ] `dataset_metadata.json` cocok dengan hash manifest dan masih jujur menandai
-  provenance `incomplete` serta lisensi `unknown` bila bukti belum tersedia.
-- [ ] Penyedia asli, tanggal snapshot, metode pengumpulan, lisensi, hak
-  redistribusi, dan sitasi telah dikonfirmasi sebelum dataset dipublikasikan;
-  jika belum, batas publikasi dinyatakan eksplisit.
+- [ ] `dataset_metadata.json` cocok dengan hash manifest dan mencatat provenance
+  `documented_with_limitations`, sumber, periode, metode, column lineage, dan
+  quality assurance.
+- [ ] Paper mengatribusikan Jevon Ivander Kangsudarmanto sebagai compiler serta
+  Peta SPKLU/PLN, PLN Mobile, dan Google Maps sebagai sumber/verifikasi.
+- [ ] Dataset tidak disebut sebagai dataset resmi atau open data PLN; jika raw
+  CSV diminta sebagai supplementary data yang dapat didistribusikan ulang,
+  izin tertulis sumber diperiksa terlebih dahulu.
 - [ ] Tidak ada `.env`, API key, ledger, atau `reports/generated/` dalam commit.
 - [ ] Berkas `.env` lokal memiliki permission `600`; secret produksi disimpan di
   secret manager platform, bukan di filesystem image.
