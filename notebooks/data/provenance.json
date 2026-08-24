@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis": {
-    "application_version": "0.17.0",
+    "application_version": "0.18.0",
     "mode": "offline",
     "notebook_path": "notebooks/analisis_sistem_spklu_sulawesi.ipynb"
   },
@@ -37,6 +37,17 @@
       "dataset_sha256": null,
       "route_sample_step_km": null,
       "scenario_count": 7
+    },
+    "detour_sensitivity": {
+      "path": "reports/generated/detour-multicorridor-live-20260824-rerun1.json",
+      "sha256": "43d4620eea38b370600283b4a489bc26e4c07042c2f3444d5fe6921f9c572063",
+      "generated_at_utc": "2026-08-24T01:35:43.161561+00:00",
+      "source_application_version": "0.18.0",
+      "report_schema_version": 5,
+      "embedded_definition_canonical_sha256": "aa698389d2fa11c26c56647c0f9896e059963bb0277a9df762864c43e552f1ae",
+      "dataset_sha256": "9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454",
+      "route_sample_step_km": 5,
+      "scenario_count": 9
     }
   },
   "tracked_snapshots": {
@@ -51,6 +62,10 @@
     "baseline_itinerary_legs.csv": {
       "sha256": "758eb59ee2ffe1eaa437ad16656897983c37004f733c70eb65ad113d0523d415",
       "rows": 6
+    },
+    "detour_sensitivity_results.csv": {
+      "sha256": "361ee6e65ab451f9a00be39b3ee711844fba7a84380332f0a15ab9a5d7cf065c",
+      "rows": 9
     }
   },
   "notes": [
@@ -60,7 +75,8 @@
     "Snapshot tidak memuat polyline, API key, atau koordinat origin-destination hasil Google.",
     "Notebook tidak menjalankan Google Maps API dan tidak mengestimasi waktu pengisian.",
     "Model feri kandidat tidak mengurangi SOC untuk jarak pelayaran, tetapi fitur ini tidak terdapat pada hasil live historis 0.9.2/0.10.0.",
-    "Dataset kandidat saat ini telah direvisi menjadi 150 baris dan 146 node logis setelah laporan live historis dibuat; dataset baru tidak boleh dianggap sebagai input kedua run lama."
-    ,"Baseline kandidat 430 km berasal dari median tujuh model-family WLTP yang dibulatkan ke 10 km; konfigurasi CCS2 + AC Type 2, hard cap total detour 20 km, dan sensitivitas baru belum dijalankan live."
+    "Dataset kandidat saat ini telah direvisi menjadi 150 baris dan 146 node logis setelah laporan live historis dibuat; dataset baru tidak boleh dianggap sebagai input kedua run lama.",
+    "Sensitivitas detour 0.18.0 memakai dataset kandidat yang hash-nya direkam, terpisah dari baseline/sensitivitas historis 0.9.2/0.10.0.",
+    "Baseline kandidat 430 km berasal dari median tujuh model-family WLTP yang dibulatkan ke 10 km; konfigurasi CCS2 + AC Type 2 dan hard cap total detour 20 km telah diuji hanya pada sensitivitas detour tiga koridor, bukan seluruh eksperimen kandidat."
   ]
 }

@@ -76,7 +76,7 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 13. Bedakan validasi SOC hasil DP/Route Matrix dari rekonsiliasi SOC pada setiap
     leg Compute Routes final.
 14. Atribusikan baseline kepada aplikasi 0.9.2 dan sensitivitas kepada 0.10.0;
-    0.17.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
+    0.18.0 adalah kandidat analisis, bukan penghasil kedua run live tersebut.
 15. Ungkap bahwa sumber asli, tanggal snapshot, metode pengumpulan, lisensi, dan
     hak redistribusi dataset belum dikonfirmasi; jangan menyebut data resmi,
     lengkap, terkini, atau open data tanpa bukti.

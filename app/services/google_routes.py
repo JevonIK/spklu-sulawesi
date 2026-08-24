@@ -848,12 +848,20 @@ class GoogleRoutesClient:
                     "Google Routes API mengembalikan status yang bertentangan dengan rute.",
                 )
             try:
-                distance_km = float(element["distanceMeters"]) / 1000
                 duration_minutes = _duration_minutes(element["duration"])
+                request = requests_for_origin[destination_index]
+                if "distanceMeters" in element:
+                    distance_km = float(element["distanceMeters"]) / 1000
+                elif (
+                    normalize_coordinate(request.origin)
+                    == normalize_coordinate(request.destination)
+                    and duration_minutes == 0
+                ):
+                    distance_km = 0.0
+                else:
+                    raise KeyError("distanceMeters")
                 result = RoadMetricResult(
-                    request_id=requests_for_origin[
-                        destination_index
-                    ].request_id,
+                    request_id=request.request_id,
                     distance_km=distance_km,
                     duration_minutes=duration_minutes,
                 )

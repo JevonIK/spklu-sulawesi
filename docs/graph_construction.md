@@ -8,6 +8,10 @@ Graf perjalanan merupakan directed acyclic graph dengan tiga jenis node:
 
 Edge hanya dibentuk menuju node dengan progres lebih besar. Aturan ini mencegah
 perjalanan kembali ke arah titik awal.
+Station dalam jarak 0,05 km dari origin atau destination dikeluarkan sebelum
+pembentukan pasangan Matrix. Station tersebut tidak merupakan pemberhentian
+antara yang bermakna dan dapat menghasilkan elemen Google zero-distance tanpa
+`distanceMeters`.
 
 ## Pemangkasan sebelum validasi jalan
 

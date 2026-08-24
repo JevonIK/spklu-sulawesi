@@ -16,7 +16,7 @@ Contoh bagian penting respons:
 {
   "status": "ok",
   "service": "spklu-sulawesi",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "data": {
     "dataset": {
       "filename": "dataset_spklu_sulawesi.csv",

@@ -211,6 +211,34 @@ def test_connector_sensitivity_changes_only_connector_set():
     } == {("CCS2",), ("AC TYPE 2", "CCS2")}
 
 
+def test_multicorridor_detour_sensitivity_is_balanced_and_oat():
+    loaded = load_experiment_definition(
+        "experiments/scenarios_detour_multicorridor.json"
+    )
+
+    assert len(loaded["scenarios"]) == 9
+    assert {item["region"] for item in loaded["scenarios"]} == {
+        "Gorontalo",
+        "Sulawesi Utara",
+        "Sulawesi Selatan",
+    }
+    for region in {item["region"] for item in loaded["scenarios"]}:
+        rows = [
+            item for item in loaded["scenarios"] if item["region"] == region
+        ]
+        assert {
+            item["options"]["max_total_detour_km"] for item in rows
+        } == {10, 20, 30}
+        fixed_payloads = []
+        for item in rows:
+            fixed = json.loads(json.dumps(item))
+            fixed["id"] = "fixed"
+            fixed["name"] = "fixed"
+            fixed["options"]["max_total_detour_km"] = 20
+            fixed_payloads.append(fixed)
+        assert fixed_payloads.count(fixed_payloads[0]) == 3
+
+
 def test_definition_rejects_duplicate_scenario_id():
     duplicate = definition(scenario("sama"), scenario("sama"))
 
@@ -370,7 +398,7 @@ def test_experiment_cli_requires_explicit_live_api_confirmation(
     assert '"matrix_element_limit": 2000' in accepted.output
     report = json.loads((tmp_path / "cli-uji.json").read_text())
     assert report["execution"] == {
-            "app_version": "0.17.0",
+            "app_version": "0.18.0",
         "live_api_confirmed": True,
         "outcome": "completed",
         "compute_routes_limit": 60,

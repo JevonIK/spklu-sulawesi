@@ -29,7 +29,7 @@ oleh pemilik penelitian dan dipakai oleh prototipe.
 
 ## Rantai artefak
 
-Rantai audit kandidat 0.17.0 memakai empat tingkat yang berbeda:
+Rantai audit kandidat 0.18.0 memakai empat tingkat yang berbeda:
 
 1. `dataset_metadata.json` mencatat identitas dataset, transformasi yang
    diketahui, status provenance, status lisensi, dan keterbatasan;
@@ -42,11 +42,10 @@ Rantai audit kandidat 0.17.0 memakai empat tingkat yang berbeda:
 
 Baseline live berasal dari aplikasi 0.9.2 dan sensitivitas dari aplikasi 0.10.0,
 keduanya memakai schema laporan 2 dengan definisi skenario schema 1 tertanam.
-Versi analisis 0.17.0 tidak boleh diatribusikan sebagai penghasil kedua run
+Versi analisis 0.18.0 tidak boleh diatribusikan sebagai penghasil kedua run
 tersebut. Definisi skenario saat ini memakai schema 4 dan laporan live baru
-memakai schema 5. Konfigurasi kandidat Combo 2/430 km/detour 20 km belum
-dijalankan live dan
-tidak mengubah provenance snapshot historis.
+memakai schema 5. Konfigurasi Combo 2/430 km/detour 10/20/30 km telah digunakan
+hanya pada eksperimen detour 0.18.0 dan tidak mengubah provenance snapshot lama.
 Kekosongan metadata pada laporan lama, termasuk langkah sampling rute, tetap
 ditandai tidak tercatat dan tidak direkonstruksi dari default versi baru.
 Kedua laporan lama juga tidak merekam hash dataset; kecocokan jumlah baris/node
@@ -54,6 +53,11 @@ tidak membuktikan bahwa byte datasetnya identik dengan kandidat sekarang.
 Dataset kandidat sekarang bahkan mempunyai 146 node logis setelah penyelarasan
 koordinat, sedangkan konteks run lama mencatat 149 node. Karena itu, dataset
 kandidat terbaru secara eksplisit bukan bukti input kedua run historis.
+
+Sensitivitas detour 0.18.0 terpisah dari dua run lama: laporannya merekam hash
+dataset kandidat 150 baris/146 node, langkah sampling 5 km, source tree, dan
+definisi sembilan skenario. Snapshot terlacaknya berada di
+`notebooks/data/detour_sensitivity_results.csv`.
 
 Laporan mentah historis disimpan lokal dan diabaikan Git. Checksum yang dicatat
 memungkinkan pemeriksaan bila berkas itu tersedia, tetapi clone repository saja

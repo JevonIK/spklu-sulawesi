@@ -6,7 +6,7 @@ byte dan transformasi komputasinya dapat diaudit. Hal itu tidak sama dengan
 provenance sumber yang lengkap: penyedia asli, tanggal snapshot, metode
 pengumpulan, lisensi, dan hak redistribusi saat ini belum diketahui.
 
-Dataset yang berada pada kandidat 0.17.0 dan dipakai analisis notebook offline
+Dataset yang berada pada kandidat 0.18.0 dan dipakai analisis notebook offline
 memiliki SHA-256:
 
 ```text

@@ -47,7 +47,7 @@ def test_research_notebook_runs_all_code_cells_offline(monkeypatch):
     assert validation["sensitivity_error_count"] == 0
     assert validation["charging_time_included"] is False
     assert validation["ferry_distance_consumes_soc"] is False
-    assert validation["analysis_application_version"] == "0.17.0"
+    assert validation["analysis_application_version"] == "0.18.0"
     assert validation["baseline_source_application_version"] == "0.9.2"
     assert validation["sensitivity_source_application_version"] == "0.10.0"
 
@@ -97,6 +97,12 @@ def test_research_snapshots_are_deterministically_derived(tmp_path):
         / "generated"
         / "sensitivitas-live-20260813-rerun1.json"
     )
+    detour_source = (
+        PROJECT_ROOT
+        / "reports"
+        / "generated"
+        / "detour-multicorridor-live-20260824-rerun1.json"
+    )
     if not baseline_source.is_file() or not sensitivity_source.is_file():
         return
 
@@ -104,6 +110,7 @@ def test_research_snapshots_are_deterministically_derived(tmp_path):
         baseline_source,
         sensitivity_source,
         tmp_path,
+        detour_source if detour_source.is_file() else None,
     )
 
     for path in generated:

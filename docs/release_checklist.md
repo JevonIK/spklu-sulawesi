@@ -22,7 +22,7 @@ pengambilan data penelitian tambahan.
   tervalidasi, dan ID skenario unik.
 - [ ] Laporan baru memakai schema 5 dan memuat provenance yang diwajibkan.
 - [ ] Hasil historis diatribusikan ke aplikasi penghasilnya: baseline 0.9.2 dan
-  sensitivitas 0.10.0, bukan kandidat analisis 0.17.0.
+  sensitivitas 0.10.0, bukan kandidat analisis 0.18.0.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
 - [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
 - [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,

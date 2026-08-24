@@ -54,7 +54,7 @@ Fase 14 memisahkan kompatibilitas konektor dari akses jaringan charger,
 menyertakan SPKLU publik secara default, menyediakan pilihan tambahan Hyundai,
 Wuling, dan Toyota/Lexus, serta menandai itinerary yang memakai charger dealer
 sebagai rute kondisional.
-Fase 15 menyiapkan kandidat 0.17.0 untuk pelaporan ilmiah: definisi skenario
+Fase 15 menyiapkan kandidat 0.18.0 untuk pelaporan ilmiah: definisi skenario
 schema 4 dan laporan baru schema 5, provenance artefak historis, identitas source
 dan dependency yang dapat diaudit, geometri rute `HIGH_QUALITY` dengan
 `TRAFFIC_UNAWARE`, margin konservatif 1% pada prapemangkasan geodesik, validasi
@@ -69,6 +69,10 @@ skenario sensitivitas 200/300/400/500 km dan konektor terpisah untuk run baru.
 Fase 17 menambahkan hard cap total detour 20 km yang diturunkan dari dua kali
 radius koridor 10 km. DP memangkas itinerary yang melampaui cap dan rute final
 Google divalidasi ulang; sensitivitas 10/20/30 km disiapkan untuk run baru.
+Fase 18 mengeluarkan station yang berjarak maksimal 50 meter dari origin atau
+destination sebelum Route Matrix. Adapter juga menerima respons Google
+zero-distance tanpa `distanceMeters` hanya ketika kedua koordinat identik dan
+durasi nol; respons nonidentik yang tidak lengkap tetap ditolak.
 
 ## Ruang lingkup sistem
 
@@ -234,7 +238,7 @@ Inggris agar dapat digunakan langsung sebagai pendamping jurnal berbahasa Inggri
 Snapshot metrik yang dilacak beserta provenance-nya berada di
 `notebooks/data/`; notebook tidak memanggil Google Maps API. Baseline tersebut
 dihasilkan aplikasi 0.9.2 dan sensitivitas oleh aplikasi 0.10.0 dengan schema
-laporan 2 serta definisi skenario schema 1 tertanam. Kandidat 0.17.0 menganalisis
+laporan 2 serta definisi skenario schema 1 tertanam. Kandidat 0.18.0 menganalisis
 snapshot itu secara offline dan tidak boleh disebut sebagai versi yang
 menghasilkan request live historis.
 
@@ -250,6 +254,8 @@ Artefak tersebut hanya menentukan baseline model; pengguna aplikasi tetap harus
 mengisi SOC dan jangkauan aktual kendaraannya.
 Definisi, penerapan dua lapis, dan batas interpretasi hard cap detour dijelaskan
 pada [`docs/detour_policy.md`](docs/detour_policy.md).
+Hasil live 10/20/30 km pada tiga koridor tersedia pada
+[`docs/detour_sensitivity_results.md`](docs/detour_sensitivity_results.md).
 
 Asal penyedia, tanggal snapshot, metode pengumpulan, lisensi, dan hak
 redistribusi dataset belum dikonfirmasi. `dataset_metadata.json` mencatat status
@@ -276,7 +282,7 @@ Strategi dependency lock dan prosedur pembaruannya dijelaskan pada
 
 Kontrak endpoint tersedia pada [`docs/api_reference.md`](docs/api_reference.md),
 panduan penggunaan pada [`docs/user_guide.md`](docs/user_guide.md), dan identitas
-kandidat rilis 0.17.0 pada
+kandidat rilis 0.18.0 pada
 [`docs/release_candidate.md`](docs/release_candidate.md).
 
 Checklist keselarasan ruang lingkup dan koreksi istilah pada proposal tersedia

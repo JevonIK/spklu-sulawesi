@@ -117,3 +117,9 @@ feasible, `optimization.final_route_validation.status` harus `passed` agar rute
 final dikembalikan. Rute yang tidak feasible tetap merupakan hasil
 perhitungan yang valid dan dikembalikan dengan HTTP 200, tetapi
 `optimization.feasible` bernilai `false`.
+
+Untuk Route Matrix, `ROUTE_EXISTS` wajib membawa jarak dan durasi. Satu pengecualian
+fail-safe berlaku ketika origin dan destination benar-benar identik: Google dapat
+menghilangkan `distanceMeters` dan mengembalikan durasi `0s`; adapter menormalkannya
+menjadi jarak/durasi nol. Pasangan nonidentik yang kehilangan field tetap ditolak
+sebagai `invalid_response`.

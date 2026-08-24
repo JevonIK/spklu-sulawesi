@@ -2,7 +2,7 @@
 
 > **Batas provenance:** dokumen ini merangkum laporan live historis schema 2
 > dengan definisi skenario schema 1 tertanam, dibuat aplikasi 0.10.0. Kandidat
-> analisis 0.17.0 hanya membaca snapshot secara offline dan bukan versi yang
+> analisis 0.18.0 hanya membaca snapshot secara offline dan bukan versi yang
 > menghasilkan request live tersebut.
 
 ## Identitas eksperimen
@@ -111,7 +111,7 @@ yang tercatat adalah 61 Compute Routes dan 988 elemen Matrix, tanpa reservasi
 aktif.
 
 Batas 10 Compute Routes dan 625 elemen Matrix per menit pada bagian ini adalah
-konfigurasi historis saat eksperimen dijalankan. Kebijakan kandidat 0.17.0 saat
+konfigurasi historis saat eksperimen dijalankan. Kebijakan kandidat 0.18.0 saat
 ini memakai batas menit 100 Compute Routes dan 2.000 elemen Matrix, sama dengan
 batas hariannya; perubahan tersebut tidak merevisi ledger atau hasil historis.
 
@@ -146,7 +146,7 @@ tanpa `rerun1`. Jangan mengubah artefak mentah setelah hash dicatat.
 - Feasible berarti layak menurut model dan parameter penelitian, bukan jaminan
   kondisi perjalanan aktual.
 - Klaim nol pelanggaran SOC berasal dari simulasi itinerary pada 0.10.0.
-  Rekonsiliasi SOC berdasarkan setiap leg Compute Routes final pada 0.17.0 belum
+  Rekonsiliasi SOC berdasarkan setiap leg Compute Routes final pada 0.18.0 belum
   dijalankan terhadap run historis ini.
 - Sumber asli, tanggal snapshot, dan lisensi dataset belum terdokumentasi; hash
   artefak tidak membuktikan izin redistribusi dataset.

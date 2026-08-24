@@ -5,7 +5,7 @@ tetapi menggunakan skenario terdokumentasi dan menghasilkan laporan JSON serta
 CSV. Eksekusi dilakukan berurutan agar jumlah panggilan API dan penggunaan
 sumber daya per skenario dapat diaudit.
 
-Definisi skenario kandidat 0.17.0 wajib memakai `schema_version: 4`. Laporan
+Definisi skenario kandidat 0.18.0 wajib memakai `schema_version: 4`. Laporan
 yang dibuat sekarang memakai `schema_version: 5`; angka schema skenario dan
 laporan sengaja berbeda karena keduanya memiliki kontrak data yang berbeda.
 
@@ -51,6 +51,10 @@ saja dengan konfigurasi Combo 2 yang mengizinkan fallback AC Type 2. Semua
 parameter lain identik. Pemberhentian AC-only direkam sebagai
 `ac_fallback_stop_count`; optimizer mendahulukan itinerary tanpa fallback AC.
 
+`experiments/scenarios_detour_multicorridor.json` dan hasilnya pada
+[`detour_sensitivity_results.md`](detour_sensitivity_results.md) membandingkan
+cap 10/20/30 km pada koridor pendek, menengah, dan panjang.
+
 Jumlah kandidat tidak dipaksakan menjadi nilai tertentu. Sistem mencatat jumlah
 kandidat aktual hasil Ball Tree untuk menunjukkan dampak radius koridor.
 
@@ -74,7 +78,7 @@ ketidaklayakan jaringan SPKLU.
 Skenario infeasible tidak memiliki leg dan mendapat nilai nol; status
 `route_feasible` dan `reason` tetap harus dibaca bersamanya.
 
-Untuk setiap itinerary feasible, versi 0.17.0 juga memvalidasi ulang SOC dari
+Untuk setiap itinerary feasible, versi 0.18.0 juga memvalidasi ulang SOC dari
 jarak setiap leg rute yang ditampilkan, bukan hanya edge Route Matrix yang
 dipakai DP.
 Mismatch jumlah leg atau pelanggaran SOC final dicatat sebagai error dan rute
@@ -163,7 +167,7 @@ schema 2, masing-masing dibuat aplikasi 0.9.2 dan 0.10.0. Definisi yang tertanam
 di kedua laporan lama memakai schema skenario 1; berkas skenario kandidat saat
 ini sudah schema 4. Perubahan tersebut dan schema laporan 5 tidak mengubah
 provenance run lama. Khususnya, langkah sampling rute tidak direkam di laporan
-lama dan tidak boleh diisi dengan mengasumsikan default 0.17.0.
+lama dan tidak boleh diisi dengan mengasumsikan default 0.18.0.
 Kedua laporan historis juga belum mempunyai metrik feri dan tidak dapat dipakai
 sebagai validasi empiris untuk fitur ferry-aware kandidat saat ini.
 
@@ -290,7 +294,7 @@ Sebelum mengambil kesimpulan, periksa hal berikut:
    graf; jangan menyimpulkan bahwa implementasi gagal hanya dari infeasibility.
 5. Catat tanggal, label keluaran, parameter, dan kondisi eksperimen pada laporan.
 6. Catat versi aplikasi penghasil dan schema laporan; jangan mengatribusikan
-   hasil historis 0.9.2/0.10.0 kepada kandidat analisis 0.17.0.
+   hasil historis 0.9.2/0.10.0 kepada kandidat analisis 0.18.0.
 
 Hasil sensitivitas live yang telah divalidasi tersedia pada
 [`sensitivity_results.md`](sensitivity_results.md). Kebijakan seluruh layanan

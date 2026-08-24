@@ -1,9 +1,9 @@
 {
   "schema_version": 5,
-  "application_version": "0.17.0",
+  "application_version": "0.18.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "779ceb1340760636f4d5c5f69395f25a99804096493bf78484d07ce6451fbb54"
+    "sha256": "9b391e7a429266e91b0966bf84a4860f08da188d5d9507ccb44587ac3fdb382e"
   },
   "supported_python_versions": [
     "3.11",
@@ -13,7 +13,7 @@
   ],
   "dependencies": {
     "constraints_path": "constraints.txt",
-    "sha256": "042952b91c79abc9c9f1cca286312fa10adface0722b8137ba94af2cb1f2cfa5"
+    "sha256": "34b300cc709924fc5e36269ec1ee7719079296b2cf26adcec7d2cc022dd1e3f5"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -81,11 +81,18 @@
       "connector_sets": [["CCS2"], ["AC TYPE 2", "CCS2"]],
       "max_total_detour_levels_km": [20],
       "sha256": "237a5c4b48094640d32f66b0c6228b12b78771ff6589beedf459965176d7a5aa"
+    },
+    {
+      "path": "experiments/scenarios_detour_multicorridor.json",
+      "scenario_count": 9,
+      "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "max_total_detour_levels_km": [10, 20, 30],
+      "sha256": "9fe160c0efd02f7544b4beaac3049c74ea735b994f3d657fd4f7bca5fc396742"
     }
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "452e9d072c0bcda4b08c1aa12ad66c03332f26db0a6b5f0f59cc243e0ea3cf0b"
+    "sha256": "60547c72d31bd7f30ce0ad3d9b50fbe1834374c013aef1ca50a3a24a85075736"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

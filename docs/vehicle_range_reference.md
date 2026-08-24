@@ -1,6 +1,6 @@
 # Dasar ilmiah jangkauan kendaraan referensi
 
-Nilai awal `maximum_range_km=430` pada kandidat 0.17.0 bukan spesifikasi untuk
+Nilai awal `maximum_range_km=430` pada kandidat 0.18.0 bukan spesifikasi untuk
 semua kendaraan. Nilai tersebut adalah baseline terkontrol untuk eksperimen dan
 placeholder yang wajib diganti pengguna sesuai kendaraannya.
 

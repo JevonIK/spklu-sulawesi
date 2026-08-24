@@ -7,7 +7,7 @@ request browser.
 
 ## Batas aktif
 
-Tabel berikut adalah konfigurasi kandidat 0.17.0. Ia tidak mengubah batas yang
+Tabel berikut adalah konfigurasi kandidat 0.18.0. Ia tidak mengubah batas yang
 tercatat pada eksperimen historis 0.9.2/0.10.0 dan tidak membuktikan bahwa
 override Google Cloud sudah aktif; operator harus memeriksa Console sebelum
 setiap tindakan live.

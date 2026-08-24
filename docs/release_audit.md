@@ -57,7 +57,7 @@ mengecualikan seluruh `.env` rahasia, tetapi memasukkan kembali `.env.example`;
 workflow `.github/workflows/ci.yml` juga ikut dalam konteks kandidat. Dummy atau
 nilai contoh tidak boleh diganti dengan key nyata pada berkas yang dilacak.
 
-Manifest penelitian schema 1 memisahkan versi analisis 0.17.0 dari versi
+Manifest penelitian schema 1 memisahkan versi analisis 0.18.0 dari versi
 penghasil data live: baseline 0.9.2 dan sensitivitas 0.10.0, keduanya laporan
 schema 2 dengan definisi skenario schema 1 tertanam. Ia mencatat artefak snapshot,
 checksum, jumlah baris, transformasi pembentuk snapshot, lokasi/hash laporan

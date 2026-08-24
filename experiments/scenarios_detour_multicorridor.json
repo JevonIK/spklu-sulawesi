@@ -1,0 +1,88 @@
+{
+  "schema_version": 4,
+  "experiment_id": "detour-tiga-koridor",
+  "description": "Sensitivitas hard cap total detour 10/20/30 km pada koridor pendek, menengah, dan panjang dengan seluruh parameter lain tetap.",
+  "scenarios": [
+    {
+      "id": "detour-pendek-gorontalo-10",
+      "name": "Gorontalo pendek; detour 10 km",
+      "region": "Gorontalo",
+      "origin": {"label": "SPKLU Marisa", "latitude": 0.4764975711, "longitude": 121.9315051},
+      "destination": {"label": "SPKLU Kota Gorontalo", "latitude": 0.5536615568, "longitude": 123.0540064},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 10, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-pendek-gorontalo-20",
+      "name": "Gorontalo pendek; detour 20 km",
+      "region": "Gorontalo",
+      "origin": {"label": "SPKLU Marisa", "latitude": 0.4764975711, "longitude": 121.9315051},
+      "destination": {"label": "SPKLU Kota Gorontalo", "latitude": 0.5536615568, "longitude": 123.0540064},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-pendek-gorontalo-30",
+      "name": "Gorontalo pendek; detour 30 km",
+      "region": "Gorontalo",
+      "origin": {"label": "SPKLU Marisa", "latitude": 0.4764975711, "longitude": 121.9315051},
+      "destination": {"label": "SPKLU Kota Gorontalo", "latitude": 0.5536615568, "longitude": 123.0540064},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 30, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-menengah-sulut-10",
+      "name": "Sulawesi Utara menengah; detour 10 km",
+      "region": "Sulawesi Utara",
+      "origin": {"label": "SPKLU PLN KJ Bintauna", "latitude": 0.8803369621, "longitude": 123.5499441},
+      "destination": {"label": "SPKLU PLN Kawasan Megamas Manado", "latitude": 1.486355344, "longitude": 124.8338777},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 10, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-menengah-sulut-20",
+      "name": "Sulawesi Utara menengah; detour 20 km",
+      "region": "Sulawesi Utara",
+      "origin": {"label": "SPKLU PLN KJ Bintauna", "latitude": 0.8803369621, "longitude": 123.5499441},
+      "destination": {"label": "SPKLU PLN Kawasan Megamas Manado", "latitude": 1.486355344, "longitude": 124.8338777},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-menengah-sulut-30",
+      "name": "Sulawesi Utara menengah; detour 30 km",
+      "region": "Sulawesi Utara",
+      "origin": {"label": "SPKLU PLN KJ Bintauna", "latitude": 0.8803369621, "longitude": 123.5499441},
+      "destination": {"label": "SPKLU PLN Kawasan Megamas Manado", "latitude": 1.486355344, "longitude": 124.8338777},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 30, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-panjang-sulsel-10",
+      "name": "Sulawesi Selatan panjang; detour 10 km",
+      "region": "Sulawesi Selatan",
+      "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
+      "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 10, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-panjang-sulsel-20",
+      "name": "Sulawesi Selatan panjang; detour 20 km",
+      "region": "Sulawesi Selatan",
+      "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
+      "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 20, "additional_charging_networks": []}
+    },
+    {
+      "id": "detour-panjang-sulsel-30",
+      "name": "Sulawesi Selatan panjang; detour 30 km",
+      "region": "Sulawesi Selatan",
+      "origin": {"label": "SPKLU PLN ULP Mattoanging", "latitude": -5.148463607, "longitude": 119.4158186},
+      "destination": {"label": "SPKLU PLN ULP Rantepao", "latitude": -2.972703162, "longitude": 119.8979519},
+      "vehicle": {"maximum_range_km": 430, "current_soc_percent": 80, "connectors": ["AC TYPE 2", "CCS2"]},
+      "options": {"minimum_soc_percent": 20, "target_soc_percent": 80, "safety_factor": 0.9, "soc_step_percent": 5, "corridor_radius_km": 10, "route_sample_step_km": 5, "max_total_detour_km": 30, "additional_charging_networks": []}
+    }
+  ]
+}

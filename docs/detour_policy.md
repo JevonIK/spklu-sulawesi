@@ -1,6 +1,6 @@
 # Kebijakan hard cap total detour
 
-Kandidat 0.17.0 membatasi total detour itinerary sebesar 20 km. Batas ini tidak
+Kandidat 0.18.0 membatasi total detour itinerary sebesar 20 km. Batas ini tidak
 dipilih sebagai angka preferensi pengguna yang universal. Ia diturunkan dari
 geometri baseline:
 
@@ -54,9 +54,10 @@ Route Matrix dan Compute Routes menghasilkan rekomendasi yang melewati batas.
 | 20 km | `2 ×` radius; baseline |
 | 30 km | `3 ×` radius; permisif |
 
-Definisi tersebut belum merupakan hasil live. Paper tidak boleh menyatakan
-20 km terbaik sebelum ketiga skenario dijalankan dengan izin, quota preflight,
-dan parameter lain yang identik.
+Hasil live tiga koridor tersedia pada
+[`detour_sensitivity_results.md`](detour_sensitivity_results.md). Seluruh cap
+menghasilkan itinerary yang sama per koridor; perbedaannya hanya pada pruning
+DP. Karena itu hasil tidak membuktikan 20 km sebagai optimum unik.
 
 ## Batas interpretasi
 

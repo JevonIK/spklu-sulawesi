@@ -520,6 +520,28 @@ def test_matrix_groups_requests_by_origin_and_skips_unavailable_elements():
     assert len(session.calls[0][1]["json"]["destinations"]) == 3
 
 
+def test_matrix_accepts_zero_distance_for_identical_coordinates():
+    response = [
+        {
+            "originIndex": 0,
+            "destinationIndex": 0,
+            "status": {},
+            "condition": "ROUTE_EXISTS",
+            "duration": "0s",
+        }
+    ]
+    client = GoogleRoutesClient(
+        "key",
+        session=RecordingSession([FakeResponse(response)]),
+    )
+
+    batch = client.fetch((road_request("same", (1, 2), (1, 2)),))
+
+    assert len(batch.results) == 1
+    assert batch.results[0].distance_km == 0
+    assert batch.results[0].duration_minutes == 0
+
+
 @pytest.mark.parametrize(
     "malformed_element",
     [

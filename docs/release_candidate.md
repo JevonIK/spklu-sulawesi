@@ -1,7 +1,7 @@
-# Kandidat rilis 0.17.0
+# Kandidat rilis 0.18.0
 
 Dokumen ini adalah identitas kandidat, bukan pernyataan bahwa deployment sudah
-produksi. Status lulus hanya boleh diberikan setelah manifest 0.17.0 sinkron,
+produksi. Status lulus hanya boleh diberikan setelah manifest 0.18.0 sinkron,
 audit offline lulus, seluruh job GitHub Actions hijau, dan artefak run tersebut
 diunduh serta diperiksa.
 
@@ -9,7 +9,7 @@ diunduh serta diperiksa.
 
 | Komponen | Nilai kandidat |
 |---|---|
-| Versi aplikasi/analisis | 0.17.0 |
+| Versi aplikasi/analisis | 0.18.0 |
 | Dataset | 150 baris, 146 node logis |
 | SHA-256 dataset | `9c99d5e8e2cf8c595d81ccc184b211d1d6acb8d12bf4b3eb0b4df4d8eed41454` |
 | Provenance/lisensi dataset | `incomplete` / `unknown` |
@@ -38,6 +38,8 @@ diunduh serta diperiksa.
 - prapemangkasan geodesik memakai lower bound dengan margin 1%;
 - jarak setiap leg Compute Routes final divalidasi ulang terhadap SOC minimum;
 - total detour dibatasi 20 km di DP dan divalidasi ulang terhadap rute final;
+- station yang berimpit dengan endpoint dikeluarkan sebelum Matrix dan respons
+  zero-distance identik dinormalisasi secara terbatas;
 - CI mengunggah `coverage.xml`, `release-audit.json`, `container-health.json`,
   dan `container-release-audit.json` sebagai artefak 14 hari;
 - container smoke test memakai root filesystem read-only, tanpa jaringan
@@ -48,7 +50,7 @@ diunduh serta diperiksa.
 
 Jangan menyalin angka jumlah test, coverage, atau check audit dari rilis lama.
 Nilai final harus diambil dari artefak GitHub Actions untuk revision kandidat
-0.17.0 yang sama. Keberhasilan versi sebelumnya tidak membuktikan image 0.17.0.
+0.18.0 yang sama. Keberhasilan versi sebelumnya tidak membuktikan image 0.18.0.
 
 ## Hard limit aktif
 
@@ -68,17 +70,19 @@ pada [`google_maps_api_limits.md`](google_maps_api_limits.md).
 
 ## Provenance bukti penelitian
 
-Hasil penelitian yang tersedia tidak dibuat oleh 0.17.0:
+Artefak penelitian mempunyai versi penghasil yang berbeda:
 
 | Artefak | Versi penghasil | Schema laporan | Ruang lingkup |
 |---|---:|---:|---|
 | Baseline enam wilayah | 0.9.2 | 2 | 6 skenario; 3 feasible |
 | Sensitivitas Makassar–Rantepao | 0.10.0 | 2 | 7 skenario feasible |
+| Sensitivitas detour tiga koridor | 0.18.0 | 5 | 9 skenario feasible; cap tidak mengubah itinerary |
 
-Versi 0.17.0 adalah versi analisis dan kandidat untuk run berikutnya. Notebook
-membaca snapshot historis secara offline. Klaim nol pelanggaran SOC pada hasil
-lama berasal dari simulasi versi penghasilnya; fitur rekonsiliasi leg final
-0.17.0 tidak dijalankan secara retroaktif. Laporan lama juga tidak merekam
+Versi 0.18.0 adalah versi analisis, kandidat untuk run berikutnya, sekaligus
+penghasil sensitivitas detour. Notebook membaca ketiga snapshot secara offline.
+Klaim nol pelanggaran SOC pada dua hasil lama berasal dari simulasi versi
+penghasilnya; fitur rekonsiliasi leg final 0.18.0 tidak dijalankan secara
+retroaktif terhadap hasil lama. Laporan lama juga tidak merekam
 langkah sampling rute atau checksum dataset, dan definisi skenario tertanamnya
 masih schema 1. Nilai yang hilang tidak boleh ditebak dari default atau file
 skenario schema 4 yang sekarang.
@@ -96,9 +100,9 @@ penelitian harus melengkapi bukti tersebut sebagaimana dijelaskan pada
 
 Kandidat baru dapat disebut terverifikasi setelah:
 
-1. audit offline berjalan terhadap manifest 0.17.0 tanpa mismatch;
+1. audit offline berjalan terhadap manifest 0.18.0 tanpa mismatch;
 2. test dan coverage lulus pada Python 3.11, 3.12, 3.13, dan 3.14;
-3. job container 0.17.0 lulus dalam mode read-only dan tanpa jaringan;
+3. job container 0.18.0 lulus dalam mode read-only dan tanpa jaringan;
 4. artefak kualitas/container dari run yang sama berhasil diunduh dan diperiksa;
 5. tidak ada secret atau laporan live mentah dalam commit;
 6. data provenance/lisensi ditangani atau batas publikasinya dinyatakan jelas;

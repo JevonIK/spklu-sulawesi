@@ -94,7 +94,7 @@ Jarak edge yang dipakai DP berasal dari Route Matrix. Jika itinerary memakai
 SPKLU, sistem kemudian meminta Compute Routes dengan SPKLU terpilih sebagai
 intermediate waypoint; rute langsung memakai kembali rute dasar. Jarak setiap
 leg rute yang ditampilkan dapat berbeda dari nilai matriks, sehingga versi
-0.17.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
+0.18.0 mengulang simulasi SOC menggunakan leg yang benar-benar dikirim kepada
 pengguna.
 
 Jumlah leg harus sama dengan itinerary. Setiap leg diperbarui dengan jarak total,

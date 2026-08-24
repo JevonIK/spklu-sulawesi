@@ -295,6 +295,17 @@ def _graph_nodes(origin, destination, route, candidates, connector):
             and normalized_connectors.isdisjoint(candidate.node.connectors)
         ):
             continue
+        candidate_coordinate = (
+            candidate.node.latitude,
+            candidate.node.longitude,
+        )
+        if (
+            haversine_distance_km(candidate_coordinate, origin)
+            <= ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM
+            or haversine_distance_km(candidate_coordinate, destination)
+            <= ROAD_DISTANCE_ABSOLUTE_TOLERANCE_KM
+        ):
+            continue
         if candidate.route_progress_km <= DISTANCE_TOLERANCE_KM:
             continue
         if (

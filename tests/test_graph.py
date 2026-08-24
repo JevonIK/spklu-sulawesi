@@ -1,4 +1,5 @@
 import pytest
+from dataclasses import replace
 
 from app.services.dataset import StationNode, StationUnit
 from app.services.graph import (
@@ -118,6 +119,34 @@ def test_graph_prunes_geodesic_pairs_before_provider_and_builds_path():
     assert len(provider.requests) == 3
     assert graph.stats.accepted_edges == 3
     assert graph.stats.external_request_count == 1
+
+
+def test_graph_excludes_station_colocated_with_destination_before_matrix():
+    provider = RecordingRoadMetricProvider()
+    destination_station = replace(
+        make_candidate("Destination Station", 1.0),
+        route_progress_km=80,
+        route_progress_ratio=0.8,
+    )
+
+    graph = build_travel_graph(
+        origin=(0, 0),
+        destination=(0, 1),
+        route=RouteGeometry(((0, 0), (0, 1))),
+        candidates=(destination_station,),
+        connector="CCS2",
+        initial_usable_range_km=200,
+        post_charge_usable_range_km=200,
+        road_metric_provider=provider,
+    )
+
+    assert [node.node_id for node in graph.nodes] == [
+        ORIGIN_NODE_ID,
+        DESTINATION_NODE_ID,
+    ]
+    assert [request.request_id for request in provider.requests] == [
+        "origin->destination"
+    ]
     assert graph.has_origin_to_destination_path() is True
 
 

@@ -76,6 +76,49 @@ LEG_COLUMNS = (
     "consumption_soc_percent",
 )
 
+DETOUR_COLUMNS = (
+    "scenario_id",
+    "scenario_name",
+    "region",
+    "maximum_range_km",
+    "current_soc_percent",
+    "connectors",
+    "preferred_connector",
+    "minimum_soc_percent",
+    "target_soc_percent",
+    "safety_factor",
+    "soc_step_percent",
+    "corridor_radius_km",
+    "route_sample_step_km",
+    "max_total_detour_km",
+    "status",
+    "route_feasible",
+    "reason",
+    "soc_violation_count",
+    "charging_stop_count",
+    "ac_fallback_stop_count",
+    "charging_stop_names",
+    "base_route_distance_km",
+    "recommended_route_distance_km",
+    "total_detour_km",
+    "final_soc_percent",
+    "minimum_observed_soc_percent",
+    "corridor_candidate_count",
+    "graph_node_count",
+    "graph_edge_count",
+    "dp_processed_states",
+    "dp_evaluated_transitions",
+    "detour_pruned_transitions",
+    "compute_routes_requests",
+    "compute_route_matrix_requests",
+    "compute_route_matrix_elements",
+    "total_external_requests",
+    "runtime_ms",
+    "peak_memory_mb",
+    "error_type",
+    "error_message",
+)
+
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -141,7 +184,12 @@ def write_csv(path, columns, rows):
             temporary_path.unlink()
 
 
-def build_snapshots(baseline_path, sensitivity_path, output_dir):
+def build_snapshots(
+    baseline_path,
+    sensitivity_path,
+    output_dir,
+    detour_sensitivity_path=None,
+):
     provenance = json.loads(PROVENANCE_PATH.read_text(encoding="utf-8"))
     baseline = load_verified_report(
         baseline_path,
@@ -179,11 +227,33 @@ def build_snapshots(baseline_path, sensitivity_path, output_dir):
         LEG_COLUMNS,
         leg_rows,
     )
-    return tuple(output_dir / filename for filename in (
+    filenames = [
         "baseline_results.csv",
         "sensitivity_results.csv",
         "baseline_itinerary_legs.csv",
-    ))
+    ]
+    if detour_sensitivity_path is not None:
+        detour = load_verified_report(
+            detour_sensitivity_path,
+            provenance["source_reports"]["detour_sensitivity"],
+            "sensitivitas detour",
+        )
+        rows = []
+        for result in detour["results"]:
+            row = dict(result)
+            row["detour_pruned_transitions"] = (
+                (result.get("optimization_stats") or {}).get(
+                    "detour_pruned_transitions"
+                )
+            )
+            rows.append(row)
+        write_csv(
+            output_dir / "detour_sensitivity_results.csv",
+            DETOUR_COLUMNS,
+            rows,
+        )
+        filenames.append("detour_sensitivity_results.csv")
+    return tuple(output_dir / filename for filename in filenames)
 
 
 def main():
@@ -192,12 +262,14 @@ def main():
     )
     parser.add_argument("--baseline", required=True, type=Path)
     parser.add_argument("--sensitivity", required=True, type=Path)
+    parser.add_argument("--detour-sensitivity", type=Path)
     parser.add_argument("--output-dir", type=Path, default=NOTEBOOK_DATA)
     args = parser.parse_args()
     for path in build_snapshots(
         args.baseline,
         args.sensitivity,
         args.output_dir,
+        args.detour_sensitivity,
     ):
         print(f"{path.name}: {sha256(path)}")
 
