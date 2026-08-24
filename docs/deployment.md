@@ -6,7 +6,9 @@ Artefak deployment terdiri atas `wsgi.py`, `gunicorn.conf.py`, `Dockerfile`, dan
 image dimiliki root serta hanya dapat dibaca oleh user runtime; direktori
 ledger/laporan dipisahkan sebagai satu-satunya target tulis aplikasi.
 Konteks image menyertakan `.env.example` dan workflow CI sebagai input integritas
-rilis, tetapi tidak menyertakan `.env` yang memuat secret lokal.
+rilis, tetapi tidak menyertakan `.env` yang memuat secret lokal. Dokumentasi
+umum dikecualikan; hanya `docs/parameter_rationale.md` yang disertakan karena
+merupakan artefak penelitian yang diperiksa release audit dalam container.
 
 ## Konfigurasi wajib
 

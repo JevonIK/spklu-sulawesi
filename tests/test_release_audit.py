@@ -169,6 +169,9 @@ def test_docker_context_keeps_v2_integrity_inputs():
     assert ".env*" in patterns
     assert "!.env.example" in patterns
     assert ".github" not in patterns
+    assert "docs" not in patterns
+    assert "docs/*" in patterns
+    assert "!docs/parameter_rationale.md" in patterns
 
 
 def test_container_tmpfs_keeps_runtime_report_directory_accessible():

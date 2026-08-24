@@ -56,6 +56,9 @@ Audit yang sama dijalankan di dalam image. Karena itu `.dockerignore` tetap
 mengecualikan seluruh `.env` rahasia, tetapi memasukkan kembali `.env.example`;
 workflow `.github/workflows/ci.yml` juga ikut dalam konteks kandidat. Dummy atau
 nilai contoh tidak boleh diganti dengan key nyata pada berkas yang dilacak.
+Folder `docs/` dikecualikan dari image kecuali `docs/parameter_rationale.md`,
+karena berkas itu dikunci sebagai artefak metodologi di manifest penelitian dan
+wajib tersedia ketika audit dijalankan di dalam container.
 
 Manifest penelitian schema 1 memisahkan versi analisis 0.18.0 dari versi
 penghasil data live: baseline 0.9.2 dan sensitivitas 0.10.0, keduanya laporan
