@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 from ..constants import (
-    CHARGING_TIME_INCLUDED,
     FALLBACK_RESEARCH_CONNECTOR,
     DETOUR_REFERENCE_MULTIPLIER,
     DETOUR_SENSITIVITY_LEVELS_KM,
@@ -262,10 +261,6 @@ def validate_release_manifest(manifest):
     ):
         raise ReleaseManifestError(
             "root.algorithm.detour_policy.sensitivity_levels_km tidak valid."
-        )
-    if not isinstance(algorithm.get("charging_time_included"), bool):
-        raise ReleaseManifestError(
-            "root.algorithm.charging_time_included wajib berupa boolean."
         )
     _text(algorithm, "travel_mode", "root.algorithm")
     _text(algorithm, "routing_preference", "root.algorithm")
@@ -768,12 +763,6 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         config.get("DEFAULT_CORRIDOR_RADIUS_KM")
         * DETOUR_REFERENCE_MULTIPLIER,
         config.get("DEFAULT_MAX_TOTAL_DETOUR_KM"),
-    )
-    _add_check(
-        checks,
-        "algorithm.charging_time_included",
-        algorithm["charging_time_included"],
-        CHARGING_TIME_INCLUDED,
     )
     _add_check(
         checks,

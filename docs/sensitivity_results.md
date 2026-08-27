@@ -15,7 +15,7 @@ maksimum 300 km, SOC awal 80%, SOC minimum 20%, target SOC 80%, dan konektor
 CCS2.
 
 Semua skenario selesai, feasible, dan tidak memiliki pelanggaran SOC. Nilai
-waktu hanya menunjukkan waktu berkendara; waktu pengisian tidak dihitung.
+waktu menunjukkan durasi perjalanan Google Routes.
 
 Laporan historis tidak merekam `route_sample_step_km`. Nilai 5 km pada definisi
 skenario schema 2 saat ini berlaku untuk run baru dan tidak boleh dianggap

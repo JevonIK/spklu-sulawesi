@@ -675,7 +675,7 @@ function stationInfoContent(stop) {
         || station.connectors?.[0]
         || "Konektor terpilih";
     const connectorRole = station.route_connector_role === "ac_fallback"
-        ? "fallback; waktu pengisian tidak dihitung"
+        ? "fallback"
         : "diprioritaskan";
     charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${selectedConnector} (${connectorRole})`;
     const access = document.createElement("span");
@@ -915,7 +915,7 @@ function renderItinerary(data) {
                 || station.connectors?.[0]
                 || "Konektor terpilih";
             const connectorLabel = station.route_connector_role === "ac_fallback"
-                ? `${selectedConnector} fallback · waktu pengisian tidak dihitung`
+                ? `${selectedConnector} fallback`
                 : `${selectedConnector} diprioritaskan`;
             const stopText = document.createElement("span");
             stopText.textContent = `Setelah tiba, isi SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${connectorLabel} · ${accessLabel}`;

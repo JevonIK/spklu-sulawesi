@@ -6,7 +6,8 @@ menjadi acuan: aplikasi umum mendukung seluruh konektor pada dataset, sedangkan
 eksperimen kandidat memakai kendaraan Combo 2 dengan prioritas CCS2 dan fallback
 AC Type 2; kapasitas kendaraan dinyatakan
 dalam jangkauan maksimum (km), unit pada koordinat sama dipertahankan sebagai
-informasi tetapi menjadi satu node algoritma, dan waktu pengisian tidak dihitung.
+informasi tetapi menjadi satu node algoritma, dan metrik temporal menggunakan
+durasi perjalanan Google Routes.
 
 ## Pemetaan komponen
 
@@ -37,25 +38,22 @@ perhentian, jarak, waktu berkendara, detour, request API, runtime, penggunaan
 memori, jumlah kandidat, statistik graf, dan statistik DP. Definisi dan cara
 menjalankannya terdapat di `docs/evaluation.md`.
 
-Tidak ada metrik estimasi waktu pengisian. Waktu perjalanan yang tersedia adalah
-waktu berkendara dari Google Routes API.
+Metrik waktu yang tersedia adalah durasi perjalanan dari Google Routes API.
 
 ## Koreksi naskah proposal yang perlu dilakukan
 
 Versi proposal yang diperiksa masih mengandung beberapa istilah dari ruang
 lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
 
-1. Pada ringkasan, hapus `daya pengisian` dari atribut data jika memang tidak
-   tersedia dan tidak dipakai algoritma.
-2. Pada bagian metode DP, hapus pertimbangan `daya pengisian` atau
-   `charging power`.
-3. Ubah objektif `total waktu perjalanan dan pengisian` menjadi objektif waktu
-   berkendara/jarak jalan dengan tie-break jumlah perhentian dan detour sesuai
-   implementasi.
-4. Hapus `estimasi waktu pengisian daya` dari keluaran sistem dan flowchart.
-5. Ubah metrik `total waktu perjalanan dan pengisian` menjadi `total waktu
-   berkendara`.
-6. Pada luaran yang diharapkan, hapus komponen `waktu pengisian`.
+1. Pada ringkasan, nyatakan atribut data sebagai lokasi, koordinat, konektor,
+   alamat, dan wilayah administratif.
+2. Pada bagian metode DP, jelaskan penggunaan jangkauan kendaraan dan state SOC.
+3. Tetapkan objektif temporal sebagai durasi perjalanan Google Routes dengan
+   tie-break jumlah perhentian dan detour sesuai implementasi.
+4. Pastikan keluaran sistem dan flowchart memakai label durasi perjalanan.
+5. Samakan nama metrik menjadi `total durasi perjalanan Google Routes`.
+6. Pada luaran yang diharapkan, cantumkan urutan SPKLU, jarak, SOC, detour, dan
+   durasi perjalanan.
 7. Jelaskan bahwa sistem dapat memfilter AC Type 2, CCS2, CHAdeMO, dan GB/T.
    Hasil historis memakai CCS2/300 km, sedangkan kandidat run berikutnya memakai
    CCS2 dengan fallback AC Type 2 dan baseline 430 km.
@@ -94,11 +92,9 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
     koridor, bukan preferensi pengguna tervalidasi; laporkan sensitivitas
     10/20/30 km setelah run berizin tersedia.
 
-Rencana pengembangan model waktu pengisian pada roadmap tahun berikutnya dapat
-tetap dicantumkan apabila dinyatakan jelas sebagai pekerjaan masa depan, bukan
-fitur sistem penelitian saat ini. Pembahasan waktu pengisian dalam latar belakang
-juga boleh dipertahankan sebagai konteks umum selama tidak mengklaim bahwa sistem
-menghitungnya.
+Pengembangan model temporal yang lebih luas dapat dicantumkan pada roadmap
+sebagai pekerjaan masa depan, terpisah dari metrik perjalanan penelitian saat
+ini.
 
 ## Batas interpretasi
 

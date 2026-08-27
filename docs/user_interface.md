@@ -18,8 +18,7 @@ Antarmuka fase 6B terdiri dari:
 - kartu penyeberangan feri dengan jarak, durasi, dan peringatan akses; serta
 - statistik kandidat, graf, state DP, dan penggunaan API.
 
-Antarmuka tidak menampilkan estimasi waktu pengisian karena fitur tersebut berada
-di luar ruang lingkup penelitian.
+Nilai waktu pada antarmuka menunjukkan durasi perjalanan Google Routes.
 
 ## Alur interaksi
 
@@ -48,8 +47,8 @@ di luar ruang lingkup penelitian.
 11. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
     peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
 12. Untuk kombinasi Combo 2, optimizer meminimalkan jumlah stop AC-only sebelum
-    biaya perjalanan. Stop AC Type 2 hanya menjadi fallback, diberi badge dan
-    peringatan bahwa waktu pengisian tidak dihitung.
+    biaya perjalanan. Stop AC Type 2 hanya menjadi fallback dan diberi label
+    yang membedakannya dari konektor CCS2 yang diprioritaskan.
 13. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
 14. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,

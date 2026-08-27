@@ -98,8 +98,7 @@ lokal sebagai jejak audit dan tidak digunakan dalam tabel hasil final.
   cap tidak memengaruhi stop.
 - Detour akhir koridor panjang hanya 0,205 km, jauh di bawah semua cap.
 - Tidak ada koridor uji yang berada dekat ambang 10/20/30 km.
-- Waktu pengisian, antrean, daya charger, dan preferensi detour pengguna tidak
-  dimodelkan.
+- Antrean, daya charger, dan preferensi detour pengguna tidak dimodelkan.
 
 Eksperimen berikutnya yang hendak mencari threshold optimum harus memilih
 koridor dengan alternatif itinerary yang detournya mendekati ketiga cap, bukan

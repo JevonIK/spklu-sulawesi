@@ -3,7 +3,7 @@
   "application_version": "0.18.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "a360c0d9946e9f1ca9dfc86e8aeb9c8c47c0aba79abcaf31cbf86a08e0a73109"
+    "sha256": "39774ae0ecc0f075dfc10e6fb86308779712f5dafe2a5094562e64966cbd2263"
   },
   "supported_python_versions": [
     "3.11",
@@ -47,7 +47,6 @@
       "corridor_multiplier": 2,
       "sensitivity_levels_km": [10, 20, 30]
     },
-    "charging_time_included": false,
     "travel_mode": "DRIVE",
     "routing_preference": "TRAFFIC_UNAWARE",
     "polyline_quality": "HIGH_QUALITY",
@@ -92,7 +91,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "933c9193b000f368a9f52ed7cae556983d025176e438abcb39b277483ccdb9e5"
+    "sha256": "c65b2795eb9e12aa3c58bd4f3341509a5ada48cae150b8771c6802075d77171c"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

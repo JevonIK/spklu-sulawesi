@@ -97,10 +97,10 @@ pembentukan graf, dan DP. Karena latensi jaringan ikut tercakup, eksperimen
 sebaiknya diulang pada kondisi jaringan yang sebanding. Peak memory merupakan
 pengukuran proses Python selama skenario dan bukan keseluruhan memori sistem.
 
-Estimasi waktu pengisian tidak dihitung. `total_driving_duration_minutes`
-mengecualikan durasi feri, sedangkan `total_travel_duration_minutes` mencakup
-durasi darat dan pelayaran dari rute Google tetapi tidak mencakup antrean atau
-waktu tunggu jadwal kapal.
+`total_driving_duration_minutes` mengecualikan durasi feri, sedangkan
+`total_travel_duration_minutes` mencakup durasi darat dan pelayaran dari rute
+Google. Kedua metrik tersebut tidak mencakup antrean atau waktu tunggu jadwal
+kapal.
 
 ## Menjalankan eksperimen
 

@@ -717,8 +717,7 @@ class RecommendationService:
         if ac_fallback_stops:
             notices.append(
                 "Rute memakai AC Type 2 sebagai fallback karena itinerary "
-                "CCS2 penuh tidak tersedia atau tidak terpilih; waktu "
-                "pengisian tidak dihitung dan dapat jauh lebih lama."
+                "CCS2 penuh tidak tersedia atau tidak terpilih."
             )
         if ferry_conditional:
             notices.append(

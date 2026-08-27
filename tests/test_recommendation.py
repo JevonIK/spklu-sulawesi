@@ -502,7 +502,10 @@ def test_combo2_route_marks_ac_type2_only_stop_as_fallback():
     assert result["optimization"]["feasible"] is True
     assert result["route_access"]["conditional"] is True
     assert result["route_access"]["ac_fallback_stop_count"] == 1
-    assert "waktu pengisian tidak dihitung" in result["route_access"]["notice"]
+    assert result["route_access"]["notice"] == (
+        "Rute memakai AC Type 2 sebagai fallback karena itinerary CCS2 penuh "
+        "tidak tersedia atau tidak terpilih."
+    )
     stop = result["optimization"]["itinerary"]["charging_stops"][0]
     assert stop["station"]["route_selected_connector"] == "AC TYPE 2"
     assert stop["station"]["route_connector_role"] == "ac_fallback"

@@ -43,7 +43,7 @@ konsumsi_SOC = jarak_energi / jangkauan_efektif × 100%
 Jarak dan durasi feri tetap disimpan sebagai bagian perjalanan. Konsumsi traksi
 selama pelayaran ditetapkan nol karena kendaraan tidak bergerak dengan motornya
 sendiri. Beban aksesori, AC, sentry mode, antrean di pelabuhan, idle sebelum
-boarding, dan pengisian di kapal tidak dimodelkan.
+boarding, dan layanan tambahan di kapal berada di luar model energi rute.
 
 ## Integrasi dengan graph dan Matrix
 

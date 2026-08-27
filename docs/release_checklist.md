@@ -27,7 +27,8 @@ pengambilan data penelitian tambahan.
 - [ ] Hasil historis diatribusikan ke aplikasi penghasilnya: baseline 0.9.2 dan
   sensitivitas 0.10.0, bukan kandidat analisis 0.18.0.
 - [ ] Hash `constraints.txt` cocok dengan manifest kandidat rilis.
-- [ ] Dokumentasi tidak mengklaim adanya estimasi waktu pengisian.
+- [ ] Dokumentasi mendefinisikan nilai waktu sebagai durasi perjalanan Google
+  Routes secara konsisten.
 - [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,
   kapasitas, atau akses kendaraan tanpa konfirmasi operator.
 - [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario kandidat
@@ -64,7 +65,7 @@ python -m flask --app run.py release-audit
 - [ ] Referensi API dan panduan pengguna sesuai dengan versi kandidat rilis.
 
 Command `release-audit` mencakup identitas versi/source, metadata dan dataset,
-dependency, konektor, ketiadaan waktu pengisian, parameter rute/graf, definisi
+dependency, konektor, definisi metrik temporal, parameter rute/graf, definisi
 skenario, manifest penelitian, snapshot terpantau, provenance run historis, dan
 hard limit. Item yang bergantung pada GitHub, arsip eksternal, deployment,
 Google Cloud, atau bukti hukum tetap diperiksa manual. Lihat

@@ -85,7 +85,8 @@ def test_combo2_defaults_and_ac_fallback_are_explained(client):
     assert "function updateConnectorCombinationNote" in source
     assert '"AC Type 2 fallback"' in source
     assert "route_selected_connector" in source
-    assert "waktu pengisian tidak dihitung" in source
+    assert "fallback; waktu" not in source.lower()
+    assert "fallback · waktu" not in source.lower()
 
 
 def test_stale_recommendation_is_invalidated_on_every_input_family():

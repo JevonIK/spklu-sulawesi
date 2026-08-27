@@ -66,8 +66,8 @@ ketersediaan kepada pengelola.
 
 Badge **AC Type 2 fallback** berarti kendaraan Combo 2 tidak memperoleh
 itinerary CCS2 penuh dan sedikitnya satu stop memakai AC Type 2. Sistem
-memprioritaskan CCS2 sebelum fallback ini, tetapi tidak menghitung waktu
-pengisian; durasi berhenti dapat jauh lebih lama.
+memprioritaskan CCS2 sebelum fallback ini. Pengguna perlu memeriksa daya,
+kabel, dan kebutuhan berhenti di lokasi terpilih.
 
 Badge **Feri kondisional** berarti Google mendeteksi sedikitnya satu
 penyeberangan. Ringkasan memisahkan jarak darat dan jarak feri; SOC hanya
@@ -75,8 +75,7 @@ berkurang pada jarak darat. Pengguna tetap wajib memeriksa apakah kapal menerima
 mobil, jadwal keberangkatan, cuaca, antrean, dan kapasitas aktual. Sistem tidak
 menyediakan booking atau status kapal real-time.
 
-Pengisian dari SOC tiba menuju SOC berangkat dimodelkan sebagai perubahan state.
-Sistem tidak menghitung lama pengisian.
+Perubahan dari SOC tiba menuju SOC berangkat dimodelkan sebagai transisi state.
 
 Hasil **Rute aman belum ditemukan** bukan selalu error aplikasi. Status ini
 berarti graf tidak memiliki rangkaian leg yang memenuhi jangkauan, SOC minimum,
@@ -90,7 +89,7 @@ kendaraan aktual.
 - **Jangkauan maksimum** adalah jarak nominal kendaraan saat baterai 100%.
 - **SOC minimum** adalah batas tiba terendah yang diizinkan model.
 - **Target SOC** adalah batas maksimum keberangkatan yang dievaluasi setelah
-  berhenti di SPKLU, bukan estimasi waktu pengisian.
+  berhenti di SPKLU; durasi perjalanan ditampilkan sebagai metrik terpisah.
 - **Jenis konektor** dapat dipilih lebih dari satu. Sistem mempertimbangkan
   SPKLU yang mendukung sedikitnya satu konektor pilihan.
 - **Jaringan charger tambahan** dapat dipilih lebih dari satu. Pilihan ini tidak
@@ -121,7 +120,7 @@ Dasar pemilihan dan batas interpretasinya tersedia di
 | Tombol pencarian tetap nonaktif | pilih lokasi awal dan tujuan dari daftar saran Google; teks yang hanya diketik belum menyimpan koordinat |
 | Tombol nonaktif setelah lokasi dipilih | pastikan sedikitnya satu checkbox konektor masih dicentang |
 | Wuling tidak masuk ketika CCS2 dipilih | lokasi Wuling pada dataset memakai GB/T; pilih GB/T hanya jika kendaraan benar-benar kompatibel |
-| Hasil menampilkan AC Type 2 fallback | tidak ada itinerary terpilih yang seluruh stop-nya memakai CCS2; konfirmasi daya/kabel dan siapkan waktu pengisian karena durasinya tidak dihitung |
+| Hasil menampilkan AC Type 2 fallback | tidak ada itinerary terpilih yang seluruh stop-nya memakai CCS2; konfirmasi daya, kabel, dan kebutuhan berhenti sebelum perjalanan |
 | Saran lokasi gelap/tidak terbaca | muat ulang aset aplikasi terbaru; widget dipaksa memakai skema warna terang |
 | Rute terlihat tetapi petunjuk awal masih menutupi peta | muat ulang aset JavaScript terbaru; overlay semestinya hilang saat rute tersedia |
 | Peta menampilkan authorization error | tambahkan origin lengkap termasuk port ke website restriction |

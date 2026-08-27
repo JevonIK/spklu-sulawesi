@@ -113,7 +113,6 @@ def test_health_endpoint_reports_dataset(client):
         payload["data"]["optimizer"]["algorithm"]
         == "dynamic_programming_soc"
     )
-    assert payload["data"]["optimizer"]["charging_time_included"] is False
     assert payload["data"]["google_maps"]["browser_key_configured"] is True
     assert payload["data"]["google_maps"]["server_key_configured"] is True
     assert (

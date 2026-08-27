@@ -22,7 +22,7 @@ diunduh serta diperiksa.
 | Schema skenario / laporan baru | 4 / 5 |
 | Mode rute | `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY` |
 | Margin lower bound geodesik | 1% |
-| Estimasi waktu pengisian | Tidak termasuk |
+| Metrik temporal | Durasi perjalanan Google Routes |
 | Penyeberangan feri | Terdeteksi generik; jarak feri tidak mengurangi SOC; akses kendaraan kondisional |
 | Python didukung | 3.11, 3.12, 3.13, 3.14 |
 | Runtime container kandidat | Python 3.14 standar |

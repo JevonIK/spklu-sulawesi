@@ -2,9 +2,9 @@
 
 ## Tujuan
 
-Google Routes API menyediakan jarak jalan, durasi berkendara, dan polyline untuk
-pipeline rekomendasi. API ini tidak menghitung waktu pengisian. Seluruh
-perhitungan energi tetap dilakukan oleh model SOC lokal.
+Google Routes API menyediakan jarak jalan, durasi perjalanan, dan polyline untuk
+pipeline rekomendasi. Seluruh perhitungan energi tetap dilakukan oleh model SOC
+lokal.
 
 ## Alur permintaan
 

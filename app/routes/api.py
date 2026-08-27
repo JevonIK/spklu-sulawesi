@@ -2,7 +2,6 @@
 
 from flask import Blueprint, current_app, jsonify, request
 
-from ..constants import CHARGING_TIME_INCLUDED
 from ..services.google_routes import ApiQuotaBudgetExceeded, GoogleRoutesError
 from ..services.recommendation import (
     RecommendationQuotaError,
@@ -40,7 +39,6 @@ def health():
             "optimizer": {
                 "status": "ready",
                 "algorithm": "dynamic_programming_soc",
-                "charging_time_included": CHARGING_TIME_INCLUDED,
             },
             "google_maps": {
                 "browser_key_configured": bool(

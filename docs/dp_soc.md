@@ -79,7 +79,8 @@ Jika data durasi belum tersedia pada graf, seluruh optimasi menggunakan total
 jarak jalan sebagai objective utama. Mode objective selalu dicantumkan pada hasil,
 sehingga eksperimen tidak mencampur satuan waktu dan jarak secara tersembunyi.
 
-Estimasi waktu pengisian, kapasitas baterai, dan daya charger tidak digunakan.
+Kapasitas baterai dan daya charger tidak digunakan. Objektif temporal memakai
+durasi perjalanan Google Routes dan tidak mengubah persentase SOC menjadi menit.
 
 ## Verifikasi optimizer
 

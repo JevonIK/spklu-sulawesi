@@ -64,7 +64,7 @@ DP. Karena itu hasil tidak membuktikan 20 km sebagai optimum unik.
 - Estimator graf bergantung pada progres terhadap satu rute dasar.
 - Jumlah estimated edge detour dapat berbeda dari selisih rute final.
 - Cap tidak berasal dari survei toleransi detour pengguna Sulawesi.
-- Cap tidak memasukkan waktu pengisian, antrean, atau waktu tunggu feri.
+- Cap bersifat geometris dan tidak memasukkan antrean atau waktu tunggu feri.
 - Rute lebih pendek daripada rute dasar memperoleh detour nol.
 
 Dengan batas tersebut, klaim yang aman adalah bahwa sistem menerapkan kebijakan

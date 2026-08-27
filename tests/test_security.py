@@ -62,7 +62,6 @@ def test_legal_pages_are_public_and_linked_from_home(client):
     assert b"Pemberitahuan privasi" in privacy.data
     assert terms.status_code == 200
     assert b"Ketentuan penggunaan" in terms.data
-    assert b"Estimasi waktu pengisian tidak termasuk" in terms.data
     assert b"kapal beroperasi dan menerima mobil" in terms.data
 
 

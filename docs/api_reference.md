@@ -109,9 +109,10 @@ rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
 `public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
 status kondisional berarti sedikitnya satu charger dealer, fallback AC Type 2,
 atau penyeberangan feri dipakai. `route_access.ac_fallback_stop_count` dan field
-station `route_selected_connector` menjelaskan fallback. `route_access.ferry` memuat status,
-jumlah segmen, jarak, durasi, serta penanda bahwa dukungan kendaraan harus
-dikonfirmasi kepada operator. Waktu pengisian tidak dilaporkan.
+station `route_selected_connector` menjelaskan fallback. `route_access.ferry`
+memuat status, jumlah segmen, jarak, durasi, serta penanda bahwa dukungan
+kendaraan harus dikonfirmasi kepada operator. Nilai waktu merepresentasikan
+durasi perjalanan Google Routes.
 Request ternormalisasi memuat `max_total_detour_km`. Statistik optimizer memuat
 `detour_pruned_transitions`; hasil yang kehilangan seluruh jalur karena cap
 menggunakan reason `detour_infeasible`.

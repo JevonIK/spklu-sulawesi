@@ -121,7 +121,6 @@ def _experiment_provenance(scenarios, service):
             "geodesic_lower_bound_margin_ratio": (
                 GEODESIC_LOWER_BOUND_MARGIN_RATIO
             ),
-            "charging_time_included": False,
         },
         "environment": {
             "python": platform.python_version(),

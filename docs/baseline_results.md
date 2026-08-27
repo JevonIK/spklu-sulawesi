@@ -27,8 +27,8 @@ Usable range awal dan setelah pengisian sampai target sama-sama 162 km:
 ```
 
 Enam skenario dibagi menjadi dua batch yang masing-masing berisi tiga skenario,
-dengan jeda 61 detik setelah batch pertama. Estimasi waktu pengisian tidak
-dihitung; seluruh nilai waktu pada dokumen ini adalah waktu berkendara.
+dengan jeda 61 detik setelah batch pertama. Seluruh nilai waktu pada dokumen ini
+adalah durasi perjalanan Google Routes.
 
 Laporan historis tidak merekam `route_sample_step_km`. Definisi skenario schema 2
 saat ini menetapkan 5 km untuk run baru, tetapi nilai itu tidak digunakan untuk
@@ -55,8 +55,8 @@ perhentian pada skenario feasible adalah 1,0.
 ### Sulawesi Selatan
 
 1. Lokasi awal → SPKLU LAGOTA CAFE: 155,819 km; SOC 80% → 22,29%.
-2. Pengisian dimodelkan dari 22,29% menjadi 80%. Tidak ada waktu pengisian yang
-   dihitung.
+2. Perubahan SOC pada pemberhentian dimodelkan dari 22,29% menjadi 80%, sedangkan
+   metrik temporal menggunakan durasi perjalanan Google Routes.
 3. SPKLU LAGOTA CAFE → lokasi tujuan: 161,112 km; SOC 80% → 20,33%.
 
 Total detour estimator adalah 0,342 km. Kandidat 15 node menghasilkan 14 node

@@ -146,9 +146,9 @@ Dataset kandidat mencatat:
 | Union CCS2 + AC Type 2 | 114 |
 
 Kombinasi tersebut merepresentasikan kendaraan Combo 2 lebih baik daripada
-CCS2-only. Optimizer mendahulukan CCS2 dan memakai AC Type 2 sebagai fallback
-karena sistem tidak menghitung waktu pengisian. Prioritas CCS2 adalah kebijakan
-operasional, belum hasil connector-sensitivity live.
+CCS2-only. Optimizer mendahulukan CCS2 dan memakai AC Type 2 sebagai fallback.
+Prioritas CCS2 adalah kebijakan operasional, belum hasil connector-sensitivity
+live.
 
 ## 7. Hard cap total detour 20 km
 
