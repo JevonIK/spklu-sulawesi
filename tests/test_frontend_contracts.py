@@ -312,3 +312,11 @@ def test_primary_interface_uses_plain_language_and_valid_legal_tokens(client):
     assert referenced_properties <= defined_properties
     assert ".service-state span:last-child" not in css
     assert 'gestureHandling: "cooperative"' in _javascript()
+    assert "right: clamp(78px, 7vw, 100px);" in css
+    assert "align-items: center;" in _between(
+        css,
+        ".method-strip span {",
+        ".method-strip span + span",
+    )
+    mobile_method_strip = css.rsplit(".method-strip {", maxsplit=1)[1]
+    assert "bottom: 78px;" in mobile_method_strip

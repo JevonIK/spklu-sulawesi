@@ -3,7 +3,7 @@
   "analysis_release": {
     "application_version": "0.18.0",
     "source_scope": "application-runtime-v2",
-    "source_sha256": "9a91f22e3f59c80c24f88eff015444633430baac08f9db92bbb4fcb185156dbb"
+    "source_sha256": "044a25c9163d47e946465fb5820d0a82c9eed5879d8d9b7d3e7d61703c6d3c71"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",

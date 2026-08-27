@@ -854,12 +854,13 @@ fieldset {
 
 .method-strip {
     position: absolute;
-    right: clamp(20px, 4vw, 52px);
-    bottom: 27px;
+    right: clamp(78px, 7vw, 100px);
+    bottom: 24px;
     left: clamp(20px, 4vw, 52px);
     z-index: 2;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    align-items: stretch;
     overflow: hidden;
     border: 1px solid rgba(7, 29, 43, 0.08);
     border-radius: 15px;
@@ -869,9 +870,15 @@ fieldset {
 }
 
 .method-strip span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 48px;
     padding: 15px 18px;
     color: var(--navy-800);
     font-size: 0.74rem;
+    line-height: 1.3;
     text-align: center;
 }
 
@@ -880,7 +887,7 @@ fieldset {
 }
 
 .method-strip strong {
-    margin-right: 6px;
+    flex: 0 0 auto;
     color: var(--teal-600);
 }
 
@@ -1106,7 +1113,7 @@ fieldset {
 
     .method-strip {
         right: 14px;
-        bottom: 25px;
+        bottom: 78px;
         left: 14px;
     }
 
