@@ -662,7 +662,8 @@ class RecommendationService:
         if not optimization_payload.get("feasible"):
             return {
                 "status": "not_applicable",
-                "conditional": ferry_summary["contains_ferry"],
+                "conditional": False,
+                "conditional_reasons": [],
                 "conditional_stop_count": 0,
                 "conditional_stops": [],
                 "ac_fallback_stop_count": 0,
@@ -731,11 +732,12 @@ class RecommendationService:
                 )
 
         ferry_conditional = ferry_summary["contains_ferry"]
-        conditional = (
-            bool(conditional_stops)
-            or bool(ac_fallback_stops)
-            or ferry_conditional
-        )
+        conditional_reasons = []
+        if conditional_stops:
+            conditional_reasons.append("dealer_charger")
+        if ferry_conditional:
+            conditional_reasons.append("ferry")
+        conditional = bool(conditional_reasons)
         notices = []
         if conditional_stops:
             notices.append(
@@ -761,6 +763,7 @@ class RecommendationService:
         return {
             "status": "conditional" if conditional else "public",
             "conditional": conditional,
+            "conditional_reasons": conditional_reasons,
             "conditional_stop_count": len(conditional_stops),
             "conditional_stops": conditional_stops,
             "preferred_connector": recommendation_input.preferred_connector,

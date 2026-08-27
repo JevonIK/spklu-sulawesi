@@ -1064,15 +1064,15 @@ function renderRecommendation(data) {
             ? ferry
                 ? "Feri kondisional"
                 : "Tanpa pengisian"
-            : acFallback
-                ? "AC Type 2 fallback"
             : conditional
                 ? "Rute kondisional"
+            : acFallback
+                ? "AC Type 2 fallback"
                 : "Rute publik";
     elements.resultsTitle.textContent = feasible
         ? "Rute perjalanan ditemukan"
         : "Rute aman belum ditemukan";
-    elements.resultMessage.textContent = conditional
+    elements.resultMessage.textContent = conditional || acFallback
         ? `${data.optimization.message} ${data.route_access.notice}`
         : data.optimization.message;
     elements.itinerarySection.hidden = !feasible;
@@ -1090,7 +1090,9 @@ function renderRecommendation(data) {
                     : "Rekomendasi selesai. Kendaraan dapat mencapai tujuan tanpa berhenti untuk mengisi baterai."
                 : conditional
                     ? "Rekomendasi selesai dengan akses kondisional. Baca peringatan feri atau charger dealer sebelum berangkat."
-                    : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
+                    : acFallback
+                        ? "Rekomendasi selesai. Rute memakai SPKLU publik dengan AC Type 2 fallback."
+                        : "Rekomendasi selesai. Rute publik dan rincian SOC telah diperbarui."
             : "Perhitungan selesai, tetapi tidak ditemukan rangkaian SPKLU yang memenuhi batas SOC.",
         feasible && !conditional ? "success" : "warning",
     );

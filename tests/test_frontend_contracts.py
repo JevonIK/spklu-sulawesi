@@ -247,6 +247,8 @@ def test_infeasible_is_warning_and_direct_route_needs_no_charger():
     assert 'feasible && !conditional ? "success" : "warning"' in rendering
     assert '"Tanpa pengisian"' in rendering
     assert '"Feri kondisional"' in rendering
+    assert 'conditional || acFallback' in rendering
+    assert "Rute memakai SPKLU publik dengan AC Type 2 fallback" in rendering
     assert '"Tidak perlu SPKLU"' in summary
     assert '"Jarak feri"' in summary
     assert '"Durasi feri"' in summary

@@ -61,7 +61,7 @@ prediktif.
 
 Badge **Rute publik** berarti seluruh pemberhentian pengisian yang dipilih
 algoritma berasal dari SPKLU publik. Badge **Rute kondisional** berarti rute
-mengandalkan sedikitnya satu charger dealer, fallback AC Type 2, atau feri.
+mengandalkan sedikitnya satu charger dealer atau feri.
 Untuk charger dealer, pengguna wajib memastikan izin, jam operasional, dan
 ketersediaan kepada pengelola.
 
@@ -69,6 +69,7 @@ Badge **AC Type 2 fallback** berarti kendaraan Combo 2 tidak memperoleh
 itinerary CCS2 penuh dan sedikitnya satu stop memakai AC Type 2. Sistem
 memprioritaskan CCS2 sebelum fallback ini. Pengguna perlu memeriksa daya,
 kabel, dan kebutuhan berhenti di lokasi terpilih.
+Fallback pada SPKLU publik tetap memiliki status akses **Rute publik**.
 
 Aturan tersebut hanya aktif ketika pilihan konektor tepat CCS2 + AC Type 2.
 Apabila pengguna memilih kombinasi lain, misalnya AC Type 2 + CHAdeMO, sistem

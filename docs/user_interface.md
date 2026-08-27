@@ -46,8 +46,9 @@ Nilai waktu pada antarmuka menunjukkan durasi perjalanan Google Routes.
    sebelum hasil ditampilkan. Ringkasan menampilkan detour total final, statistik
    membandingkannya dengan hard cap, dan setiap leg menampilkan estimasi detour
    berbasis Route Matrix serta progres rute dasar.
-11. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
-    peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
+11. Rute yang memakai charger dealer atau feri diberi badge **Rute
+    kondisional** dan peringatan konfirmasi akses. AC Type 2 fallback pada SPKLU
+    publik tetap berstatus **Rute publik** dan ditandai terpisah.
 12. Untuk kombinasi Combo 2, optimizer meminimalkan jumlah stop AC-only sebelum
     biaya perjalanan. Stop AC Type 2 hanya menjadi fallback dan diberi label
     yang membedakannya dari konektor CCS2 yang diprioritaskan.

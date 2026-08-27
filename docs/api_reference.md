@@ -111,9 +111,11 @@ Objek `data` mencakup request ternormalisasi, parameter energi, rute dasar,
 jumlah kandidat sebelum/sesudah filter jaringan, statistik graf, hasil DP, rute
 rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
 `public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
-status kondisional berarti sedikitnya satu charger dealer, fallback AC Type 2,
-atau penyeberangan feri dipakai. `route_access.ac_fallback_stop_count` dan field
-station `route_selected_connector` menjelaskan fallback. Untuk kombinasi netral,
+status kondisional berarti sedikitnya satu charger dealer atau penyeberangan
+feri dipakai. Penyebab eksplisit tersedia pada `conditional_reasons` dengan
+nilai `dealer_charger` dan/atau `ferry`. AC Type 2 fallback pada SPKLU publik
+tidak mengubah status akses; `route_access.ac_fallback_stop_count` dan field
+station `route_selected_connector` menjelaskannya secara terpisah. Untuk kombinasi netral,
 `route_selected_connector` dapat bernilai `null` dan seluruh pilihan pada
 `route_compatible_connectors` berstatus kompatibel setara. `route_access.ferry`
 memuat status, jumlah segmen, jarak, durasi, serta penanda bahwa dukungan

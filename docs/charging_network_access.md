@@ -62,15 +62,18 @@ seluruhnya memakai GB/T. SPKLU publik CCS2 tetap dipertimbangkan. Sistem tidak
 menambahkan GB/T secara otomatis.
 
 Rute diberi status `conditional` hanya apabila itinerary yang akhirnya dipilih
-benar-benar menggunakan charger dealer. Mencentang jaringan dealer tanpa
-memakainya tidak mengubah rute publik menjadi kondisional.
+benar-benar menggunakan charger dealer atau feri. Mencentang jaringan dealer
+atau mengizinkan feri tanpa memakainya tidak mengubah rute publik menjadi
+kondisional. Pemakaian AC Type 2 fallback pada SPKLU publik juga tidak mengubah
+status akses.
 
 ## Interpretasi hasil
 
 - **Rute publik**: seluruh pemberhentian pengisian yang dipilih menggunakan unit
   publik yang kompatibel.
 - **Rute kondisional**: sedikitnya satu pemberhentian menggunakan unit jaringan
-  dealer. Pengguna wajib memeriksa izin, jam operasional, dan ketersediaannya.
+  dealer atau rute memakai feri. Pengguna wajib memeriksa izin, jam operasional,
+  ketersediaan, atau layanan kendaraan kepada pengelola terkait.
 
 Status tersebut tidak menggantikan pemeriksaan kondisi nyata, antrean, gangguan
 charger, ataupun batas keselamatan kendaraan.

@@ -505,6 +505,7 @@ def test_ferry_pipeline_keeps_soc_constant_over_sea_and_marks_route_conditional(
     assert itinerary["legs"][0]["consumption_soc_percent"] == pytest.approx(52)
     assert result["route_access"]["conditional"] is True
     assert result["route_access"]["status"] == "conditional"
+    assert result["route_access"]["conditional_reasons"] == ["ferry"]
     assert result["route_access"]["ferry"]["segment_count"] == 1
     assert "konfirmasi jadwal" in result["route_access"]["notice"]
 
@@ -554,6 +555,9 @@ def test_dealer_station_requires_network_selection_and_marks_conditional_route()
 
     assert conditional_result["optimization"]["feasible"] is True
     assert conditional_result["route_access"]["conditional"] is True
+    assert conditional_result["route_access"]["conditional_reasons"] == [
+        "dealer_charger"
+    ]
     assert conditional_result["route_access"]["conditional_stop_count"] == 1
     stop = conditional_result["optimization"]["itinerary"]["charging_stops"][0]
     assert stop["station"]["route_charging_network"] == "WULING"
@@ -575,7 +579,9 @@ def test_combo2_route_marks_ac_type2_only_stop_as_fallback():
     result = service.recommend(service.parse_input(body))
 
     assert result["optimization"]["feasible"] is True
-    assert result["route_access"]["conditional"] is True
+    assert result["route_access"]["conditional"] is False
+    assert result["route_access"]["status"] == "public"
+    assert result["route_access"]["conditional_reasons"] == []
     assert result["route_access"]["ac_fallback_stop_count"] == 1
     assert result["route_access"]["notice"] == (
         "Rute memakai AC Type 2 sebagai fallback karena itinerary CCS2 penuh "
