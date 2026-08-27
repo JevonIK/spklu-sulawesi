@@ -254,7 +254,10 @@ def test_infeasible_is_warning_and_direct_route_needs_no_charger():
     assert 'ferryCard.setAttribute("role", "note")' in source
     assert ".ferry-card" in css
     assert ".form-status.is-warning" in css
-    assert '"Batas total detour"' in source
+    assert 'summaryItem("Detour total", formatDistance(itinerary.total_detour_km))' in summary
+    assert '"Detour total"' in source
+    assert "dari batas" in source
+    assert "Estimasi detour" in source
     assert '"Transisi dipangkas oleh batas detour"' in source
 
 

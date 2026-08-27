@@ -46,6 +46,7 @@ halaman.
 Hasil **Rute aman ditemukan** menampilkan:
 
 - jarak darat, jarak feri jika ada, dan waktu perjalanan;
+- detour total final serta estimasi detour setiap leg;
 - jumlah perhentian;
 - SOC akhir;
 - urutan leg dan SPKLU;

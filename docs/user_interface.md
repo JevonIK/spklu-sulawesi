@@ -43,7 +43,9 @@ Nilai waktu pada antarmuka menunjukkan durasi perjalanan Google Routes.
 10. Rute feasible ditampilkan dengan marker SPKLU dan rincian SOC; petunjuk awal
    di tengah peta disembunyikan segera setelah data rute tersedia. Jika rute
    feasible, SOC setiap leg rute yang ditampilkan harus lolos validasi ulang
-   sebelum hasil ditampilkan.
+   sebelum hasil ditampilkan. Ringkasan menampilkan detour total final, statistik
+   membandingkannya dengan hard cap, dan setiap leg menampilkan estimasi detour
+   berbasis Route Matrix serta progres rute dasar.
 11. Rute yang memakai charger dealer diberi badge **Rute kondisional** dan
     peringatan konfirmasi akses pada hasil serta kartu pemberhentian.
 12. Untuk kombinasi Combo 2, optimizer meminimalkan jumlah stop AC-only sebelum

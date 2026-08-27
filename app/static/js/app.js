@@ -821,6 +821,7 @@ function renderSummary(data) {
         const items = [
             summaryItem("Jarak darat", formatDistance(itinerary.total_energy_distance_km)),
             summaryItem("Durasi perjalanan", formatDuration(itinerary.total_travel_duration_minutes)),
+            summaryItem("Detour total", formatDistance(itinerary.total_detour_km)),
             summaryItem("Pemberhentian SPKLU", String(itinerary.charging_stop_count)),
             summaryItem("SOC tiba tujuan", formatPercent(itinerary.final_soc_percent)),
             summaryItem(
@@ -902,7 +903,8 @@ function renderItinerary(data) {
         const distanceLabel = leg.contains_ferry
             ? `Darat ${formatDistance(leg.energy_distance_km)} + feri ${formatDistance(leg.ferry_distance_km)}`
             : formatDistance(leg.road_distance_km);
-        metadata.textContent = `${distanceLabel} · ${formatDuration(leg.road_duration_minutes)} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
+        const estimatedDetourLabel = `Estimasi detour ${formatDistance(leg.estimated_detour_km)}`;
+        metadata.textContent = `${distanceLabel} · ${formatDuration(leg.road_duration_minutes)} · ${estimatedDetourLabel} · SOC ${formatPercent(leg.departure_soc_percent)} → ${formatPercent(leg.arrival_soc_percent)}`;
         copy.append(title, metadata);
 
         if (leg.contains_ferry) {
@@ -960,14 +962,20 @@ function renderDiagnostics(data) {
     const graph = data.graph;
     const stats = data.optimization.stats;
     const usage = data.api_usage;
+    const totalDetour = data.optimization.itinerary?.total_detour_km;
+    const detourAgainstLimit = totalDetour !== null
+        && totalDetour !== undefined
+        && Number.isFinite(Number(totalDetour))
+        ? `${formatDistance(totalDetour)} dari batas ${formatDistance(data.request.max_total_detour_km)}`
+        : `Belum tersedia · batas ${formatDistance(data.request.max_total_detour_km)}`;
     const pairs = [
         ...diagnosticPair("Kandidat dalam koridor", data.candidate_summary.corridor_candidate_count),
         ...diagnosticPair("Kandidat sebelum filter jaringan", data.candidate_summary.connector_candidate_count),
         ...diagnosticPair("Node graf", graph.node_count),
         ...diagnosticPair("Edge graf diterima", graph.edge_count),
         ...diagnosticPair(
-            "Batas total detour",
-            formatDistance(data.request.max_total_detour_km),
+            "Detour total",
+            detourAgainstLimit,
         ),
         ...diagnosticPair(
             "Transisi dipangkas oleh batas detour",
