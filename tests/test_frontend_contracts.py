@@ -65,6 +65,13 @@ def test_dynamic_connector_counts_follow_selected_networks(client):
     assert "allow_ferries: Boolean(elements.allowFerries?.checked)" in _javascript()
 
 
+def test_header_readiness_status_uses_user_facing_copy_without_dataset_count():
+    source = _javascript()
+
+    assert 'setServiceState("ready", "Sistem siap digunakan")' in source
+    assert "Siap · ${locationCount} data" not in source
+
+
 def test_combo2_defaults_and_ac_fallback_are_explained(client):
     html = client.get("/").get_data(as_text=True)
     source = _javascript()
@@ -186,9 +193,9 @@ def test_initialization_checks_health_before_consuming_a_map_load():
         "\ninitializeApplication();",
     )
 
-    health = "const health = await checkServiceHealth();"
+    health = "await checkServiceHealth();"
     maps = "await initializeMapsInterface();"
-    ready = 'setServiceState(\n            "ready"'
+    ready = 'setServiceState("ready", "Sistem siap digunakan");'
     assert health in initialization
     assert maps in initialization
     assert initialization.index(health) < initialization.index(maps)

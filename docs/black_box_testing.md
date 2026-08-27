@@ -40,7 +40,7 @@ client dan layanan rute deterministik; tidak ada request ke Google Maps API.
 Setelah test otomatis lulus, jalankan aplikasi lokal dan periksa:
 
 1. layout desktop dan mobile tidak mengalami overflow;
-2. status sistem berubah dari `Memeriksa sistem` menjadi `Sistem siap`;
+2. status sistem berubah dari `Memeriksa server` menjadi `Sistem siap digunakan`;
 3. autocomplete origin/destination dapat dipilih;
 4. input angka dan satu atau beberapa checkbox konektor dapat diubah;
 5. pilihan jaringan dealer menampilkan peringatan apabila konektornya tidak

@@ -8,7 +8,7 @@
 4. Jalankan `python run.py`.
 5. Buka `http://127.0.0.1:5000`.
 
-Status **Sistem siap** berarti dataset, browser Maps, dan endpoint rekomendasi
+Status **Sistem siap digunakan** berarti dataset, browser Maps, dan endpoint rekomendasi
 telah tersedia. Jika formulir tetap nonaktif, baca pesan status dan bagian
 troubleshooting di bawah.
 

@@ -1194,7 +1194,7 @@ async function initializeApplication() {
     updateNetworkCompatibilityNote();
     try {
         setServiceState("checking", "Memeriksa server");
-        const health = await checkServiceHealth();
+        await checkServiceHealth();
         setServiceState("checking", "Memuat peta");
         await initializeMapsInterface();
         state.interfaceReady = true;
@@ -1203,13 +1203,7 @@ async function initializeApplication() {
             autocomplete.disabled = false;
         });
         updateSubmitAvailability();
-        const locationCount = health.dataset?.logical_nodes;
-        setServiceState(
-            "ready",
-            Number.isInteger(locationCount)
-                ? `Siap · ${locationCount} data`
-                : "Siap",
-        );
+        setServiceState("ready", "Sistem siap digunakan");
         setFormStatus(
             "Sistem siap. Pilih lokasi awal dan tujuan dari daftar saran Google; tombol pencarian akan aktif setelah keduanya tersimpan.",
             "success",
