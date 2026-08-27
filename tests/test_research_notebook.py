@@ -46,6 +46,14 @@ def test_research_notebook_runs_all_code_cells_offline(monkeypatch):
     assert validation["baseline_error_count"] == 0
     assert validation["sensitivity_error_count"] == 0
     assert validation["ferry_distance_consumes_soc"] is False
+    assert (
+        validation["combo2_connector_policy"]
+        == "combo2_ccs2_primary_ac_type2_fallback"
+    )
+    assert (
+        validation["neutral_multi_connector_policy"]
+        == "selected_connectors_equal"
+    )
     assert validation["analysis_application_version"] == "0.18.0"
     assert validation["baseline_source_application_version"] == "0.9.2"
     assert validation["sensitivity_source_application_version"] == "0.10.0"

@@ -62,8 +62,10 @@ ulang SOC dari setiap leg rute final, serta bukti CI yang dapat diunduh. Contain
 CI juga dijalankan dengan root filesystem read-only dan source aplikasi yang
 tidak dapat ditulis oleh user runtime.
 Fase 16 menetapkan kendaraan referensi Combo 2: CCS2 menjadi pilihan utama dan
-AC Type 2 menjadi fallback yang selalu ditandai secara eksplisit. Jangkauan
-awal 430 km diturunkan secara deterministik dari median
+AC Type 2 menjadi fallback yang selalu ditandai secara eksplisit hanya ketika
+keduanya merupakan pilihan tepat pengguna. Kombinasi multi-konektor lain
+diperlakukan setara tanpa ranking implisit. Jangkauan awal 430 km diturunkan
+secara deterministik dari median
 tujuh model-family WLTP resmi Indonesia (433 km, dibulatkan ke 10 km), dengan
 skenario sensitivitas 200/300/400/500 km dan konektor terpisah untuk run baru.
 Fase 17 menambahkan hard cap total detour 20 km yang diturunkan dari dua kali

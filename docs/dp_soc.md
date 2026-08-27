@@ -67,7 +67,8 @@ urutan leg, lokasi pengisian, SOC tiba, dan SOC berangkat.
 Kelayakan SOC merupakan constraint wajib. Solusi feasible dibandingkan secara
 leksikografis berdasarkan:
 
-1. jumlah pemberhentian AC Type 2 fallback;
+1. jumlah pemberhentian AC Type 2 fallback untuk profil tepat Combo 2; bernilai
+   nol untuk kombinasi multi-konektor netral;
 2. total waktu perjalanan Google (darat dan pelayaran, tanpa waktu tunggu
    jadwal feri);
 3. jumlah pemberhentian pengisian;

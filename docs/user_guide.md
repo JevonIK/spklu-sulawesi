@@ -69,6 +69,11 @@ itinerary CCS2 penuh dan sedikitnya satu stop memakai AC Type 2. Sistem
 memprioritaskan CCS2 sebelum fallback ini. Pengguna perlu memeriksa daya,
 kabel, dan kebutuhan berhenti di lokasi terpilih.
 
+Aturan tersebut hanya aktif ketika pilihan konektor tepat CCS2 + AC Type 2.
+Apabila pengguna memilih kombinasi lain, misalnya AC Type 2 + CHAdeMO, sistem
+memperlakukan keduanya setara. SPKLU multi-konektor menampilkan seluruh pilihan
+yang cocok sebagai **kompatibel**.
+
 Badge **Feri kondisional** berarti Google mendeteksi sedikitnya satu
 penyeberangan. Ringkasan memisahkan jarak darat dan jarak feri; SOC hanya
 berkurang pada jarak darat. Pengguna tetap wajib memeriksa apakah kapal menerima

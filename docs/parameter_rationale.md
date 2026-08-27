@@ -23,7 +23,7 @@ optimum ilmiah.
 | SOC minimum / target | 20% / 80% | A/B | kebijakan reserve dan partial charging yang evidence-informed |
 | SOC awal | 80% | C | kondisi awal referensi yang dapat diganti pengguna |
 | Maximum range | 430 km | B | median sampel WLTP model-family; bukan median penjualan Sulawesi |
-| Konektor | CCS2 + AC Type 2 | A/B | konfigurasi Combo 2 yang memperluas jaringan; prioritas CCS2 adalah policy |
+| Konektor | CCS2 + AC Type 2 | A/B | profil tepat Combo 2; kombinasi lain diperlakukan netral tanpa ranking implisit |
 | Hard cap total detour | 20 km | B | policy tengah `2 ×` radius; bukan optimum unik |
 | Radius koridor | 10 km | B | level tengah sensitivitas lokal; bukan radius optimum seluruh Sulawesi |
 
@@ -131,10 +131,11 @@ Karena sampel proyek tidak dibobot penjualan dan bukan data registrasi Sulawesi,
 
 ## 6. Konektor CCS2 + AC Type 2
 
-Combo 2 menggunakan bagian Type 2 untuk AC dan pin tambahan untuk DC. Penjelasan
-teknis tersedia pada
-[CharIN CCS FAQ](https://www.charin.global/faq-section/). Indonesia juga
-mengakui Type 2 AC dan combined charging configuration FF dalam
+Combo 2 menggunakan bagian Type 2 untuk AC dan pin tambahan untuk DC. Arsitektur
+ini dijelaskan dalam
+[CharIN CCS Design Guide](https://www.charin.global/media/pages/technology/ccs-specification/42a9d61e04-1626949173/design_guide_combined_charging_system_v7.pdf).
+Indonesia juga mengakui Type 2 AC, konektor DC konfigurasi AA, dan combined
+charging configuration FF dalam
 [Permen ESDM Nomor 1 Tahun 2023](https://jdih.esdm.go.id/dokumen/download?id=Permen+ESDM+Nomor+1+Tahun+2023.pdf).
 
 Dataset kandidat mencatat:
@@ -146,9 +147,34 @@ Dataset kandidat mencatat:
 | Union CCS2 + AC Type 2 | 114 |
 
 Kombinasi tersebut merepresentasikan kendaraan Combo 2 lebih baik daripada
-CCS2-only. Optimizer mendahulukan CCS2 dan memakai AC Type 2 sebagai fallback.
-Prioritas CCS2 adalah kebijakan operasional, belum hasil connector-sensitivity
-live.
+CCS2-only. Untuk **pilihan tepat** `{CCS2, AC Type 2}`, optimizer mendahulukan
+CCS2 dan memakai AC Type 2 sebagai fallback. Ini adalah kebijakan operasional
+berbasis arsitektur Combo 2, bukan ranking universal antarkonektor dan belum
+merupakan optimum empiris connector-sensitivity live.
+
+Tidak ada dasar yang cukup untuk menggunakan urutan penyimpanan dataset sebagai
+ranking AC Type 2, CCS2, CHAdeMO, dan GB/T. Regulasi menetapkan kompatibilitas
+serta kategori teknologi, bukan urutan preferensi. Literatur routing dengan
+teknologi pengisian heterogen juga membedakan teknologi melalui recharge rate
+dan biaya, bukan nama konektor semata
+([Bezzi et al., 2023](https://doi.org/10.1016/j.trc.2023.104374);
+[Keskin & Çatay, 2018](https://doi.org/10.1016/j.cor.2018.06.019)). Dataset
+penelitian belum memuat atribut daya per konektor yang diperlukan untuk membuat
+ranking semacam itu.
+
+Karena itu kebijakan runtime adalah:
+
+| Pilihan pengguna | Kebijakan |
+|---|---|
+| Satu konektor | konektor tersebut menjadi satu-satunya pilihan kompatibel |
+| Tepat CCS2 + AC Type 2 | CCS2 utama; AC Type 2 fallback |
+| Kombinasi multi-konektor lain | seluruh konektor kompatibel diperlakukan setara |
+
+Untuk kombinasi netral, optimizer memilih rute berdasarkan kelayakan SOC,
+durasi perjalanan, jumlah pemberhentian, detour, penambahan SOC, dan jarak.
+Apabila satu SPKLU menawarkan lebih dari satu konektor pilihan, seluruh konektor
+kompatibel ditampilkan tanpa label prioritas. Kebijakan ini mencegah urutan
+kanonis `CONNECTOR_ORDER` berubah menjadi asumsi ilmiah tersembunyi.
 
 ## 7. Hard cap total detour 20 km
 

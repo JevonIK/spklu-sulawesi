@@ -105,6 +105,17 @@ def test_release_manifest_rejects_unreviewed_detour_policy_change():
         validate_release_manifest(manifest)
 
 
+def test_release_manifest_rejects_missing_connector_preference_policy():
+    manifest = json.loads(Path("release_manifest.json").read_text())
+    del manifest["algorithm"]["neutral_multi_connector_policy"]
+
+    with pytest.raises(
+        ReleaseManifestError,
+        match="neutral_multi_connector_policy",
+    ):
+        validate_release_manifest(manifest)
+
+
 @pytest.mark.parametrize(
     "relative_path",
     [

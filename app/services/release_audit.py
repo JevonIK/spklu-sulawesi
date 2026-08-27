@@ -10,10 +10,13 @@ import sys
 from pathlib import Path
 
 from ..constants import (
+    COMBO2_CONNECTOR_POLICY,
+    COMBO2_CONNECTOR_SCOPE,
     FALLBACK_RESEARCH_CONNECTOR,
     DETOUR_REFERENCE_MULTIPLIER,
     DETOUR_SENSITIVITY_LEVELS_KM,
     PREFERRED_RESEARCH_CONNECTOR,
+    NEUTRAL_CONNECTOR_POLICY,
     REFERENCE_MAXIMUM_RANGE_KM,
     REFERENCE_MAX_TOTAL_DETOUR_KM,
     RESEARCH_CONNECTORS,
@@ -218,6 +221,9 @@ def validate_release_manifest(manifest):
         )
     _text(algorithm, "preferred_connector", "root.algorithm")
     _text(algorithm, "fallback_connector", "root.algorithm")
+    _text(algorithm, "connector_preference_scope", "root.algorithm")
+    _text(algorithm, "connector_preference_policy", "root.algorithm")
+    _text(algorithm, "neutral_multi_connector_policy", "root.algorithm")
     reference_range = algorithm.get("reference_maximum_range_km")
     if (
         isinstance(reference_range, bool)
@@ -673,6 +679,24 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
         "algorithm.fallback_connector",
         algorithm["fallback_connector"],
         FALLBACK_RESEARCH_CONNECTOR,
+    )
+    _add_check(
+        checks,
+        "algorithm.connector_preference_scope",
+        algorithm["connector_preference_scope"],
+        COMBO2_CONNECTOR_SCOPE,
+    )
+    _add_check(
+        checks,
+        "algorithm.connector_preference_policy",
+        algorithm["connector_preference_policy"],
+        COMBO2_CONNECTOR_POLICY,
+    )
+    _add_check(
+        checks,
+        "algorithm.neutral_multi_connector_policy",
+        algorithm["neutral_multi_connector_policy"],
+        NEUTRAL_CONNECTOR_POLICY,
     )
     _add_check(
         checks,

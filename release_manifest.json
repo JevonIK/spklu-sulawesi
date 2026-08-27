@@ -3,7 +3,7 @@
   "application_version": "0.18.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "39774ae0ecc0f075dfc10e6fb86308779712f5dafe2a5094562e64966cbd2263"
+    "sha256": "b84b62acfa72a22fe03ac543422010ba406382fd56f0944620b6711be84cd0d2"
   },
   "supported_python_versions": [
     "3.11",
@@ -36,6 +36,9 @@
     ],
     "preferred_connector": "CCS2",
     "fallback_connector": "AC TYPE 2",
+    "connector_preference_scope": "exact_combo2_connector_set",
+    "connector_preference_policy": "combo2_ccs2_primary_ac_type2_fallback",
+    "neutral_multi_connector_policy": "selected_connectors_equal",
     "reference_maximum_range_km": 430,
     "range_reference": {
       "path": "research/vehicle_range_reference.json",
@@ -91,7 +94,7 @@
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "c65b2795eb9e12aa3c58bd4f3341509a5ada48cae150b8771c6802075d77171c"
+    "sha256": "8a08e1655501b51957856dbb7e52549a219939e69242f2884ddc06b6f1252ac2"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

@@ -4,7 +4,8 @@ Dokumen ini menjadi checklist agar implementasi, eksperimen, dan naskah tugas
 akhir memakai ruang lingkup yang sama. Instruksi terbaru pemilik penelitian
 menjadi acuan: aplikasi umum mendukung seluruh konektor pada dataset, sedangkan
 eksperimen kandidat memakai kendaraan Combo 2 dengan prioritas CCS2 dan fallback
-AC Type 2; kapasitas kendaraan dinyatakan
+AC Type 2 hanya untuk pilihan tepat kedua konektor; kombinasi multi-konektor
+lain diperlakukan setara. Kapasitas kendaraan dinyatakan
 dalam jangkauan maksimum (km), unit pada koordinat sama dipertahankan sebagai
 informasi tetapi menjadi satu node algoritma, dan metrik temporal menggunakan
 durasi perjalanan Google Routes.
@@ -15,7 +16,7 @@ durasi perjalanan Google Routes.
 |---|---|
 | Dataset enam wilayah Sulawesi | `dataset_spklu_sulawesi.csv` dan validasi `app/services/dataset.py` |
 | Beberapa unit satu lokasi | `StationNode.units`; satu `node_id` dipakai graf untuk setiap koordinat identik |
-| Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline kandidat memakai CCS2 + AC Type 2 dengan prioritas CCS2 |
+| Kompatibilitas konektor | normalisasi dataset, pilihan input, dan filter kandidat; baseline kandidat memakai profil tepat CCS2 + AC Type 2, sedangkan kombinasi lain netral |
 | Akses jaringan dealer | metadata jaringan per unit, pilihan jaringan tambahan, dan status rute kondisional |
 | Kandidat berbasis Ball Tree | `app/services/spatial.py` |
 | Rute dan jarak jalan | `app/services/google_routes.py` |
@@ -56,7 +57,8 @@ lingkup lama. Sebelum naskah berikutnya dikumpulkan, lakukan koreksi berikut:
    durasi perjalanan.
 7. Jelaskan bahwa sistem dapat memfilter AC Type 2, CCS2, CHAdeMO, dan GB/T.
    Hasil historis memakai CCS2/300 km, sedangkan kandidat run berikutnya memakai
-   CCS2 dengan fallback AC Type 2 dan baseline 430 km.
+   profil tepat CCS2 dengan fallback AC Type 2 dan baseline 430 km. Kombinasi
+   multi-konektor lain tidak menggunakan ranking antarkonektor.
 8. Gunakan satuan `km` untuk jangkauan maksimum kendaraan; GB/T adalah nama
    konektor dan bukan satuan atau parameter kapasitas.
 9. Hapus `jumlah kandidat SPKLU pada setiap segmen` dari daftar parameter

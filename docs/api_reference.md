@@ -95,6 +95,10 @@ tunggal `vehicle.connector` tetap diterima untuk kompatibilitas dengan skenario
 eksperimen dan klien versi lama. Respons ternormalisasi memuat `connectors` serta
 `connector` sebagai konektor utama kompatibilitas lama. Untuk pasangan Combo 2,
 `preferred_connector` bernilai CCS2 dan `fallback_connectors` memuat AC Type 2.
+Kebijakan tersebut hanya berlaku jika pilihan tepat berisi CCS2 dan AC Type 2.
+Kombinasi multi-konektor lain memiliki `preferred_connector: null`,
+`fallback_connectors: []`, dan
+`connector_preference_policy: "selected_connectors_equal"`.
 
 Respons HTTP 200 selalu berarti pipeline selesai, bukan selalu feasible. Periksa
 `data.optimization.feasible`:
@@ -109,7 +113,9 @@ rekomendasi, `route_access`, dan pemakaian API. `route_access.status` bernilai
 `public`, `conditional`, atau `not_applicable` untuk hasil tidak feasible;
 status kondisional berarti sedikitnya satu charger dealer, fallback AC Type 2,
 atau penyeberangan feri dipakai. `route_access.ac_fallback_stop_count` dan field
-station `route_selected_connector` menjelaskan fallback. `route_access.ferry`
+station `route_selected_connector` menjelaskan fallback. Untuk kombinasi netral,
+`route_selected_connector` dapat bernilai `null` dan seluruh pilihan pada
+`route_compatible_connectors` berstatus kompatibel setara. `route_access.ferry`
 memuat status, jumlah segmen, jarak, durasi, serta penanda bahwa dukungan
 kendaraan harus dikonfirmasi kepada operator. Nilai waktu merepresentasikan
 durasi perjalanan Google Routes.

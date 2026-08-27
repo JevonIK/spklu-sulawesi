@@ -50,6 +50,9 @@ mengubah satu variabel pada satu waktu:
 saja dengan konfigurasi Combo 2 yang mengizinkan fallback AC Type 2. Semua
 parameter lain identik. Pemberhentian AC-only direkam sebagai
 `ac_fallback_stop_count`; optimizer mendahulukan itinerary tanpa fallback AC.
+Kebijakan ini hanya berlaku pada pilihan tepat CCS2 + AC Type 2. Kombinasi
+multi-konektor lainnya menggunakan policy `selected_connectors_equal` dan tidak
+memiliki konektor preferen.
 
 `experiments/scenarios_detour_multicorridor.json` dan hasilnya pada
 [`detour_sensitivity_results.md`](detour_sensitivity_results.md) membandingkan
@@ -153,8 +156,8 @@ artefak laporan penelitian yang memang hendak dijadikan bukti versi.
 Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
-Schema laporan versi 5 menyimpan daftar konektor, konektor preferen, batas
-total detour, jumlah
+Schema laporan versi 5 menyimpan daftar konektor, konektor preferen, policy
+preferensi, batas total detour, jumlah
 fallback AC, nama SPKLU terpilih, rincian leg dan SOC,
 jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
 statistik optimizer. Laporan juga merekam provenance kandidat: versi aplikasi,

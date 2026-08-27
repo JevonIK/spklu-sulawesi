@@ -53,6 +53,7 @@ def valid_payload(**vehicle_overrides):
 
 
 def station_node(connector="CCS2", charging_network="PUBLIC"):
+    connectors = (connector,) if isinstance(connector, str) else tuple(connector)
     unit = StationUnit(
         source_row=2,
         province="Sulawesi Selatan",
@@ -62,7 +63,7 @@ def station_node(connector="CCS2", charging_network="PUBLIC"):
         latitude=0,
         longitude=0.5,
         maps_url="https://maps.app.goo.gl/uji",
-        connectors=(connector,),
+        connectors=connectors,
         charging_network=charging_network,
     )
     return StationNode(
@@ -255,6 +256,10 @@ def test_recommendation_input_defaults_to_combo2_ac_and_dc_connectors():
     assert parsed.connectors == ("AC TYPE 2", "CCS2")
     assert parsed.preferred_connector == "CCS2"
     assert parsed.fallback_connectors == ("AC TYPE 2",)
+    assert (
+        parsed.connector_preference_policy
+        == "combo2_ccs2_primary_ac_type2_fallback"
+    )
 
 
 def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
@@ -265,7 +270,77 @@ def test_recommendation_input_accepts_multiple_connectors_from_checkbox_list():
 
     assert parsed.connectors == ("CCS2", "GB/T")
     assert parsed.connector == "CCS2"
+    assert parsed.preferred_connector is None
+    assert parsed.fallback_connectors == ()
+    assert parsed.connector_preference_policy == "selected_connectors_equal"
     assert parsed.to_dict()["connectors"] == ["CCS2", "GB/T"]
+
+
+def test_non_combo2_multi_connector_selection_has_no_ordinal_priority():
+    parsed = RecommendationInput.from_payload(
+        valid_payload(connectors=["CHADEMO", "AC TYPE 2"]),
+        defaults=DEFAULTS,
+    )
+
+    assert parsed.connectors == ("AC TYPE 2", "CHADEMO")
+    assert parsed.connector == "AC TYPE 2"
+    assert parsed.preferred_connector is None
+    assert parsed.fallback_connectors == ()
+    assert parsed.connector_preference_policy == "selected_connectors_equal"
+
+
+@pytest.mark.parametrize(
+    "connectors",
+    [
+        ["CCS2", "CHADEMO"],
+        ["CCS2", "GB/T"],
+        ["AC TYPE 2", "GB/T"],
+        ["CHADEMO", "GB/T"],
+        ["AC TYPE 2", "CCS2", "CHADEMO"],
+        ["AC TYPE 2", "CCS2", "CHADEMO", "GB/T"],
+    ],
+)
+def test_all_other_multi_connector_combinations_are_neutral(connectors):
+    parsed = RecommendationInput.from_payload(
+        valid_payload(connectors=connectors),
+        defaults=DEFAULTS,
+    )
+
+    assert parsed.preferred_connector is None
+    assert parsed.fallback_connectors == ()
+    assert parsed.connector_preference_policy == "selected_connectors_equal"
+
+
+def test_non_combo2_multi_connector_station_reports_all_as_compatible():
+    routes_client = PipelineRoutesClient()
+    service = RecommendationService(
+        spatial_index=StationSpatialIndex(
+            (station_node(("AC TYPE 2", "CHADEMO")),)
+        ),
+        routes_client=routes_client,
+        defaults=DEFAULTS,
+    )
+
+    result = service.recommend(
+        service.parse_input(
+            valid_payload(connectors=["AC TYPE 2", "CHADEMO"])
+        )
+    )
+
+    assert result["optimization"]["feasible"] is True
+    assert result["route_access"]["conditional"] is False
+    assert result["route_access"]["preferred_connector"] is None
+    assert (
+        result["route_access"]["connector_preference_policy"]
+        == "selected_connectors_equal"
+    )
+    stop = result["optimization"]["itinerary"]["charging_stops"][0]
+    assert stop["station"]["route_compatible_connectors"] == [
+        "AC TYPE 2",
+        "CHADEMO",
+    ]
+    assert stop["station"]["route_selected_connector"] is None
+    assert stop["station"]["route_connector_role"] == "compatible"
 
 
 def test_recommendation_input_accepts_multiple_additional_networks():

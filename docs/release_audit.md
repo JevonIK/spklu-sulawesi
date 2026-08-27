@@ -25,7 +25,8 @@ dibaca oleh CI.
 - path, jumlah baris, jumlah node logis, SHA-256 dataset, serta checksum
   `dataset_metadata.json`;
 - empat konektor aplikasi, konfigurasi penelitian Combo 2, prioritas CCS2,
-  fallback AC Type 2, baseline 430 km, artefak sumber range, dan definisi metrik
+  fallback AC Type 2 hanya untuk pilihan tepat Combo 2, kebijakan netral untuk
+  kombinasi lain, baseline 430 km, artefak sumber range, dan definisi metrik
   temporal Google Routes;
 - hard cap total detour 20 km, pengali radius 2, dan level sensitivitas
   10/20/30 km;

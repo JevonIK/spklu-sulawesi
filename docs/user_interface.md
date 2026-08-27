@@ -49,12 +49,15 @@ Nilai waktu pada antarmuka menunjukkan durasi perjalanan Google Routes.
 12. Untuk kombinasi Combo 2, optimizer meminimalkan jumlah stop AC-only sebelum
     biaya perjalanan. Stop AC Type 2 hanya menjadi fallback dan diberi label
     yang membedakannya dari konektor CCS2 yang diprioritaskan.
-13. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
+13. Prioritas Combo 2 hanya berlaku pada pilihan tepat CCS2 + AC Type 2.
+    Kombinasi multi-konektor lain menampilkan seluruh konektor yang cocok dengan
+    label **kompatibel** dan tidak memperoleh ranking dari urutan dataset.
+14. Jika tidak feasible, rute dasar tetap divisualisasikan dan alasan kegagalan
    ditampilkan tanpa membuat hasil seolah-olah berhasil.
-14. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,
+15. Tombol **Reset perjalanan** mengembalikan formulir dan peta ke keadaan awal,
     menghapus lokasi tersimpan, hasil, marker, serta polyline tanpa reload dan
     tanpa request Routes baru.
-15. Manuver feri dideteksi otomatis. Ringkasan dan itinerary memisahkan jarak
+16. Manuver feri dideteksi otomatis. Ringkasan dan itinerary memisahkan jarak
     darat dari jarak feri, mempertahankan SOC selama pelayaran, dan menandai
     seluruh rute feri sebagai kondisional.
 

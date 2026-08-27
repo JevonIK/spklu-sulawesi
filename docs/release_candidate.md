@@ -16,7 +16,7 @@ diunduh serta diperiksa.
 | Konektor aplikasi | AC Type 2, CCS2, CHAdeMO, GB/T |
 | Jaringan tambahan | Hyundai, Wuling, Toyota/Lexus |
 | SPKLU publik | Selalu disertakan |
-| Konektor eksperimen kandidat | CCS2 diprioritaskan; AC Type 2 fallback |
+| Konektor eksperimen kandidat | profil tepat Combo 2: CCS2 utama dan AC Type 2 fallback; kombinasi lain netral |
 | Jangkauan referensi kandidat | 430 km (median WLTP 433 km dibulatkan ke 10 km) |
 | Batas total detour | 20 km (`2 ×` radius koridor 10 km); sensitivitas 10/20/30 km |
 | Schema skenario / laporan baru | 4 / 5 |

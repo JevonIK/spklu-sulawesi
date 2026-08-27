@@ -83,8 +83,10 @@ def test_combo2_defaults_and_ac_fallback_are_explained(client):
     assert "CCS2 diprioritaskan" in html
     assert 'id="connectorCombinationNote"' in html
     assert "function updateConnectorCombinationNote" in source
+    assert "Semua konektor pilihan diperlakukan setara" in source
     assert '"AC Type 2 fallback"' in source
     assert "route_selected_connector" in source
+    assert 'return `${compatibleLabel} kompatibel`' in source
     assert "fallback; waktu" not in source.lower()
     assert "fallback · waktu" not in source.lower()
 

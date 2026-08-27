@@ -109,7 +109,9 @@ hard cap total detour 20 km juga dikelola backend dan divalidasi ulang terhadap
 rute final;
 perangkat eksperimen dapat menetapkannya secara eksplisit. Baseline kandidat
 memakai CCS2 dengan fallback AC Type 2; sensitivitas konektor membandingkannya
-dengan CCS2-only, sedangkan hasil historis tetap CCS2-only.
+dengan CCS2-only, sedangkan hasil historis tetap CCS2-only. Kebijakan fallback
+hanya berlaku pada pilihan tepat Combo 2; kombinasi multi-konektor lainnya
+diperlakukan setara.
 
 Respons sukses berisi rute dasar, statistik kandidat dan graf, hasil optimasi,
 rute rekomendasi, serta statistik penggunaan API. Untuk setiap itinerary

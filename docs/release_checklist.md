@@ -32,7 +32,8 @@ pengambilan data penelitian tambahan.
 - [ ] Rute feri memisahkan jarak darat dan pelayaran serta tidak menjamin jadwal,
   kapasitas, atau akses kendaraan tanpa konfirmasi operator.
 - [ ] Aplikasi menerima AC Type 2, CCS2, CHAdeMO, dan GB/T; skenario kandidat
-  memakai Combo 2 dengan prioritas CCS2 dan fallback AC Type 2.
+  memakai Combo 2 dengan prioritas CCS2 dan fallback AC Type 2, sedangkan
+  kombinasi multi-konektor lain tidak mempunyai ranking implisit.
 - [ ] Referensi jangkauan dapat dihitung ulang menjadi median 433 km dan
   baseline 430 km; sensitivitas 200/300/400/500 km tervalidasi.
 - [ ] Hard cap total detour 20 km sama dengan dua kali radius koridor baseline;

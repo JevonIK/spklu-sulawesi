@@ -7,9 +7,11 @@ import uuid
 from dataclasses import dataclass
 
 from ..constants import (
+    COMBO2_CONNECTOR_POLICY,
     DEFAULT_CONNECTORS,
-    FALLBACK_RESEARCH_CONNECTOR,
-    PREFERRED_RESEARCH_CONNECTOR,
+    connector_preference_policy,
+    fallback_connectors_for,
+    preferred_connector_for,
 )
 from .dataset import (
     CHARGING_NETWORK_LABELS,
@@ -321,6 +323,7 @@ class RecommendationInput:
             "connectors": list(self.connectors),
             "preferred_connector": self.preferred_connector,
             "fallback_connectors": list(self.fallback_connectors),
+            "connector_preference_policy": self.connector_preference_policy,
             "additional_charging_networks": list(
                 self.additional_charging_networks
             ),
@@ -334,26 +337,25 @@ class RecommendationInput:
     def connector(self):
         """Konektor utama untuk kompatibilitas integrasi versi lama."""
 
-        return self.preferred_connector
+        return self.preferred_connector or self.connectors[0]
 
     @property
     def preferred_connector(self):
-        """Konektor yang didahulukan untuk pemberhentian pengisian."""
+        """Konektor utama eksplisit; ``None`` untuk kombinasi netral."""
 
-        if PREFERRED_RESEARCH_CONNECTOR in self.connectors:
-            return PREFERRED_RESEARCH_CONNECTOR
-        return self.connectors[0]
+        return preferred_connector_for(self.connectors)
 
     @property
     def fallback_connectors(self):
-        """Konektor lambat yang hanya dipakai bila opsi utama tidak tersedia."""
+        """Konektor cadangan yang berlaku khusus profil tepat Combo 2."""
 
-        if (
-            PREFERRED_RESEARCH_CONNECTOR in self.connectors
-            and FALLBACK_RESEARCH_CONNECTOR in self.connectors
-        ):
-            return (FALLBACK_RESEARCH_CONNECTOR,)
-        return ()
+        return fallback_connectors_for(self.connectors)
+
+    @property
+    def connector_preference_policy(self):
+        """Kebijakan preferensi yang dapat diaudit pada request."""
+
+        return connector_preference_policy(self.connectors)
 
 
 class RecommendationService:
@@ -412,7 +414,7 @@ class RecommendationService:
 
     @staticmethod
     def _station_connector_choice(station_node, recommendation_input):
-        """Pilih jaringan publik lebih dahulu, lalu konektor DC preferen."""
+        """Pilih jaringan publik dan terapkan preferensi hanya untuk Combo 2."""
 
         eligible_networks = matching_charging_networks(
             station_node,
@@ -438,13 +440,38 @@ class RecommendationService:
             for connector in CONNECTOR_ORDER
             if connector in compatible
         )
-        selected_connector = (
-            recommendation_input.preferred_connector
-            if recommendation_input.preferred_connector in compatible
-            else ordered_compatible[0]
+        preferred_connector = recommendation_input.preferred_connector
+        fallback_connectors = frozenset(
+            recommendation_input.fallback_connectors
         )
+        if preferred_connector in compatible:
+            selected_connector = preferred_connector
+        elif fallback_connectors:
+            non_fallback = tuple(
+                connector
+                for connector in ordered_compatible
+                if connector not in fallback_connectors
+            )
+            selected_connector = (
+                non_fallback[0] if non_fallback else ordered_compatible[0]
+            )
+        elif len(ordered_compatible) == 1:
+            selected_connector = ordered_compatible[0]
+        else:
+            selected_connector = None
         is_fallback = (
-            selected_connector in recommendation_input.fallback_connectors
+            selected_connector in fallback_connectors
+        )
+        connector_role = (
+            "ac_fallback"
+            if is_fallback
+            else "preferred"
+            if (
+                recommendation_input.connector_preference_policy
+                == COMBO2_CONNECTOR_POLICY
+                and selected_connector == preferred_connector
+            )
+            else "compatible"
         )
         return {
             "eligible_networks": eligible_networks,
@@ -452,6 +479,7 @@ class RecommendationService:
             "compatible_connectors": ordered_compatible,
             "selected_connector": selected_connector,
             "is_fallback": is_fallback,
+            "connector_role": connector_role,
         }
 
     def _station_preference_ranks(self, graph, recommendation_input):
@@ -676,9 +704,9 @@ class RecommendationService:
             station_payload["route_selected_connector"] = choice[
                 "selected_connector"
             ]
-            station_payload["route_connector_role"] = (
-                "ac_fallback" if choice["is_fallback"] else "preferred"
-            )
+            station_payload["route_connector_role"] = choice[
+                "connector_role"
+            ]
             station_payload["route_access_type"] = (
                 "dealer_conditional" if is_conditional else "public"
             )
@@ -736,6 +764,9 @@ class RecommendationService:
             "conditional_stop_count": len(conditional_stops),
             "conditional_stops": conditional_stops,
             "preferred_connector": recommendation_input.preferred_connector,
+            "connector_preference_policy": (
+                recommendation_input.connector_preference_policy
+            ),
             "ac_fallback_stop_count": len(ac_fallback_stops),
             "ac_fallback_stops": ac_fallback_stops,
             "ferry": ferry_summary,
@@ -882,9 +913,7 @@ class RecommendationService:
                     recommendation_input.fallback_connectors
                 ),
                 "connector_preference_policy": (
-                    "minimize_ac_fallback_stops_before_travel_cost"
-                    if recommendation_input.fallback_connectors
-                    else "selected_connectors_equal"
+                    recommendation_input.connector_preference_policy
                 ),
                 "additional_charging_networks": list(
                     recommendation_input.additional_charging_networks

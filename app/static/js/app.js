@@ -420,9 +420,18 @@ function updateConnectorCombinationNote() {
     const count = state.config.connectorSetAvailability?.[connectorKey]?.[
         networkKey
     ];
-    note.textContent = Number.isInteger(count)
+    const isExactCombo2 = connectors.length === 2
+        && connectors.includes("AC TYPE 2")
+        && connectors.includes("CCS2");
+    const policyLabel = isExactCombo2
+        ? " CCS2 menjadi konektor utama dan AC Type 2 menjadi fallback."
+        : connectors.length > 1
+            ? " Semua konektor pilihan diperlakukan setara."
+            : "";
+    const availabilityLabel = Number.isInteger(count)
         ? `${count} lokasi unik dapat dipertimbangkan untuk kombinasi ${connectors.join(" + ")}.`
         : "Jumlah union lokasi untuk kombinasi ini tidak tersedia.";
+    note.textContent = `${availabilityLabel}${policyLabel}`;
 }
 
 function networkConnectorCounts(input) {
@@ -656,6 +665,22 @@ function addMarker({ position, title, text, modifier, onClick, zIndex }) {
     return marker;
 }
 
+function stationConnectorLabel(station) {
+    const compatibleConnectors = station.route_compatible_connectors?.length
+        ? station.route_compatible_connectors
+        : station.connectors || [];
+    const compatibleLabel = compatibleConnectors.length
+        ? compatibleConnectors.join(" + ")
+        : "Konektor kompatibel";
+    if (station.route_connector_role === "ac_fallback") {
+        return `${station.route_selected_connector || "AC Type 2"} fallback`;
+    }
+    if (station.route_connector_role === "preferred") {
+        return `${station.route_selected_connector || compatibleLabel} diprioritaskan`;
+    }
+    return `${compatibleLabel} kompatibel`;
+}
+
 function stationInfoContent(stop) {
     const station = stop.station;
     const content = document.createElement("div");
@@ -670,14 +695,7 @@ function stationInfoContent(stop) {
     content.append(address);
 
     const charging = document.createElement("span");
-    const selectedConnector = station.route_selected_connector
-        || station.route_compatible_connectors?.[0]
-        || station.connectors?.[0]
-        || "Konektor terpilih";
-    const connectorRole = station.route_connector_role === "ac_fallback"
-        ? "fallback"
-        : "diprioritaskan";
-    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${selectedConnector} (${connectorRole})`;
+    charging.textContent = `SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} · ${station.unit_count} unit · ${stationConnectorLabel(station)}`;
     const access = document.createElement("span");
     access.className = station.route_access_type === "dealer_conditional"
         ? "is-conditional"
@@ -910,13 +928,7 @@ function renderItinerary(data) {
             const accessLabel = station.route_access_type === "dealer_conditional"
                 ? `${station.route_charging_network_label} · konfirmasi akses`
                 : "SPKLU publik";
-            const selectedConnector = station.route_selected_connector
-                || station.route_compatible_connectors?.[0]
-                || station.connectors?.[0]
-                || "Konektor terpilih";
-            const connectorLabel = station.route_connector_role === "ac_fallback"
-                ? `${selectedConnector} fallback`
-                : `${selectedConnector} diprioritaskan`;
+            const connectorLabel = stationConnectorLabel(station);
             const stopText = document.createElement("span");
             stopText.textContent = `Setelah tiba, isi SOC ${formatPercent(stop.arrival_soc_percent)} → ${formatPercent(stop.departure_soc_percent)} (+${formatPercent(stop.charged_soc_percent)}) · ${station.unit_count} unit · ${connectorLabel} · ${accessLabel}`;
             stopCard.append(stopText);

@@ -15,6 +15,10 @@ from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ..constants import (
+    connector_preference_policy,
+    preferred_connector_for,
+)
 from .dataset import (
     EXPECTED_PROVINCES,
     parse_connectors,
@@ -37,6 +41,7 @@ CSV_COLUMNS = (
     "connector",
     "connectors",
     "preferred_connector",
+    "connector_preference_policy",
     "minimum_soc_percent",
     "target_soc_percent",
     "safety_factor",
@@ -475,7 +480,8 @@ def _result_template(scenario):
     vehicle = scenario["vehicle"]
     options = scenario.get("options", {})
     connectors = parse_connectors(vehicle.get("connectors"))
-    preferred_connector = "CCS2" if "CCS2" in connectors else connectors[0]
+    preferred_connector = preferred_connector_for(connectors)
+    preference_policy = connector_preference_policy(connectors)
     return {
         "scenario_id": scenario["id"],
         "scenario_name": scenario["name"],
@@ -484,9 +490,10 @@ def _result_template(scenario):
         "destination_label": scenario["destination"].get("label"),
         "maximum_range_km": vehicle.get("maximum_range_km"),
         "current_soc_percent": vehicle.get("current_soc_percent"),
-        "connector": preferred_connector,
+        "connector": preferred_connector or connectors[0],
         "connectors": " | ".join(connectors),
         "preferred_connector": preferred_connector,
+        "connector_preference_policy": preference_policy,
         "minimum_soc_percent": options.get("minimum_soc_percent"),
         "target_soc_percent": options.get("target_soc_percent"),
         "safety_factor": options.get("safety_factor"),

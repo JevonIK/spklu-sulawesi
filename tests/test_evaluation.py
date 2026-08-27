@@ -314,6 +314,10 @@ def test_experiment_summary_and_json_csv_export(tmp_path):
     assert rows[0]["ferry_segment_count"] == "0"
     assert rows[0]["minimum_soc_percent"] == "20"
     assert rows[0]["max_total_detour_km"] == "20"
+    assert (
+        rows[0]["connector_preference_policy"]
+        == "combo2_ccs2_primary_ac_type2_fallback"
+    )
     assert rows[0]["charging_stop_names"] == "SPKLU Tengah"
     assert report["definition"]["experiment_id"] == "eksperimen-uji"
     assert report["schema_version"] == 5
