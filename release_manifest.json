@@ -3,7 +3,7 @@
   "application_version": "0.18.0",
   "source": {
     "scope": "application-runtime-v2",
-    "sha256": "e59329171ba5a5868a73e1b2b8e604cbd866f3bc3d6c3335662e992534557d16"
+    "sha256": "1614f7fbc1bdb26094aa85fba20a924a6a529b7e9ff56d778d26c6a5d1923028"
   },
   "supported_python_versions": [
     "3.11",
@@ -67,6 +67,8 @@
       "path": "experiments/scenarios_baseline.json",
       "scenario_count": 6,
       "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "connector_preference_policies": ["combo2_ccs2_primary_ac_type2_fallback"],
+      "maximum_range_levels_km": [430],
       "max_total_detour_levels_km": [20],
       "sha256": "bc695b451716b41bd3b1a110517ea4589580985b9c4d1f6cb78cbe76200a1135"
     },
@@ -74,6 +76,8 @@
       "path": "experiments/scenarios_sensitivity.json",
       "scenario_count": 13,
       "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "connector_preference_policies": ["combo2_ccs2_primary_ac_type2_fallback"],
+      "maximum_range_levels_km": [200, 300, 400, 430, 500],
       "max_total_detour_levels_km": [10, 20, 30],
       "sha256": "d89bafcc720ab5867d96815c55b77dcd950f3d004f46378b4d283e2ea0425bbb"
     },
@@ -81,6 +85,8 @@
       "path": "experiments/scenarios_connector_sensitivity.json",
       "scenario_count": 2,
       "connector_sets": [["CCS2"], ["AC TYPE 2", "CCS2"]],
+      "connector_preference_policies": ["combo2_ccs2_primary_ac_type2_fallback", "single_connector"],
+      "maximum_range_levels_km": [430],
       "max_total_detour_levels_km": [20],
       "sha256": "237a5c4b48094640d32f66b0c6228b12b78771ff6589beedf459965176d7a5aa"
     },
@@ -88,13 +94,15 @@
       "path": "experiments/scenarios_detour_multicorridor.json",
       "scenario_count": 9,
       "connector_sets": [["AC TYPE 2", "CCS2"]],
+      "connector_preference_policies": ["combo2_ccs2_primary_ac_type2_fallback"],
+      "maximum_range_levels_km": [430],
       "max_total_detour_levels_km": [10, 20, 30],
       "sha256": "9fe160c0efd02f7544b4beaac3049c74ea735b994f3d657fd4f7bca5fc396742"
     }
   ],
   "research_manifest": {
     "path": "research_manifest.json",
-    "sha256": "51d73533d913f82bfff3b9d9590005d41ecf07e40ef71d7ce2c0fbdc06dcaae6"
+    "sha256": "f2cbb9ad85a870e0617116e1c3f55f7ebbee0f3194034159e97783057ba5cde9"
   },
   "quota_limits": {
     "GOOGLE_COMPUTE_ROUTES_DAILY_LIMIT": 100,

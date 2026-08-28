@@ -116,6 +116,17 @@ def test_release_manifest_rejects_missing_connector_preference_policy():
         validate_release_manifest(manifest)
 
 
+def test_release_manifest_rejects_missing_experiment_range_levels():
+    manifest = json.loads(Path("release_manifest.json").read_text())
+    del manifest["experiments"][0]["maximum_range_levels_km"]
+
+    with pytest.raises(
+        ReleaseManifestError,
+        match="maximum_range_levels_km",
+    ):
+        validate_release_manifest(manifest)
+
+
 @pytest.mark.parametrize(
     "relative_path",
     [

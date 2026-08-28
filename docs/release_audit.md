@@ -40,8 +40,9 @@ dibaca oleh CI.
 
 Audit memuat definisi eksperimen schema 4 melalui validator yang sama dengan
 command `experiment-run`. Selain jumlah skenario dan checksum, konfigurasi
-konektor setiap berkas harus sama dengan manifest dan ID skenario harus unik
-lintas berkas. Laporan baru yang dihasilkan command memakai schema 5. Audit juga
+konektor, policy preferensi, dan level maximum range setiap berkas harus sama
+dengan manifest, dan ID skenario harus unik lintas berkas. Laporan baru yang
+dihasilkan command memakai schema 5. Audit juga
 menghitung ulang median dan pembulatan pada referensi kendaraan sehingga 430 km
 tidak dapat diganti menjadi magic number tanpa mematahkan audit.
 

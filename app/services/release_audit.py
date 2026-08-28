@@ -20,6 +20,7 @@ from ..constants import (
     REFERENCE_MAXIMUM_RANGE_KM,
     REFERENCE_MAX_TOTAL_DETOUR_KM,
     RESEARCH_CONNECTORS,
+    connector_preference_policy,
 )
 from .dataset import CONNECTOR_ORDER, parse_connectors
 from .evaluation import ExperimentDefinitionError, load_experiment_definition
@@ -325,6 +326,34 @@ def validate_release_manifest(manifest):
         ):
             raise ReleaseManifestError(
                 f"{field}.connector_sets wajib berupa daftar konfigurasi."
+            )
+        connector_policies = experiment.get("connector_preference_policies")
+        if (
+            not isinstance(connector_policies, list)
+            or not connector_policies
+            or connector_policies != sorted(set(connector_policies))
+            or any(
+                not isinstance(policy, str) or not policy.strip()
+                for policy in connector_policies
+            )
+        ):
+            raise ReleaseManifestError(
+                f"{field}.connector_preference_policies tidak valid."
+            )
+        range_levels = experiment.get("maximum_range_levels_km")
+        if (
+            not isinstance(range_levels, list)
+            or not range_levels
+            or range_levels != sorted(set(range_levels))
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or value <= 0
+                for value in range_levels
+            )
+        ):
+            raise ReleaseManifestError(
+                f"{field}.maximum_range_levels_km tidak valid."
             )
         detour_levels = experiment.get("max_total_detour_levels_km")
         if (
@@ -882,6 +911,35 @@ def audit_release(manifest, *, project_root, app_version, catalog, config):
                 for connector_set in experiment["connector_sets"]
             ),
             connector_sets,
+        )
+        try:
+            connector_policies = sorted(
+                {
+                    connector_preference_policy(
+                        parse_connectors(scenario["vehicle"].get("connectors"))
+                    )
+                    for scenario in scenarios
+                }
+            )
+        except (KeyError, ValueError) as error:
+            connector_policies = [f"invalid: {error}"]
+        _add_check(
+            checks,
+            f"{check_prefix}.connector_preference_policies",
+            experiment["connector_preference_policies"],
+            connector_policies,
+        )
+        range_levels = sorted(
+            {
+                float(scenario["vehicle"]["maximum_range_km"])
+                for scenario in scenarios
+            }
+        )
+        _add_check(
+            checks,
+            f"{check_prefix}.maximum_range_levels_km",
+            [float(value) for value in experiment["maximum_range_levels_km"]],
+            range_levels,
         )
         detour_levels = sorted(
             {

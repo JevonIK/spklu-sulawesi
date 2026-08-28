@@ -129,6 +129,13 @@ lingkungan, dan faktor psikologis
 Karena sampel proyek tidak dibobot penjualan dan bukan data registrasi Sulawesi,
 430 km disebut **reference vehicle range**, bukan range mobil rata-rata Sulawesi.
 
+Semua skenario baseline kandidat, connector sensitivity, dan detour sensitivity
+memakai 430 km. Pada range sensitivity, 430 km tetap menjadi kontrol, sedangkan
+200/300/400/500 km adalah level stress-test satu-factor-at-a-time. Oleh karena
+itu, keberadaan 300 km pada `sensitivitas-range-300` tidak menjadikannya baseline
+baru. Laporan historis 0.9.2/0.10.0 juga tetap mencatat 300 km sesuai konfigurasi
+yang benar-benar dijalankan dan tidak boleh ditulis ulang secara retroaktif.
+
 ## 6. Konektor CCS2 + AC Type 2
 
 Combo 2 menggunakan bagian Type 2 untuk AC dan pin tambahan untuk DC. Arsitektur
@@ -175,6 +182,12 @@ durasi perjalanan, jumlah pemberhentian, detour, penambahan SOC, dan jarak.
 Apabila satu SPKLU menawarkan lebih dari satu konektor pilihan, seluruh konektor
 kompatibel ditampilkan tanpa label prioritas. Kebijakan ini mencegah urutan
 kanonis `CONNECTOR_ORDER` berubah menjadi asumsi ilmiah tersembunyi.
+
+Seluruh skenario kandidat utama memakai profil tepat CCS2 + AC Type 2 agar
+sesuai dengan sampel kendaraan Combo 2 dan agar 114 node publik pada union kedua
+konektor dapat dinilai. CCS2-only dipertahankan hanya sebagai kontrol pada
+`scenarios_connector_sensitivity.json`; selisih hasilnya terhadap profil Combo 2
+mengukur dampak perluasan cakupan dan pemakaian fallback secara eksplisit.
 
 ## 7. Hard cap total detour 20 km
 

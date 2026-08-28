@@ -64,6 +64,9 @@ dokumen naratif ini.
 ## Sensitivitas dan batas interpretasi
 
 Skenario kandidat menguji 200, 300, 400, dan 500 km terhadap baseline 430 km.
+Keempat nilai tersebut adalah level sensitivitas/stress-test, bukan baseline
+alternatif. Semua eksperimen kandidat yang tidak sedang memvariasikan range
+tetap memakai 430 km.
 Dengan SOC awal 80%, SOC minimum 20%, dan safety factor 0,9, usable range-nya:
 
 | Maximum range | Usable range 80→20% |

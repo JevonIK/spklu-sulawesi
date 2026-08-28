@@ -54,6 +54,11 @@ Kebijakan ini hanya berlaku pada pilihan tepat CCS2 + AC Type 2. Kombinasi
 multi-konektor lainnya menggunakan policy `selected_connectors_equal` dan tidak
 memiliki konektor preferen.
 
+Manifest mengunci level range per berkas: baseline, connector sensitivity, dan
+detour sensitivity hanya boleh memakai 430 km; range sensitivity memuat
+200/300/400/430/500 km. Manifest juga mengunci policy konektor setiap skenario,
+sehingga CCS2-only tidak dapat menjadi baseline kandidat secara tidak sengaja.
+
 `experiments/scenarios_detour_multicorridor.json` dan hasilnya pada
 [`detour_sensitivity_results.md`](detour_sensitivity_results.md) membandingkan
 cap 10/20/30 km pada koridor pendek, menengah, dan panjang.
@@ -157,7 +162,7 @@ Laporan JSON menyimpan ulang definisi skenario secara utuh. CSV menyertakan
 parameter kendaraan dan algoritma pada setiap baris sehingga hasil sensitivitas
 dapat dibandingkan tanpa bergantung pada berkas skenario yang mungkin berubah.
 Schema laporan versi 5 menyimpan daftar konektor, konektor preferen, policy
-preferensi, batas total detour, jumlah
+preferensi, maximum range, batas total detour, jumlah
 fallback AC, nama SPKLU terpilih, rincian leg dan SOC,
 jarak/durasi rute dasar serta rekomendasi, statistik pemangkasan graf, dan
 statistik optimizer. Laporan juga merekam provenance kandidat: versi aplikasi,

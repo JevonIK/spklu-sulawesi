@@ -54,6 +54,18 @@ def test_research_notebook_runs_all_code_cells_offline(monkeypatch):
         validation["neutral_multi_connector_policy"]
         == "selected_connectors_equal"
     )
+    assert validation["candidate_baseline_range_levels_km"] == [430]
+    assert validation["candidate_range_sensitivity_levels_km"] == [
+        200,
+        300,
+        400,
+        430,
+        500,
+    ]
+    assert validation["candidate_connector_policies"] == [
+        "combo2_ccs2_primary_ac_type2_fallback",
+        "single_connector",
+    ]
     assert validation["analysis_application_version"] == "0.18.0"
     assert validation["baseline_source_application_version"] == "0.9.2"
     assert validation["sensitivity_source_application_version"] == "0.10.0"

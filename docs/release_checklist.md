@@ -36,6 +36,9 @@ pengambilan data penelitian tambahan.
   kombinasi multi-konektor lain tidak mempunyai ranking implisit.
 - [ ] Referensi jangkauan dapat dihitung ulang menjadi median 433 km dan
   baseline 430 km; sensitivitas 200/300/400/500 km tervalidasi.
+- [ ] Manifest memastikan baseline/connector/detour memakai 430 km dan profil
+  Combo 2; 300 km hanya terdapat sebagai level range sensitivity atau provenance
+  run historis.
 - [ ] Hard cap total detour 20 km sama dengan dua kali radius koridor baseline;
   sensitivitas 10/20/30 km dan validasi rute final tersedia.
 - [ ] Delapan parameter utama mempunyai rasionalisasi, sumber eksternal/bukti

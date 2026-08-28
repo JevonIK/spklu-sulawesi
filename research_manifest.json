@@ -3,7 +3,7 @@
   "analysis_release": {
     "application_version": "0.18.0",
     "source_scope": "application-runtime-v2",
-    "source_sha256": "e59329171ba5a5868a73e1b2b8e604cbd866f3bc3d6c3335662e992534557d16"
+    "source_sha256": "1614f7fbc1bdb26094aa85fba20a924a6a529b7e9ff56d778d26c6a5d1923028"
   },
   "dataset": {
     "path": "dataset_spklu_sulawesi.csv",
@@ -20,13 +20,13 @@
       "id": "analysis_notebook",
       "kind": "jupyter_notebook",
       "path": "notebooks/analisis_sistem_spklu_sulawesi.ipynb",
-      "sha256": "4856f9c09064e59dfef31b0df341c6ff908768fd73552367bca2a05e848bc574"
+      "sha256": "28f1535f2c0f5094ebe2af4928047f5aeb25408f1414e783603bb68bbbc5e2fb"
     },
     {
       "id": "notebook_provenance",
       "kind": "provenance_metadata",
       "path": "notebooks/data/provenance.json",
-      "sha256": "58aa7bbbd241a71c3998119ad2dab83bd90d5636e2312081d2d766d446ec031b"
+      "sha256": "a14aa4b06c75cfafd63458c9155bb6c16dd6bebfc9bda1cddd69bd9516e6210c"
     },
     {
       "id": "snapshot_builder",
@@ -62,7 +62,7 @@
       "id": "parameter_rationale",
       "kind": "methodology_documentation",
       "path": "docs/parameter_rationale.md",
-      "sha256": "f9367483b75998a9b530e3d66981489b767bbe248ce2e021c3c8113a7552a8a3"
+      "sha256": "fbcc08eba97dc8b7c992792995a135dc8a95197254a6fd2b935c2d3cd8680faf"
     },
     {
       "id": "scenario_detour_multicorridor_current",
@@ -167,6 +167,7 @@
     "Dukungan feri kandidat saat ini belum dievaluasi oleh eksperimen live historis dan tidak boleh dianggap tervalidasi secara empiris oleh snapshot 0.9.2/0.10.0.",
     "Dataset kandidat direvisi menjadi 150 baris dan 146 node logis setelah run historis; dataset ini tidak boleh diatribusikan sebagai input laporan live 0.9.2/0.10.0 yang tidak merekam hash dataset.",
     "Baseline 430 km berasal dari median tujuh model-family WLTP yang dibulatkan ke 10 km dan bukan estimasi distribusi penjualan atau registrasi khusus Sulawesi.",
+    "Angka 300 km tetap dipertahankan sebagai level range sensitivity dan sebagai provenance run historis; seluruh baseline kandidat dan eksperimen non-range memakai 430 km.",
     "Prioritas CCS2 dan fallback AC Type 2 hanya berlaku pada pilihan tepat profil Combo 2; kombinasi multi-konektor lain diperlakukan setara karena dataset tidak memuat daya per konektor untuk membentuk ranking universal.",
     "Sensitivitas detour 0.18.0 menguji 10/20/30 km pada tiga koridor; seluruh cap menghasilkan itinerary yang sama per koridor sehingga 20 km belum terbukti sebagai optimum unik."
   ]

@@ -18,6 +18,7 @@ diunduh serta diperiksa.
 | SPKLU publik | Selalu disertakan |
 | Konektor eksperimen kandidat | profil tepat Combo 2: CCS2 utama dan AC Type 2 fallback; kombinasi lain netral |
 | Jangkauan referensi kandidat | 430 km (median WLTP 433 km dibulatkan ke 10 km) |
+| Range sensitivity | 200/300/400/500 km terhadap kontrol 430 km; 300 km bukan baseline kandidat |
 | Batas total detour | 20 km (`2 ×` radius koridor 10 km); sensitivitas 10/20/30 km |
 | Schema skenario / laporan baru | 4 / 5 |
 | Mode rute | `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY` |
